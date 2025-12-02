@@ -15,9 +15,9 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "NovaDigital Studio | Digital Marketing Agency",
+  title: "SMOVE Communication | We do the work for you",
   description:
-    "NovaDigital Studio crafts immersive digital marketing experiences with strategy, creative, and technology.",
+    "SMOVE Communication delivers done-for-you social content, campaigns, and creative so your brand keeps moving.",
 };
 
 export default function RootLayout({
@@ -28,10 +28,9 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body
-        className={`${geistSans.variable} ${geistMono.variable} bg-slate-950 text-slate-100 antialiased`}
+        className={`${geistSans.variable} ${geistMono.variable} bg-neutral-50 text-slate-900 antialiased`}
       >
-        <div className="relative min-h-screen bg-slate-950">
-          <div className="pointer-events-none absolute inset-0 -z-10 bg-[radial-gradient(circle_at_20%_20%,rgba(56,189,248,0.12),transparent_25%),radial-gradient(circle_at_80%_0%,rgba(139,92,246,0.12),transparent_20%),radial-gradient(circle_at_80%_80%,rgba(34,197,94,0.12),transparent_22%)]" />
+        <div className="relative min-h-screen overflow-x-hidden">
           <Header />
           <main>{children}</main>
           <Footer />

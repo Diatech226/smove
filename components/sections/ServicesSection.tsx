@@ -1,11 +1,14 @@
+"use client";
+
 import { motion } from "framer-motion";
 import SectionHeader from "@/components/ui/SectionHeader";
+import type { SectionKey } from "@/types/sections";
 
 const services = [
   {
     title: "Social media content",
     description: "Story-driven posts, carousels, and shorts tailored to every platform.",
-    bullets: ["Weekly content calendars", "Copy + design production", "Platform-native formats"],
+    bullets: ["Weekly calendars", "Copy + design production", "Platform-native formats"],
   },
   {
     title: "Community management",
@@ -20,7 +23,7 @@ const services = [
   {
     title: "Branding & identity",
     description: "Refresh your look with bold, social-ready visuals, type, and motion.",
-    bullets: ["Logo + visual toolkit", "Templates for teams", "Motion and 3D touchpoints"],
+    bullets: ["Logo + toolkit", "Templates for teams", "Motion and 3D touchpoints"],
   },
   {
     title: "Motion & 3D creative",
@@ -43,9 +46,20 @@ const cardVariants = {
   }),
 };
 
-export default function ServicesSection() {
+export default function ServicesSection({
+  onSectionIn,
+}: {
+  onSectionIn?: (section: SectionKey) => void;
+}) {
   return (
-    <section id="services" className="border-b border-amber-100 bg-white">
+    <motion.section
+      id="services"
+      className="border-b border-yellow-200/80 bg-white"
+      onViewportEnter={() => onSectionIn?.("services")}
+      initial="hidden"
+      whileInView="visible"
+      viewport={{ once: true, margin: "-30%" }}
+    >
       <div className="mx-auto max-w-6xl px-6 py-16 md:py-20">
         <SectionHeader
           eyebrow="Services"
@@ -56,22 +70,27 @@ export default function ServicesSection() {
           {services.map((service, idx) => (
             <motion.article
               key={service.title}
-              className="flex h-full flex-col gap-4 rounded-2xl border border-amber-100 bg-white/80 p-6 shadow-sm shadow-amber-200/60 transition hover:-translate-y-1 hover:shadow-lg hover:shadow-amber-200/60"
+              className="group relative flex h-full flex-col gap-4 overflow-hidden rounded-2xl border border-amber-100 bg-white/90 p-6 shadow-sm shadow-amber-200/60"
               variants={cardVariants}
               initial="hidden"
               whileInView="visible"
               viewport={{ once: true, margin: "-80px" }}
               custom={idx}
+              whileHover={{ scale: 1.03, y: -6 }}
+              transition={{ type: "spring", stiffness: 260, damping: 20 }}
             >
-              <div className="flex items-start justify-between gap-3">
+              <div className="absolute inset-0 bg-gradient-to-br from-yellow-100/0 via-yellow-50/50 to-blue-50/70 opacity-0 transition duration-300 group-hover:opacity-100" aria-hidden />
+              <div className="relative flex items-start justify-between gap-3">
                 <h3 className="text-xl font-semibold text-slate-900">{service.title}</h3>
-                <span className="h-2 w-2 rounded-full bg-blue-700" aria-hidden />
+                <span className="flex h-9 w-9 items-center justify-center rounded-2xl bg-blue-800 text-xs font-semibold uppercase tracking-[0.2em] text-yellow-200 shadow-sm shadow-blue-700/30">
+                  SM
+                </span>
               </div>
-              <p className="text-sm text-slate-600">{service.description}</p>
-              <ul className="space-y-2 text-sm text-slate-700">
+              <p className="relative text-sm text-slate-600">{service.description}</p>
+              <ul className="relative space-y-2 text-sm text-slate-700">
                 {service.bullets.map((bullet) => (
                   <li key={bullet} className="flex items-start gap-2">
-                    <span className="mt-1 h-1.5 w-1.5 rounded-full bg-blue-600" aria-hidden />
+                    <span className="mt-1 h-1.5 w-1.5 rounded-full bg-blue-700" aria-hidden />
                     <span>{bullet}</span>
                   </li>
                 ))}
@@ -80,6 +99,6 @@ export default function ServicesSection() {
           ))}
         </div>
       </div>
-    </section>
+    </motion.section>
   );
 }
