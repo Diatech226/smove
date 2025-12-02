@@ -20,27 +20,27 @@ function CoreSculpt() {
       <mesh castShadow receiveShadow>
         <torusKnotGeometry args={[1, 0.28, 180, 32]} />
         <meshStandardMaterial
-          color="#fde047"
-          emissive="#facc15"
-          emissiveIntensity={0.18}
-          metalness={0.3}
+          color="#67e8f9"
+          emissive="#0ea5e9"
+          emissiveIntensity={0.22}
+          metalness={0.25}
           roughness={0.25}
         />
       </mesh>
       <mesh position={[0, 0, -0.7]} scale={0.7} castShadow receiveShadow>
         <icosahedronGeometry args={[0.7, 1]} />
-        <meshStandardMaterial color="#1d4ed8" metalness={0.4} roughness={0.32} />
+        <meshStandardMaterial color="#a855f7" metalness={0.35} roughness={0.4} />
       </mesh>
     </group>
   );
 }
 
-function FloatingOrb({ position, color, emissive, delay = 0 }: { position: [number, number, number]; color: string; emissive: string; delay?: number }) {
+function FloatingOrb({ position, color, delay = 0 }: { position: [number, number, number]; color: string; delay?: number }) {
   return (
-    <Float speed={1.4} rotationIntensity={0.7} floatIntensity={0.7} floatingRange={[0.05, 0.32]}>
+    <Float speed={1.5} rotationIntensity={0.8} floatIntensity={0.8} floatingRange={[0.05, 0.35]}>
       <mesh position={position} castShadow receiveShadow>
         <sphereGeometry args={[0.25, 24, 24]} />
-        <meshStandardMaterial color={color} emissive={emissive} emissiveIntensity={0.22 + delay * 0.04} roughness={0.3} />
+        <meshStandardMaterial color={color} emissive={color} emissiveIntensity={0.25 + delay * 0.05} roughness={0.3} />
       </mesh>
     </Float>
   );
@@ -61,11 +61,7 @@ function OrbitRibbon({ radius = 2.6 }) {
       {points.map((pos, idx) => (
         <mesh key={idx} position={pos as [number, number, number]} rotation={[0, 0, 0]}>
           <boxGeometry args={[0.02, 0.02, 0.22]} />
-          <meshStandardMaterial
-            color={idx % 6 === 0 ? "#1d4ed8" : "#facc15"}
-            emissive={idx % 6 === 0 ? "#1d4ed8" : "#fef08a"}
-            emissiveIntensity={0.05}
-          />
+          <meshStandardMaterial color={idx % 6 === 0 ? "#22d3ee" : "#94a3b8"} emissive="#0ea5e9" emissiveIntensity={0.05} />
         </mesh>
       ))}
     </group>
@@ -88,10 +84,10 @@ export default function Hero3DCanvas() {
 
   const orbiters = useMemo(
     () => [
-      { position: [2.3, 0.5, -0.8] as [number, number, number], color: "#bfdbfe", emissive: "#93c5fd", delay: 0 },
-      { position: [-2.2, -0.4, 0.9] as [number, number, number], color: "#fef08a", emissive: "#fde047", delay: 1 },
-      { position: [1.2, 1.1, 1.4] as [number, number, number], color: "#93c5fd", emissive: "#60a5fa", delay: 2 },
-      { position: [-1.3, 1.0, -1.6] as [number, number, number], color: "#fde047", emissive: "#facc15", delay: 3 },
+      { position: [2.3, 0.5, -0.8] as [number, number, number], color: "#7dd3fc", delay: 0 },
+      { position: [-2.2, -0.4, 0.9] as [number, number, number], color: "#c4b5fd", delay: 1 },
+      { position: [1.2, 1.1, 1.4] as [number, number, number], color: "#22d3ee", delay: 2 },
+      { position: [-1.3, 1.0, -1.6] as [number, number, number], color: "#38bdf8", delay: 3 },
     ],
     []
   );
@@ -115,13 +111,12 @@ export default function Hero3DCanvas() {
       performance={{ min: 0.6 }}
     >
       <Suspense fallback={null}>
-        <color attach="background" args={["#0b1536"]} />
+        <color attach="background" args={["#0b172a"]} />
         <PerspectiveCamera makeDefault position={[0, 0.4, 6]} fov={42} />
 
         <ambientLight intensity={0.45} />
-        <directionalLight position={[4, 6, 4]} intensity={1} castShadow shadow-mapSize-width={1024} shadow-mapSize-height={1024} color="#facc15" />
-        <spotLight position={[-6, 6, 2]} angle={0.7} penumbra={0.6} intensity={0.7} color="#1d4ed8" />
-        <pointLight position={[0, -2, -2]} intensity={0.3} color="#60a5fa" />
+        <directionalLight position={[4, 6, 4]} intensity={1.1} castShadow shadow-mapSize-width={1024} shadow-mapSize-height={1024} />
+        <spotLight position={[-6, 6, 2]} angle={0.7} penumbra={0.6} intensity={0.7} color="#8b5cf6" />
 
         <group ref={groupRef} position={[0, -0.2, 0]}>
           <CoreSculpt />
@@ -129,13 +124,7 @@ export default function Hero3DCanvas() {
             <OrbitRibbon radius={isMobile ? 2.2 : 2.6} />
           </Float>
           {visibleOrbiters.map((orb) => (
-            <FloatingOrb
-              key={`${orb.position.join("-")}`}
-              position={orb.position}
-              color={orb.color}
-              emissive={orb.emissive}
-              delay={orb.delay}
-            />
+            <FloatingOrb key={`${orb.position.join("-")}`} position={orb.position} color={orb.color} delay={orb.delay} />
           ))}
         </group>
 
