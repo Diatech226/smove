@@ -1,5 +1,8 @@
+"use client";
+
 import { motion } from "framer-motion";
 import SectionHeader from "@/components/ui/SectionHeader";
+import type { SectionKey } from "@/types/sections";
 
 const caseStudies = [
   {
@@ -20,6 +23,12 @@ const caseStudies = [
     result: "+62% community replies",
     summary: "Community management and refreshed visuals turned support questions into loyal fans.",
   },
+  {
+    client: "AgroFresh Markets",
+    platforms: "Meta Ads, WhatsApp",
+    result: "+38% repeat orders",
+    summary: "Promo bursts and conversational replies built trust with neighborhood shoppers.",
+  },
 ];
 
 const cardVariants = {
@@ -31,42 +40,61 @@ const cardVariants = {
   }),
 };
 
-export default function PortfolioSection() {
+export default function PortfolioSection({
+  onSectionIn,
+}: {
+  onSectionIn?: (section: SectionKey) => void;
+}) {
   return (
-    <section id="portfolio" className="border-b border-amber-100 bg-amber-100/60">
-      <div className="mx-auto max-w-6xl px-6 py-16 md:py-20">
-        <SectionHeader
-          eyebrow="Case studies"
-          title="Campaigns that look good and deliver numbers."
-          subtitle="A few snapshots from SMOVE engagements across social, paid, and community."
-        />
-        <div className="mt-12 grid gap-6 md:grid-cols-3">
-          {caseStudies.map((study, idx) => (
-            <motion.article
-              key={study.client}
-              className="flex h-full flex-col justify-between rounded-2xl border border-amber-200/80 bg-white/80 p-6 shadow-sm shadow-amber-200/70 transition hover:-translate-y-1 hover:shadow-md hover:shadow-amber-200/70"
-              variants={cardVariants}
-              initial="hidden"
-              whileInView="visible"
-              viewport={{ once: true, margin: "-80px" }}
-              custom={idx}
-            >
-              <div className="space-y-3">
-                <div className="flex items-center justify-between text-xs font-semibold uppercase tracking-[0.2em] text-blue-800">
-                  <span>{study.client}</span>
-                  <span className="rounded-full bg-blue-700 px-3 py-1 text-[11px] text-white">{study.platforms}</span>
+    <motion.section
+      id="portfolio"
+      className="border-b border-blue-900/30 bg-gradient-to-br from-blue-900 via-blue-950 to-slate-950 text-white"
+      onViewportEnter={() => onSectionIn?.("portfolio")}
+      initial="hidden"
+      whileInView="visible"
+      viewport={{ once: true, margin: "-30%" }}
+    >
+      <div className="relative">
+        <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_20%_20%,rgba(250,204,21,0.16),transparent_35%),radial-gradient(circle_at_80%_20%,rgba(56,189,248,0.18),transparent_30%)]" aria-hidden />
+        <div className="relative mx-auto max-w-6xl px-6 py-16 md:py-20">
+          <SectionHeader
+            eyebrow="Case studies"
+            title="Campaigns that look good and deliver numbers."
+            subtitle="A few snapshots from SMOVE engagements across social, paid, and community."
+            tone="light"
+          />
+          <div className="mt-12 grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+            {caseStudies.map((study, idx) => (
+              <motion.article
+                key={study.client}
+                className="group flex h-full flex-col justify-between overflow-hidden rounded-2xl border border-blue-800/60 bg-white/5 p-6 shadow-[0_30px_80px_rgba(8,47,73,0.35)]"
+                variants={cardVariants}
+                initial="hidden"
+                whileInView="visible"
+                viewport={{ once: true, margin: "-80px" }}
+                custom={idx}
+                whileHover={{ rotateX: -2, rotateY: 2, y: -8 }}
+                transition={{ type: "spring", stiffness: 180, damping: 18 }}
+                style={{ transformStyle: "preserve-3d", perspective: 900 }}
+              >
+                <div className="absolute left-0 top-0 h-1 w-full origin-left scale-x-0 bg-gradient-to-r from-yellow-300 via-yellow-100 to-blue-300 transition duration-300 group-hover:scale-x-100" aria-hidden />
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between text-xs font-semibold uppercase tracking-[0.2em] text-blue-100/90">
+                    <span>{study.client}</span>
+                    <span className="rounded-full bg-white/10 px-3 py-1 text-[11px] text-yellow-200">{study.platforms}</span>
+                  </div>
+                  <p className="text-lg font-semibold text-yellow-100">{study.result}</p>
+                  <p className="text-sm text-blue-100/90">{study.summary}</p>
                 </div>
-                <p className="text-lg font-semibold text-slate-900">{study.result}</p>
-                <p className="text-sm text-slate-700">{study.summary}</p>
-              </div>
-              <div className="mt-6 flex items-center gap-2 text-sm font-semibold text-blue-800">
-                <span className="h-1.5 w-1.5 rounded-full bg-blue-700" aria-hidden />
-                <span>Full case study on request</span>
-              </div>
-            </motion.article>
-          ))}
+                <div className="mt-6 flex items-center gap-2 text-sm font-semibold text-yellow-100">
+                  <span className="h-1.5 w-1.5 rounded-full bg-yellow-300" aria-hidden />
+                  <span>Full case study on request</span>
+                </div>
+              </motion.article>
+            ))}
+          </div>
         </div>
       </div>
-    </section>
+    </motion.section>
   );
 }
