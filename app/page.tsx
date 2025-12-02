@@ -1,8 +1,3 @@
-"use client";
-
-import { motion } from "framer-motion";
-import Hero3DCanvas from "@/components/Hero3DCanvas";
-
 const services = [
   {
     title: "3D Landing Experiences",
@@ -62,45 +57,15 @@ const processSteps = [
   },
 ];
 
-const fadeInUp = {
-  hidden: { opacity: 0, y: 24 },
-  visible: {
-    opacity: 1,
-    y: 0,
-    transition: { duration: 0.6, ease: "easeOut" },
-  },
-};
-
-const sectionFade = {
-  hidden: { opacity: 0, y: 30 },
-  visible: {
-    opacity: 1,
-    y: 0,
-    transition: { duration: 0.7, ease: "easeOut" },
-  },
-};
-
-const staggerChildren = {
-  hidden: {},
-  visible: {
-    transition: {
-      staggerChildren: 0.12,
-    },
-  },
-};
-
 export default function Home() {
   return (
     <div className="bg-slate-950">
-      <motion.section
+      <section
         id="hero"
         className="relative overflow-hidden border-b border-white/5 bg-gradient-to-b from-slate-950 via-slate-900 to-slate-950"
-        initial="hidden"
-        animate="visible"
-        variants={staggerChildren}
       >
         <div className="mx-auto grid max-w-6xl grid-cols-1 gap-10 px-6 py-20 md:grid-cols-2 md:items-center md:py-28">
-          <motion.div className="space-y-8" variants={fadeInUp}>
+          <div className="space-y-8">
             <div className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-4 py-2 text-xs font-semibold uppercase tracking-[0.2em] text-cyan-100">
               NovaDigital Studio
               <span className="h-1.5 w-1.5 rounded-full bg-cyan-400" aria-hidden />
@@ -142,24 +107,25 @@ export default function Home() {
                 <p className="text-xs uppercase tracking-wide text-slate-400">Building digital wins</p>
               </div>
             </div>
-          </motion.div>
-          <motion.div className="relative" variants={fadeInUp}>
+          </div>
+          <div className="relative">
             <div className="absolute inset-0 rounded-3xl bg-gradient-to-tr from-cyan-400/20 via-violet-500/10 to-transparent blur-3xl" aria-hidden />
-            <div className="relative flex h-full min-h-[420px] items-center justify-center rounded-3xl border border-white/10 bg-white/5 p-4 text-center">
-              <Hero3DCanvas />
+            <div className="relative flex h-full min-h-[360px] items-center justify-center rounded-3xl border border-white/10 bg-white/5 p-6 text-center">
+              <div className="space-y-3">
+                <p className="text-xs font-semibold uppercase tracking-[0.25em] text-cyan-200">3D showcase</p>
+                <p className="text-lg font-medium text-white">
+                  Animated 3D hero experience landing here in the next iteration.
+                </p>
+                <p className="text-sm text-slate-300">
+                  The scene will feature an abstract form that mirrors our strategic, adaptive marketing workflows.
+                </p>
+              </div>
             </div>
-          </motion.div>
+          </div>
         </div>
-      </motion.section>
+      </section>
 
-      <motion.section
-        id="services"
-        className="border-b border-white/5 bg-slate-950"
-        initial="hidden"
-        whileInView="visible"
-        viewport={{ once: true, margin: "-100px" }}
-        variants={sectionFade}
-      >
+      <section id="services" className="border-b border-white/5 bg-slate-950">
         <div className="mx-auto max-w-6xl px-6 py-16 md:py-20">
           <div className="space-y-3">
             <p className="text-sm font-semibold uppercase tracking-[0.25em] text-cyan-200">Services</p>
@@ -171,15 +137,10 @@ export default function Home() {
             </p>
           </div>
           <div className="mt-10 grid gap-6 md:grid-cols-3">
-            {services.map((service, idx) => (
-              <motion.div
+            {services.map((service) => (
+              <div
                 key={service.title}
                 className="flex h-full flex-col gap-4 rounded-2xl border border-white/10 bg-white/5 p-6 shadow-[0_20px_60px_rgba(0,0,0,0.35)] transition hover:-translate-y-1 hover:border-cyan-300/40"
-                variants={fadeInUp}
-                custom={idx}
-                initial="hidden"
-                whileInView="visible"
-                viewport={{ once: true, margin: "-80px" }}
               >
                 <div className="flex items-center justify-between">
                   <h3 className="text-xl font-semibold text-white">{service.title}</h3>
@@ -194,20 +155,13 @@ export default function Home() {
                     </li>
                   ))}
                 </ul>
-              </motion.div>
+              </div>
             ))}
           </div>
         </div>
-      </motion.section>
+      </section>
 
-      <motion.section
-        id="portfolio"
-        className="border-b border-white/5 bg-slate-950"
-        initial="hidden"
-        whileInView="visible"
-        viewport={{ once: true, margin: "-100px" }}
-        variants={sectionFade}
-      >
+      <section id="portfolio" className="border-b border-white/5 bg-slate-950">
         <div className="mx-auto max-w-6xl px-6 py-16 md:py-20">
           <div className="space-y-3">
             <p className="text-sm font-semibold uppercase tracking-[0.25em] text-cyan-200">Case Studies</p>
@@ -220,13 +174,9 @@ export default function Home() {
           </div>
           <div className="mt-10 grid gap-6 md:grid-cols-3">
             {caseStudies.map((study) => (
-              <motion.article
+              <article
                 key={study.name}
                 className="flex h-full flex-col justify-between rounded-2xl border border-white/10 bg-white/5 p-6 shadow-[0_20px_60px_rgba(0,0,0,0.35)] transition hover:-translate-y-1 hover:border-cyan-300/40"
-                variants={fadeInUp}
-                initial="hidden"
-                whileInView="visible"
-                viewport={{ once: true, margin: "-80px" }}
               >
                 <div className="space-y-3">
                   <div className="flex items-center justify-between text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">
@@ -239,20 +189,13 @@ export default function Home() {
                   <span className="h-1.5 w-1.5 rounded-full bg-cyan-300" aria-hidden />
                   <span>Full case study coming soon</span>
                 </div>
-              </motion.article>
+              </article>
             ))}
           </div>
         </div>
-      </motion.section>
+      </section>
 
-      <motion.section
-        id="process"
-        className="border-b border-white/5 bg-slate-950"
-        initial="hidden"
-        whileInView="visible"
-        viewport={{ once: true, margin: "-100px" }}
-        variants={sectionFade}
-      >
+      <section id="process" className="border-b border-white/5 bg-slate-950">
         <div className="mx-auto max-w-6xl px-6 py-16 md:py-20">
           <div className="space-y-3">
             <p className="text-sm font-semibold uppercase tracking-[0.25em] text-cyan-200">Process</p>
@@ -264,13 +207,11 @@ export default function Home() {
             </p>
           </div>
           <div className="mt-10 grid gap-4 md:grid-cols-[1fr,1fr] md:items-start">
-            <motion.div className="space-y-4" variants={staggerChildren} initial="hidden" whileInView="visible" viewport={{ once: true, margin: "-80px" }}>
+            <div className="space-y-4">
               {processSteps.map((step, index) => (
-                <motion.div
+                <div
                   key={step.title}
                   className="flex gap-4 rounded-2xl border border-white/10 bg-white/5 p-5 transition hover:-translate-y-1 hover:border-cyan-300/40"
-                  variants={fadeInUp}
-                  custom={index}
                 >
                   <div className="flex h-10 w-10 items-center justify-center rounded-full bg-cyan-400/15 text-sm font-semibold text-cyan-200">
                     {index + 1}
@@ -279,16 +220,10 @@ export default function Home() {
                     <h3 className="text-lg font-semibold text-white">{step.title}</h3>
                     <p className="text-sm text-slate-300">{step.detail}</p>
                   </div>
-                </motion.div>
+                </div>
               ))}
-            </motion.div>
-            <motion.div
-              className="rounded-3xl border border-white/10 bg-gradient-to-br from-white/5 via-slate-900/40 to-slate-950 p-6 text-slate-300"
-              variants={fadeInUp}
-              initial="hidden"
-              whileInView="visible"
-              viewport={{ once: true, margin: "-80px" }}
-            >
+            </div>
+            <div className="rounded-3xl border border-white/10 bg-gradient-to-br from-white/5 via-slate-900/40 to-slate-950 p-6 text-slate-300">
               <h3 className="text-xl font-semibold text-white">What to expect</h3>
               <ul className="mt-4 space-y-3 text-sm">
                 <li className="flex items-start gap-2">
@@ -304,19 +239,12 @@ export default function Home() {
                   QA checklists for performance, accessibility, and launch-readiness.
                 </li>
               </ul>
-            </motion.div>
+            </div>
           </div>
         </div>
-      </motion.section>
+      </section>
 
-      <motion.section
-        id="contact"
-        className="bg-slate-950"
-        initial="hidden"
-        whileInView="visible"
-        viewport={{ once: true, margin: "-100px" }}
-        variants={sectionFade}
-      >
+      <section id="contact" className="bg-slate-950">
         <div className="mx-auto max-w-6xl px-6 py-16 md:py-20">
           <div className="space-y-3">
             <p className="text-sm font-semibold uppercase tracking-[0.25em] text-cyan-200">Contact</p>
@@ -328,7 +256,7 @@ export default function Home() {
             </p>
           </div>
           <div className="mt-10 grid gap-8 md:grid-cols-2">
-            <motion.div className="space-y-4 text-sm text-slate-300" variants={fadeInUp}>
+            <div className="space-y-4 text-sm text-slate-300">
               <p>
                 We collaborate with product, marketing, and brand teams to build memorable, high-performing digital experiences. Expect candor, momentum, and measurable outcomes.
               </p>
@@ -337,14 +265,8 @@ export default function Home() {
                 <p className="mt-2 text-lg font-semibold text-white">&lt; 24 hours</p>
                 <p className="mt-1 text-sm text-slate-300">Dedicated strategist reviews every submission.</p>
               </div>
-            </motion.div>
-            <motion.form
-              className="grid gap-4 rounded-2xl border border-white/10 bg-white/5 p-6"
-              variants={fadeInUp}
-              initial="hidden"
-              whileInView="visible"
-              viewport={{ once: true, margin: "-80px" }}
-            >
+            </div>
+            <form className="grid gap-4 rounded-2xl border border-white/10 bg-white/5 p-6">
               <label className="text-sm text-slate-200" htmlFor="name">
                 Name
                 <input
@@ -391,10 +313,10 @@ export default function Home() {
               >
                 Submit
               </button>
-            </motion.form>
+            </form>
           </div>
         </div>
-      </motion.section>
+      </section>
     </div>
   );
 }
