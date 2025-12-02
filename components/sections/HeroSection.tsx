@@ -1,8 +1,17 @@
 "use client";
 
+import dynamic from "next/dynamic";
 import { motion } from "framer-motion";
-import Hero3DCanvas from "@/components/Hero3DCanvas";
 import type { SectionKey } from "@/types/sections";
+
+const Hero3DCanvas = dynamic(() => import("@/components/Hero3DCanvas"), {
+  ssr: false,
+  loading: () => (
+    <div className="h-[360px] w-full rounded-[32px] bg-yellow-200/40 flex items-center justify-center text-sm text-slate-700 md:h-[480px]">
+      Loading 3D...
+    </div>
+  ),
+});
 
 const fadeIn = {
   hidden: { opacity: 0, y: 28 },
