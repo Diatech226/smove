@@ -1,7 +1,7 @@
 "use client";
 
 import { motion } from "framer-motion";
-import SectionHeader from "@/components/ui/SectionHeader";
+import { SectionHeader } from "@/components/ui/SectionHeader";
 import type { SectionKey } from "@/types/sections";
 
 const steps = [
@@ -55,6 +55,7 @@ export default function ProcessSection({
           eyebrow="Process"
           title="A clear path that keeps you in the loop without extra work."
           subtitle="We pair weekly check-ins with async updates so you always know what shipped and what is next."
+          tone="dark"
         />
         <div className="mt-12 grid gap-8 md:grid-cols-[1.1fr,0.9fr] md:items-start">
           <div className="relative space-y-4">

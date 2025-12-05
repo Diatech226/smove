@@ -1,24 +1,40 @@
-type BlogPageProps = {
-  params: {
-    slug: string;
-  };
+import { notFound } from "next/navigation";
+import { Container } from "@/components/ui/Container";
+import { SectionHeader } from "@/components/ui/SectionHeader";
+import { posts } from "@/lib/config/posts";
+
+function formatDate(dateString: string) {
+  return new Intl.DateTimeFormat("fr-FR", { dateStyle: "long" }).format(new Date(dateString));
+}
+
+type BlogPostPageProps = {
+  params: { slug: string };
 };
 
-export default function BlogArticlePage({ params }: BlogPageProps) {
-  const { slug } = params;
+export default function BlogPostPage({ params }: BlogPostPageProps) {
+  const post = posts.find((item) => item.slug === params.slug);
+
+  if (!post) {
+    notFound();
+  }
 
   return (
-    <div className="mx-auto max-w-4xl space-y-6 px-6 py-12">
-      <p className="text-sm uppercase tracking-[0.2em] text-emerald-300">Article</p>
-      <h1 className="text-4xl font-semibold text-white">{slug.replace(/-/g, " ")}</h1>
-      <p className="text-lg text-slate-200">
-        Article en cours de rédaction. Nous partagerons bientôt insights, études de cas et coulisses
-        détaillées.
-      </p>
-      <div className="rounded-2xl border border-slate-800 bg-slate-900/50 p-6 text-slate-200">
-        <p className="text-sm text-slate-400">Slug: {slug}</p>
-        <p className="mt-2">Contenu éditorial à venir dans une prochaine itération.</p>
-      </div>
+    <div className="bg-slate-950 pb-16 pt-10">
+      <Container className="space-y-8">
+        <SectionHeader
+          eyebrow="Article"
+          title={post.title}
+          subtitle={formatDate(post.date)}
+        />
+
+        <div className="space-y-4 text-lg text-slate-200">
+          <p>{post.content}</p>
+          <p>
+            Chez SMOVE Communication, nous combinons stratégie éditoriale, production créative et pilotage des campagnes pour
+            transformer ces idées en résultats concrets.
+          </p>
+        </div>
+      </Container>
     </div>
   );
 }

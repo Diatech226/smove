@@ -3,12 +3,11 @@
 
 import Link from "next/link";
 import { motion } from "framer-motion";
-
-const projects = [
-  { title: "Lancement produit tech", client: "Client A" },
-  { title: "Campagne social media", client: "Client B" },
-  { title: "Identité visuelle", client: "Client C" },
-];
+import { Card } from "@/components/ui/Card";
+import { Container } from "@/components/ui/Container";
+import { SectionHeader } from "@/components/ui/SectionHeader";
+import { projects } from "@/lib/config/projects";
+import { Button } from "@/components/ui/Button";
 
 type SectionProps = {
   onSectionIn?: () => void;
@@ -24,35 +23,49 @@ export default function PortfolioPreviewSection({ onSectionIn }: SectionProps) {
       viewport={{ once: true, amount: 0.3 }}
       onViewportEnter={onSectionIn}
     >
-      <div className="mx-auto max-w-6xl px-6">
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-          <div>
-            <p className="text-sm uppercase tracking-[0.2em] text-emerald-300">Portfolio</p>
-            <h2 className="text-3xl font-semibold text-white">Un aperçu de nos réalisations.</h2>
+      <Container>
+        <div className="flex flex-col gap-6 sm:flex-row sm:items-center sm:justify-between">
+          <SectionHeader
+            eyebrow="Portfolio"
+            title="Un aperçu de nos réalisations"
+            subtitle="Des campagnes intégrées qui combinent storytelling, production premium et pilotage media."
+          />
+          <div className="flex justify-start sm:justify-end">
+            <Button href="/portfolio" variant="secondary">
+              Explorer tous les projets
+            </Button>
           </div>
-          <Link href="/portfolio" className="text-sm font-semibold text-emerald-300 transition hover:text-emerald-200">
-            Explorer tous les projets →
-          </Link>
         </div>
         <div className="mt-8 grid gap-4 md:grid-cols-3">
-          {projects.map((project, index) => (
+          {projects.slice(0, 3).map((project, index) => (
             <motion.div
-              key={project.title}
-              className="rounded-2xl border border-slate-800 bg-slate-900/50 px-5 py-6 text-slate-100 shadow-lg shadow-black/20"
+              key={project.slug}
+              className="h-full"
               initial={{ opacity: 0, y: 24 }}
               whileInView={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.55, ease: "easeOut", delay: index * 0.04 }}
               viewport={{ once: true, amount: 0.2 }}
             >
-              <p className="text-xs uppercase tracking-[0.2em] text-emerald-300">{project.client}</p>
-              <h3 className="mt-2 text-xl font-semibold text-white">{project.title}</h3>
-              <p className="mt-2 text-sm text-slate-300">
-                Résumé du projet avec mise en avant de la valeur ajoutée créative et digitale.
-              </p>
+              <Card className="h-full space-y-3">
+                <p className="text-xs uppercase tracking-[0.2em] text-emerald-200">{project.client}</p>
+                <h3 className="text-xl font-semibold text-white">{project.title}</h3>
+                <p className="text-sm text-slate-300">{project.summary}</p>
+                <div className="flex items-center justify-between">
+                  <span className="rounded-full bg-white/5 px-3 py-1 text-xs font-semibold text-slate-100">
+                    {project.sector}
+                  </span>
+                  <Link
+                    href={`/portfolio/${project.slug}`}
+                    className="text-sm font-semibold text-emerald-300 transition hover:text-emerald-200"
+                  >
+                    Voir le projet →
+                  </Link>
+                </div>
+              </Card>
             </motion.div>
           ))}
         </div>
-      </div>
+      </Container>
     </motion.section>
   );
 }
