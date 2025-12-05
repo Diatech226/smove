@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import { Button } from "@/components/ui/Button";
@@ -5,10 +6,29 @@ import { Card } from "@/components/ui/Card";
 import { Container } from "@/components/ui/Container";
 import { SectionHeader } from "@/components/ui/SectionHeader";
 import { projects } from "@/lib/config/projects";
+import { createMetadata } from "@/lib/config/seo";
 
 type ProjectPageProps = {
   params: { slug: string };
 };
+
+export function generateMetadata({ params }: ProjectPageProps): Metadata {
+  const project = projects.find((item) => item.slug === params.slug);
+
+  if (!project) {
+    return createMetadata({
+      title: "Projet introuvable – SMOVE Communication",
+      description: "Le projet que vous recherchez n'existe pas ou a été déplacé.",
+      path: `/portfolio/${params.slug}`,
+    });
+  }
+
+  return createMetadata({
+    title: `${project.title} – ${project.client} – SMOVE Communication`,
+    description: project.summary ?? "Découvrez les réalisations et résultats portés par SMOVE Communication.",
+    path: `/portfolio/${project.slug}`,
+  });
+}
 
 export default function ProjectPage({ params }: ProjectPageProps) {
   const project = projects.find((item) => item.slug === params.slug);

@@ -8,6 +8,7 @@ import { Container } from "@/components/ui/Container";
 import { SectionHeader } from "@/components/ui/SectionHeader";
 import { posts } from "@/lib/config/posts";
 import { Button } from "@/components/ui/Button";
+import { useReducedMotionPref } from "@/lib/hooks/useReducedMotionPref";
 
 type SectionProps = {
   onSectionIn?: () => void;
@@ -18,13 +19,15 @@ function formatDate(dateString: string) {
 }
 
 export default function BlogPreviewSection({ onSectionIn }: SectionProps) {
+  const shouldReduceMotion = useReducedMotionPref();
+
   return (
     <motion.section
       className="border-b border-slate-800 bg-slate-950 py-14"
-      initial={{ opacity: 0, y: 30 }}
-      whileInView={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.6, ease: "easeOut" }}
-      viewport={{ once: true, amount: 0.3 }}
+      initial={shouldReduceMotion ? undefined : { opacity: 0, y: 30 }}
+      whileInView={shouldReduceMotion ? undefined : { opacity: 1, y: 0 }}
+      transition={shouldReduceMotion ? { duration: 0 } : { duration: 0.6, ease: "easeOut" }}
+      viewport={shouldReduceMotion ? undefined : { once: true, amount: 0.3 }}
       onViewportEnter={onSectionIn}
     >
       <Container>
@@ -45,10 +48,12 @@ export default function BlogPreviewSection({ onSectionIn }: SectionProps) {
             <motion.article
               key={post.slug}
               className="h-full"
-              initial={{ opacity: 0, y: 24 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.55, ease: "easeOut", delay: index * 0.04 }}
-              viewport={{ once: true, amount: 0.2 }}
+              initial={shouldReduceMotion ? undefined : { opacity: 0, y: 24 }}
+              whileInView={shouldReduceMotion ? undefined : { opacity: 1, y: 0 }}
+              transition={
+                shouldReduceMotion ? { duration: 0 } : { duration: 0.55, ease: "easeOut", delay: index * 0.04 }
+              }
+              viewport={shouldReduceMotion ? undefined : { once: true, amount: 0.2 }}
             >
               <Card className="h-full space-y-3">
                 <p className="text-xs uppercase tracking-[0.2em] text-emerald-200">{formatDate(post.date)}</p>

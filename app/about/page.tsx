@@ -1,6 +1,15 @@
+import type { Metadata } from "next";
 import { Card } from "@/components/ui/Card";
 import { Container } from "@/components/ui/Container";
 import { SectionHeader } from "@/components/ui/SectionHeader";
+import { createMetadata } from "@/lib/config/seo";
+
+export const metadata: Metadata = createMetadata({
+  title: "À propos – SMOVE Communication",
+  description:
+    "Découvrez l'équipe SMOVE Communication, notre vision et notre manière d'orchestrer des campagnes créatives et efficaces.",
+  path: "/about",
+});
 
 const valeurs = [
   { titre: "Vision", texte: "Mettre en mouvement les marques africaines avec des idées qui voyagent et performent." },
