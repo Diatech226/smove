@@ -1,3 +1,4 @@
+// file: components/ui/Button.tsx
 import Link from "next/link";
 import { ComponentPropsWithoutRef, ReactNode } from "react";
 import { cn } from "@/lib/utils";
@@ -26,6 +27,7 @@ export function Button({
   href,
   children,
   className,
+  type = "button",
   ...props
 }: ButtonProps) {
   const classes = cn(
@@ -35,15 +37,18 @@ export function Button({
   );
 
   if (href) {
+    // Avoid passing button-only attributes to link-rendered buttons
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    const { type: _type, ...linkProps } = props;
     return (
-      <Link href={href} className={classes}>
+      <Link href={href} className={classes} {...linkProps}>
         {children}
       </Link>
     );
   }
 
   return (
-    <button className={classes} {...props}>
+    <button className={classes} type={type} {...props}>
       {children}
     </button>
   );

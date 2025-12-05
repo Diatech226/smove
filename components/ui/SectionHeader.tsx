@@ -1,3 +1,5 @@
+// file: components/ui/SectionHeader.tsx
+import { ElementType } from "react";
 import { cn } from "@/lib/utils";
 
 export type SectionHeaderProps = {
@@ -7,6 +9,7 @@ export type SectionHeaderProps = {
   align?: "left" | "center";
   className?: string;
   tone?: "light" | "dark";
+  as?: ElementType;
 };
 
 export function SectionHeader({
@@ -16,6 +19,7 @@ export function SectionHeader({
   align = "left",
   className,
   tone = "light",
+  as: HeadingTag = "h2",
 }: SectionHeaderProps) {
   const alignment = align === "center" ? "text-center" : "text-left";
   const spacing = align === "center" ? "mx-auto max-w-3xl" : "max-w-4xl";
@@ -29,7 +33,7 @@ export function SectionHeader({
           {eyebrow}
         </p>
       ) : null}
-      <h2 className={cn("text-3xl font-semibold sm:text-4xl", titleColor)}>{title}</h2>
+      <HeadingTag className={cn("text-3xl font-semibold sm:text-4xl", titleColor)}>{title}</HeadingTag>
       {subtitle ? <p className={cn("text-base", subtitleColor)}>{subtitle}</p> : null}
     </div>
   );
