@@ -1,7 +1,16 @@
+import type { Metadata } from "next";
 import { Card } from "@/components/ui/Card";
 import { Container } from "@/components/ui/Container";
 import { SectionHeader } from "@/components/ui/SectionHeader";
 import { services } from "@/lib/config/services";
+import { createMetadata } from "@/lib/config/seo";
+
+export const metadata: Metadata = createMetadata({
+  title: "Services – SMOVE Communication",
+  description:
+    "Stratégie, contenu, campagnes media et production audiovisuelle : découvrez les services de l'agence SMOVE Communication.",
+  path: "/services",
+});
 
 export default function ServicesPage() {
   return (

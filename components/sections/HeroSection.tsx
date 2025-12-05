@@ -5,6 +5,8 @@ import dynamic from "next/dynamic";
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/Button";
 import { Container } from "@/components/ui/Container";
+import { trackEvent } from "@/lib/analytics";
+import { useReducedMotionPref } from "@/lib/hooks/useReducedMotionPref";
 
 const Hero3DCanvas = dynamic(() => import("@/components/three/Hero3DCanvas"), {
   ssr: false,
@@ -22,13 +24,15 @@ type SectionProps = {
 };
 
 export default function HeroSection({ onSectionIn }: SectionProps) {
+  const shouldReduceMotion = useReducedMotionPref();
+
   return (
     <motion.section
       className="border-b border-slate-800 bg-gradient-to-b from-slate-900 via-slate-950 to-black py-16"
-      initial={{ opacity: 0, y: 30 }}
-      whileInView={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.7, ease: "easeOut" }}
-      viewport={{ once: true, amount: 0.35 }}
+      initial={shouldReduceMotion ? undefined : { opacity: 0, y: 30 }}
+      whileInView={shouldReduceMotion ? undefined : { opacity: 1, y: 0 }}
+      transition={shouldReduceMotion ? { duration: 0 } : { duration: 0.7, ease: "easeOut" }}
+      viewport={shouldReduceMotion ? undefined : { once: true, amount: 0.35 }}
       onViewportEnter={onSectionIn}
     >
       <Container className="flex flex-col gap-10 lg:flex-row lg:items-center lg:justify-between">
@@ -46,11 +50,24 @@ export default function HeroSection({ onSectionIn }: SectionProps) {
             </p>
           </div>
           <div className="flex flex-wrap gap-3">
-            <Button href="/contact">Contact</Button>
-            <Button href="/portfolio" variant="secondary">
+            <Button
+              href="/contact"
+              onClick={() => trackEvent({ name: "cta_click", payload: { label: "contact_primary" } })}
+            >
+              Contact
+            </Button>
+            <Button
+              href="/portfolio"
+              variant="secondary"
+              onClick={() => trackEvent({ name: "cta_click", payload: { label: "voir_portfolio" } })}
+            >
               Voir le portfolio
             </Button>
-            <Button href="/services" variant="ghost">
+            <Button
+              href="/services"
+              variant="ghost"
+              onClick={() => trackEvent({ name: "cta_click", payload: { label: "decouvrir_services" } })}
+            >
               Découvrir nos services
             </Button>
           </div>

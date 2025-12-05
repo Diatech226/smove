@@ -5,12 +5,13 @@ import { Float, OrbitControls } from "@react-three/drei";
 import { Canvas, useFrame } from "@react-three/fiber";
 import { useRef } from "react";
 import * as THREE from "three";
+import { useReducedMotionPref } from "@/lib/hooks/useReducedMotionPref";
 
-function MainSculpture() {
+function MainSculpture({ shouldReduceMotion }: { shouldReduceMotion: boolean }) {
   const meshRef = useRef<THREE.Mesh>(null);
 
   useFrame((_, delta) => {
-    if (!meshRef.current) return;
+    if (!meshRef.current || shouldReduceMotion) return;
     meshRef.current.rotation.y += delta * 0.35;
     meshRef.current.rotation.x += delta * 0.15;
   });
@@ -23,9 +24,14 @@ function MainSculpture() {
   );
 }
 
-function FloatingSphere({ position, color }: { position: [number, number, number]; color: string }) {
+function FloatingSphere({ position, color, shouldReduceMotion }: { position: [number, number, number]; color: string; shouldReduceMotion: boolean }) {
   return (
-    <Float speed={1.4} rotationIntensity={0.6} floatIntensity={1} position={position}>
+    <Float
+      speed={shouldReduceMotion ? 0.2 : 1.4}
+      rotationIntensity={shouldReduceMotion ? 0.1 : 0.6}
+      floatIntensity={shouldReduceMotion ? 0.2 : 1}
+      position={position}
+    >
       <mesh castShadow>
         <icosahedronGeometry args={[0.32, 0]} />
         <meshStandardMaterial color={color} metalness={0.2} roughness={0.35} emissive="#0b1221" />
@@ -35,6 +41,8 @@ function FloatingSphere({ position, color }: { position: [number, number, number
 }
 
 export default function Hero3DCanvas() {
+  const shouldReduceMotion = useReducedMotionPref();
+
   return (
     <div className="h-64 w-full overflow-hidden rounded-3xl bg-slate-900/40 md:h-80 lg:h-96">
       <Canvas camera={{ position: [2.5, 1.6, 4.2], fov: 45 }} shadows dpr={[1, 2]}>
@@ -49,12 +57,12 @@ export default function Hero3DCanvas() {
         />
         <directionalLight position={[-3, -2, -4]} intensity={0.2} color="#22d3ee" />
 
-        <MainSculpture />
+        <MainSculpture shouldReduceMotion={shouldReduceMotion} />
 
         <group>
-          <FloatingSphere position={[-1.8, 0.4, -0.6]} color="#22d3ee" />
-          <FloatingSphere position={[1.5, 1.1, -1.2]} color="#a78bfa" />
-          <FloatingSphere position={[0.2, -0.6, 1.2]} color="#f59e0b" />
+          <FloatingSphere position={[-1.8, 0.4, -0.6]} color="#22d3ee" shouldReduceMotion={shouldReduceMotion} />
+          <FloatingSphere position={[1.5, 1.1, -1.2]} color="#a78bfa" shouldReduceMotion={shouldReduceMotion} />
+          <FloatingSphere position={[0.2, -0.6, 1.2]} color="#f59e0b" shouldReduceMotion={shouldReduceMotion} />
         </group>
 
         <mesh rotation-x={-Math.PI / 2} position={[0, -1.1, 0]} receiveShadow>
@@ -62,7 +70,7 @@ export default function Hero3DCanvas() {
           <meshStandardMaterial color="#0f172a" roughness={0.9} metalness={0.1} />
         </mesh>
 
-        <OrbitControls enablePan={false} enableZoom={false} autoRotate autoRotateSpeed={0.3} />
+        <OrbitControls enablePan={false} enableZoom={false} autoRotate={!shouldReduceMotion} autoRotateSpeed={0.3} />
       </Canvas>
     </div>
   );

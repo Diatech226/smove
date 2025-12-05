@@ -1,6 +1,15 @@
+import type { Metadata } from "next";
 import { Card } from "@/components/ui/Card";
 import { Container } from "@/components/ui/Container";
 import { SectionHeader } from "@/components/ui/SectionHeader";
+import { createMetadata } from "@/lib/config/seo";
+
+export const metadata: Metadata = createMetadata({
+  title: "Mentions légales & Confidentialité – SMOVE Communication",
+  description:
+    "Mentions légales, politique de confidentialité et gestion des données pour le site de SMOVE Communication.",
+  path: "/legal",
+});
 
 export default function LegalPage() {
   return (

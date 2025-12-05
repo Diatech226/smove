@@ -3,19 +3,22 @@
 
 import Link from "next/link";
 import { motion } from "framer-motion";
+import { useReducedMotionPref } from "@/lib/hooks/useReducedMotionPref";
 
 type SectionProps = {
   onSectionIn?: () => void;
 };
 
 export default function AboutPreviewSection({ onSectionIn }: SectionProps) {
+  const shouldReduceMotion = useReducedMotionPref();
+
   return (
     <motion.section
       className="border-b border-slate-800 bg-slate-950 py-14"
-      initial={{ opacity: 0, y: 30 }}
-      whileInView={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.6, ease: "easeOut" }}
-      viewport={{ once: true, amount: 0.3 }}
+      initial={shouldReduceMotion ? undefined : { opacity: 0, y: 30 }}
+      whileInView={shouldReduceMotion ? undefined : { opacity: 1, y: 0 }}
+      transition={shouldReduceMotion ? { duration: 0 } : { duration: 0.6, ease: "easeOut" }}
+      viewport={shouldReduceMotion ? undefined : { once: true, amount: 0.3 }}
       onViewportEnter={onSectionIn}
     >
       <div className="mx-auto flex max-w-6xl flex-col gap-8 px-6 lg:flex-row lg:items-center lg:justify-between">
@@ -38,10 +41,10 @@ export default function AboutPreviewSection({ onSectionIn }: SectionProps) {
             <motion.div
               key={value}
               className="rounded-2xl border border-slate-800 bg-slate-900/50 px-4 py-6 text-center text-slate-100"
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.5, ease: "easeOut" }}
-              viewport={{ once: true, amount: 0.2 }}
+              initial={shouldReduceMotion ? undefined : { opacity: 0, y: 20 }}
+              whileInView={shouldReduceMotion ? undefined : { opacity: 1, y: 0 }}
+              transition={shouldReduceMotion ? { duration: 0 } : { duration: 0.5, ease: "easeOut" }}
+              viewport={shouldReduceMotion ? undefined : { once: true, amount: 0.2 }}
             >
               <p className="text-sm uppercase tracking-wide text-slate-400">Pilier</p>
               <p className="mt-2 text-lg font-semibold text-white">{value}</p>

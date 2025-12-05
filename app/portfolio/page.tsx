@@ -1,9 +1,18 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { Card } from "@/components/ui/Card";
 import { Container } from "@/components/ui/Container";
 import { SectionHeader } from "@/components/ui/SectionHeader";
 import { projects } from "@/lib/config/projects";
 import { Button } from "@/components/ui/Button";
+import { createMetadata } from "@/lib/config/seo";
+
+export const metadata: Metadata = createMetadata({
+  title: "Portfolio – SMOVE Communication",
+  description:
+    "Découvrez les projets et campagnes orchestrés par SMOVE Communication pour des clients variés : tech, industrie, services et culture.",
+  path: "/portfolio",
+});
 
 export default function PortfolioPage() {
   return (

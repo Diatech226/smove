@@ -1,12 +1,21 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { Card } from "@/components/ui/Card";
 import { Container } from "@/components/ui/Container";
 import { SectionHeader } from "@/components/ui/SectionHeader";
 import { posts } from "@/lib/config/posts";
+import { createMetadata } from "@/lib/config/seo";
 
 function formatDate(dateString: string) {
   return new Intl.DateTimeFormat("fr-FR", { dateStyle: "medium" }).format(new Date(dateString));
 }
+
+export const metadata: Metadata = createMetadata({
+  title: "Blog & Actualités – SMOVE Communication",
+  description:
+    "Articles, inspirations et coulisses pour suivre les actualités et méthodes de SMOVE Communication au service des marques.",
+  path: "/blog",
+});
 
 export default function BlogPage() {
   return (

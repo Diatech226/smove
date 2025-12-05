@@ -2,11 +2,12 @@ import type { Metadata } from "next";
 import "./globals.css";
 import Header from "@/components/layout/Header";
 import Footer from "@/components/layout/Footer";
+import { createMetadata, siteConfig } from "@/lib/config/seo";
 
-export const metadata: Metadata = {
-  title: "SMOVE Communication",
-  description: "Agence de communication digitale – We do the work for you.",
-};
+export const metadata: Metadata = createMetadata({
+  title: `${siteConfig.name} – Agence de communication digitale`,
+  description: siteConfig.description,
+});
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
