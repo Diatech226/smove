@@ -1,8 +1,23 @@
-import Link from "next/link";
+// file: components/sections/ContactCtaSection.tsx
+"use client";
 
-export default function ContactCtaSection() {
+import Link from "next/link";
+import { motion } from "framer-motion";
+
+type SectionProps = {
+  onSectionIn?: () => void;
+};
+
+export default function ContactCtaSection({ onSectionIn }: SectionProps) {
   return (
-    <section className="bg-gradient-to-r from-emerald-500/20 via-slate-900 to-slate-950 py-14">
+    <motion.section
+      className="bg-gradient-to-r from-emerald-500/20 via-slate-900 to-slate-950 py-14"
+      initial={{ opacity: 0, y: 30 }}
+      whileInView={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.65, ease: "easeOut" }}
+      viewport={{ once: true, amount: 0.3 }}
+      onViewportEnter={onSectionIn}
+    >
       <div className="mx-auto max-w-6xl rounded-3xl border border-emerald-500/30 bg-slate-900/60 px-6 py-12 text-center shadow-emerald-500/20">
         <p className="text-sm uppercase tracking-[0.2em] text-emerald-200">Prêt à bouger ?</p>
         <h2 className="mt-3 text-3xl font-semibold text-white">Discutons de votre prochain projet.</h2>
@@ -24,6 +39,6 @@ export default function ContactCtaSection() {
           </Link>
         </div>
       </div>
-    </section>
+    </motion.section>
   );
 }
