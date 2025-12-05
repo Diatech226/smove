@@ -1,3 +1,4 @@
+// file: components/layout/Header.tsx
 "use client";
 
 import Link from "next/link";
@@ -20,6 +21,8 @@ export default function Header() {
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
 
+  const toggleMenu = () => setOpen((prev) => !prev);
+
   return (
     <header className="border-b border-slate-800 bg-slate-950/70 backdrop-blur">
       <Container className="flex items-center justify-between py-4">
@@ -27,7 +30,7 @@ export default function Header() {
           SMOVE Communication
         </Link>
 
-        <nav className="hidden items-center gap-6 text-sm text-slate-200 md:flex">
+        <nav className="hidden items-center gap-6 text-sm text-slate-200 md:flex" aria-label="Navigation principale">
           {navLinks.map((link) => {
             const isActive = pathname === link.href;
             return (
@@ -48,10 +51,12 @@ export default function Header() {
 
         <button
           className="inline-flex items-center justify-center rounded-lg border border-slate-800 px-3 py-2 text-slate-100 md:hidden"
-          aria-label="Ouvrir la navigation"
-          onClick={() => setOpen((prev) => !prev)}
+          aria-label={open ? "Fermer la navigation" : "Ouvrir la navigation"}
+          aria-expanded={open}
+          onClick={toggleMenu}
+          type="button"
         >
-          ☰
+          {open ? "✕" : "☰"}
         </button>
       </Container>
 
