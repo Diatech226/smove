@@ -1,7 +1,7 @@
 "use client";
 
 import { motion } from "framer-motion";
-import SectionHeader from "@/components/ui/SectionHeader";
+import { SectionHeader } from "@/components/ui/SectionHeader";
 import type { SectionKey } from "@/types/sections";
 
 const services = [
@@ -65,6 +65,7 @@ export default function ServicesSection({
           eyebrow="Services"
           title="Everything you need to look sharp online and keep momentum."
           subtitle="Done-for-you delivery across content, community, paid campaigns, and the visuals that make people stop scrolling."
+          tone="dark"
         />
         <div className="mt-12 grid gap-6 md:grid-cols-2 lg:grid-cols-3">
           {services.map((service, idx) => (

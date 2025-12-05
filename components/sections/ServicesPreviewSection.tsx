@@ -3,14 +3,11 @@
 
 import Link from "next/link";
 import { motion } from "framer-motion";
-
-const services = [
-  { title: "Communication digitale", desc: "Social media, campagnes multicanal, influence." },
-  { title: "Design & branding", desc: "Identité visuelle, charte, storytelling de marque." },
-  { title: "Audiovisuel", desc: "Production vidéo, captation, photographie." },
-  { title: "Web & multimédia", desc: "Sites vitrines, landing pages, expériences interactives." },
-  { title: "Motion design / 3D", desc: "Animations, motion graphics, environnements 3D." },
-];
+import { Card } from "@/components/ui/Card";
+import { Container } from "@/components/ui/Container";
+import { SectionHeader } from "@/components/ui/SectionHeader";
+import { services } from "@/lib/config/services";
+import { Button } from "@/components/ui/Button";
 
 type SectionProps = {
   onSectionIn?: () => void;
@@ -26,32 +23,51 @@ export default function ServicesPreviewSection({ onSectionIn }: SectionProps) {
       viewport={{ once: true, amount: 0.3 }}
       onViewportEnter={onSectionIn}
     >
-      <div className="mx-auto max-w-6xl px-6">
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-          <div>
-            <p className="text-sm uppercase tracking-[0.2em] text-emerald-300">Services</p>
-            <h2 className="text-3xl font-semibold text-white">Tout ce qu'il faut pour faire bouger votre marque.</h2>
+      <Container>
+        <div className="flex flex-col gap-6 sm:flex-row sm:items-center sm:justify-between">
+          <SectionHeader
+            eyebrow="Services"
+            title="Tout ce qu'il faut pour faire bouger votre marque"
+            subtitle="Stratégie, design, production et diffusion : nous synchronisons nos expertises pour délivrer des campagnes complètes."
+          />
+          <div className="flex justify-start sm:justify-end">
+            <Button href="/services" variant="secondary">
+              Voir tous les services
+            </Button>
           </div>
-          <Link href="/services" className="text-sm font-semibold text-emerald-300 transition hover:text-emerald-200">
-            Voir tous les services →
-          </Link>
         </div>
         <div className="mt-8 grid gap-4 md:grid-cols-2">
-          {services.map((service, index) => (
+          {services.slice(0, 3).map((service, index) => (
             <motion.div
-              key={service.title}
-              className="rounded-2xl border border-slate-800 bg-slate-900/50 px-5 py-6 shadow-lg shadow-black/20"
+              key={service.id}
               initial={{ opacity: 0, y: 24 }}
               whileInView={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.55, ease: "easeOut", delay: index * 0.05 }}
               viewport={{ once: true, amount: 0.2 }}
             >
-              <h3 className="text-xl font-semibold text-white">{service.title}</h3>
-              <p className="mt-2 text-slate-200">{service.desc}</p>
+              <Card className="h-full">
+                <div className="flex items-start justify-between gap-3">
+                  <div>
+                    <h3 className="text-xl font-semibold text-white">{service.name}</h3>
+                    <p className="mt-2 text-slate-200">{service.description}</p>
+                  </div>
+                  {service.category ? (
+                    <span className="rounded-full bg-white/5 px-3 py-1 text-xs font-semibold uppercase tracking-[0.2em] text-emerald-200">
+                      {service.category}
+                    </span>
+                  ) : null}
+                </div>
+                <Link
+                  href="/contact"
+                  className="mt-4 inline-flex text-sm font-semibold text-emerald-300 transition hover:text-emerald-200"
+                >
+                  Planifier un brief →
+                </Link>
+              </Card>
             </motion.div>
           ))}
         </div>
-      </div>
+      </Container>
     </motion.section>
   );
 }

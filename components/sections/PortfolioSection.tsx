@@ -1,7 +1,7 @@
 "use client";
 
 import { motion } from "framer-motion";
-import SectionHeader from "@/components/ui/SectionHeader";
+import { SectionHeader } from "@/components/ui/SectionHeader";
 import type { SectionKey } from "@/types/sections";
 
 const caseStudies = [
@@ -61,7 +61,6 @@ export default function PortfolioSection({
             eyebrow="Case studies"
             title="Campaigns that look good and deliver numbers."
             subtitle="A few snapshots from SMOVE engagements across social, paid, and community."
-            tone="light"
           />
           <div className="mt-12 grid gap-6 md:grid-cols-2 lg:grid-cols-3">
             {caseStudies.map((study, idx) => (

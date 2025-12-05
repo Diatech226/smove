@@ -1,61 +1,92 @@
+import { Card } from "@/components/ui/Card";
+import { Container } from "@/components/ui/Container";
+import { SectionHeader } from "@/components/ui/SectionHeader";
+
+const valeurs = [
+  { titre: "Vision", texte: "Mettre en mouvement les marques africaines avec des idées qui voyagent et performent." },
+  {
+    titre: "Mission",
+    texte: "Allier créativité, technologie et data pour délivrer des campagnes qui génèrent de l'impact mesurable.",
+  },
+  {
+    titre: "Valeurs",
+    texte: "Curiosité, exigence, esprit d'équipe et transparence guident chaque collaboration avec nos clients.",
+  },
+];
+
+const equipe = [
+  {
+    nom: "Aïcha Traoré",
+    role: "Fondatrice & Directrice de création",
+    bio: "Stratège de marque et directrice artistique, elle pilote les concepts créatifs et l'expérience globale.",
+  },
+  {
+    nom: "Marc Kaboré",
+    role: "Lead digital & média",
+    bio: "Expert social media et paid, il orchestre les plans de diffusion et la performance des campagnes.",
+  },
+  {
+    nom: "Inès Ouédraogo",
+    role: "Productrice audiovisuelle",
+    bio: "Coordonne les tournages, motion design et post-production pour des livrables prêts à diffuser.",
+  },
+  {
+    nom: "Yann Diallo",
+    role: "Designer interactif",
+    bio: "Conçoit des expériences web et 3D qui valorisent les produits et les équipes de nos clients.",
+  },
+];
+
 export default function AboutPage() {
-  const valeurs = [
-    { title: "Vision", content: "Créer des expériences qui font vivre les marques dans le quotidien des publics." },
-    { title: "Mission", content: "Piloter votre communication digitale de bout en bout avec agilité et créativité." },
-    { title: "Valeurs", content: "Curiosité, transparence, exigence et goût du travail bien fait." },
-  ];
-
-  const equipe = [
-    { name: "Sarah", role: "Directrice de création" },
-    { name: "Mehdi", role: "Lead stratégie digitale" },
-    { name: "Léna", role: "Productrice audiovisuelle" },
-    { name: "Kassim", role: "Motion designer / 3D" },
-  ];
-
   return (
-    <div className="mx-auto max-w-6xl space-y-12 px-6 py-12">
-      <header className="space-y-3">
-        <p className="text-sm uppercase tracking-[0.2em] text-emerald-300">À propos</p>
-        <h1 className="text-4xl font-semibold text-white">SMOVE Communication</h1>
-        <p className="text-lg text-slate-200">
-          Nous sommes une agence de communication digitale basée sur l'action. Notre promesse :
-          "We do the work for you".
-        </p>
-      </header>
+    <div className="bg-slate-950 pb-16 pt-10">
+      <Container className="space-y-12">
+        <SectionHeader
+          eyebrow="À propos"
+          title="L'agence SMOVE Communication"
+          subtitle="Nous accompagnons les marques qui veulent passer de l'idée à l'impact, en combinant stratégie, production et pilotage."
+        />
 
-      <section className="space-y-3">
-        <h2 className="text-2xl font-semibold text-white">Notre histoire</h2>
-        <p className="text-slate-200">
-          Née de la rencontre entre créatifs et stratèges, SMOVE accompagne les marques qui veulent
-          aller vite tout en gardant une identité forte. Nous avons lancé l'agence pour simplifier la
-          production de contenus et de campagnes, en intégrant toutes les expertises sous un même
-          toit.
-        </p>
-      </section>
+        <Card className="space-y-3">
+          <h3 className="text-xl font-semibold text-white">Histoire</h3>
+          <p className="text-lg text-slate-200">
+            Née à Ouagadougou, SMOVE Communication est une agence indépendante qui réunit créatifs, stratèges et technophiles
+            autour d'un objectif : raconter des histoires fortes et les rendre visibles auprès des bonnes audiences.
+          </p>
+          <p className="text-slate-300">
+            Nous travaillons avec des entreprises locales et internationales pour imaginer des campagnes qui respectent leur ADN
+            tout en osant des dispositifs innovants.
+          </p>
+        </Card>
 
-      <section className="space-y-6">
-        <h2 className="text-2xl font-semibold text-white">Vision, mission, valeurs</h2>
         <div className="grid gap-4 md:grid-cols-3">
           {valeurs.map((item) => (
-            <div key={item.title} className="rounded-2xl border border-slate-800 bg-slate-900/50 p-5">
-              <h3 className="text-lg font-semibold text-white">{item.title}</h3>
-              <p className="mt-2 text-slate-200">{item.content}</p>
-            </div>
+            <Card key={item.titre} className="space-y-2">
+              <h4 className="text-lg font-semibold text-white">{item.titre}</h4>
+              <p className="text-slate-200">{item.texte}</p>
+            </Card>
           ))}
         </div>
-      </section>
 
-      <section className="space-y-6">
-        <h2 className="text-2xl font-semibold text-white">L'équipe SMOVE</h2>
-        <div className="grid gap-4 sm:grid-cols-2 md:grid-cols-4">
-          {equipe.map((member) => (
-            <div key={member.name} className="rounded-2xl border border-slate-800 bg-slate-900/50 p-4 text-center">
-              <p className="text-lg font-semibold text-white">{member.name}</p>
-              <p className="text-sm text-slate-300">{member.role}</p>
-            </div>
-          ))}
+        <div className="space-y-6">
+          <SectionHeader
+            eyebrow="Équipe"
+            title="Une équipe agile et complémentaire"
+            subtitle="Production, design, stratégie : nous rassemblons les compétences nécessaires pour dérouler vos projets de bout en bout."
+          />
+          <div className="grid gap-4 md:grid-cols-2">
+            {equipe.map((profil) => (
+              <Card key={profil.nom} className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <h5 className="text-xl font-semibold text-white">{profil.nom}</h5>
+                  <span className="text-xs uppercase tracking-[0.2em] text-emerald-200">{profil.role}</span>
+                </div>
+                <p className="text-slate-200">{profil.bio}</p>
+              </Card>
+            ))}
+          </div>
         </div>
-      </section>
+      </Container>
     </div>
   );
 }

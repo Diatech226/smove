@@ -2,8 +2,9 @@
 "use client";
 
 import dynamic from "next/dynamic";
-import Link from "next/link";
 import { motion } from "framer-motion";
+import { Button } from "@/components/ui/Button";
+import { Container } from "@/components/ui/Container";
 
 const Hero3DCanvas = dynamic(() => import("@/components/three/Hero3DCanvas"), {
   ssr: false,
@@ -30,45 +31,34 @@ export default function HeroSection({ onSectionIn }: SectionProps) {
       viewport={{ once: true, amount: 0.35 }}
       onViewportEnter={onSectionIn}
     >
-      <div className="mx-auto flex max-w-6xl flex-col gap-10 px-6 lg:flex-row lg:items-center lg:justify-between">
+      <Container className="flex flex-col gap-10 lg:flex-row lg:items-center lg:justify-between">
         <div className="max-w-2xl space-y-6">
           <div className="inline-flex items-center rounded-full bg-slate-800/60 px-4 py-2 text-xs font-medium uppercase tracking-wide text-slate-200">
-            Agence créative 360°
+            Agence de communication digitale
           </div>
           <div className="space-y-4">
             <h1 className="text-4xl font-semibold leading-tight text-white sm:text-5xl">
-              SMOVE Communication : on pilote votre communication digitale.
+              SMOVE Communication : on pilote vos contenus, vous récoltez les résultats.
             </h1>
             <p className="text-lg text-slate-200">
-              Stratégie, contenu, campagnes, production audiovisuelle et activations social media. Nous orchestrons votre
-              visibilité de A à Z. We do the work for you.
+              Stratégie, production, campagnes et expériences 3D. Nous orchestrons votre visibilité de A à Z. We do the work for
+              you.
             </p>
           </div>
           <div className="flex flex-wrap gap-3">
-            <Link
-              href="/contact"
-              className="rounded-full bg-emerald-500 px-5 py-3 text-sm font-semibold text-slate-950 shadow-lg shadow-emerald-500/30 transition hover:-translate-y-0.5 hover:bg-emerald-400"
-            >
-              Contact
-            </Link>
-            <Link
-              href="/portfolio"
-              className="rounded-full border border-slate-700 px-5 py-3 text-sm font-semibold text-white transition hover:-translate-y-0.5 hover:border-emerald-400"
-            >
+            <Button href="/contact">Contact</Button>
+            <Button href="/portfolio" variant="secondary">
               Voir le portfolio
-            </Link>
-            <Link
-              href="/contact"
-              className="rounded-full border border-slate-700 px-5 py-3 text-sm font-semibold text-white transition hover:-translate-y-0.5 hover:border-emerald-400"
-            >
-              Demande de devis
-            </Link>
+            </Button>
+            <Button href="/services" variant="ghost">
+              Découvrir nos services
+            </Button>
           </div>
         </div>
         <div className="w-full max-w-md flex-1">
           <Hero3DCanvas />
         </div>
-      </div>
+      </Container>
     </motion.section>
   );
 }

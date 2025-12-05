@@ -1,7 +1,7 @@
 "use client";
 
 import { motion } from "framer-motion";
-import SectionHeader from "@/components/ui/SectionHeader";
+import { SectionHeader } from "@/components/ui/SectionHeader";
 import type { SectionKey } from "@/types/sections";
 
 const fadeIn = {
@@ -29,7 +29,6 @@ export default function ContactSection({
           eyebrow="Contact"
           title="Tell us what you need, we’ll handle the heavy lifting."
           subtitle="Reach us by form, phone, or WhatsApp—whatever is fastest for you."
-          tone="light"
         />
         <div className="mt-12 grid gap-8 md:grid-cols-2">
           <motion.div className="space-y-5" variants={fadeIn} initial="hidden" whileInView="visible" viewport={{ once: true, margin: "-100px" }}>
