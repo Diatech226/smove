@@ -1,96 +1,199 @@
 // file: app/admin/dashboard/page.tsx
+"use client";
+
+import { useEffect, useMemo, useState } from "react";
+import { motion } from "framer-motion";
 import Link from "next/link";
 
 import { AdminPageHeader } from "@/components/admin/AdminPageHeader";
 import { Card } from "@/components/ui/Card";
-import { services } from "@/lib/config/services";
-import { posts } from "@/lib/config/posts";
-import { projects } from "@/lib/config/projects";
+import { Button } from "@/components/ui/Button";
 
-const stats = [
-  { label: "Services", value: services.length, href: "/admin/services" },
-  { label: "Projets", value: projects.length, href: "/admin/projects" },
-  { label: "Articles", value: posts.length, href: "/admin/posts" },
+type StatCard = {
+  label: string;
+  value: number;
+  href: string;
+};
+
+type RemoteData<T> = {
+  loading: boolean;
+  data: T[];
+  error?: string | null;
+};
+
+const statConfig: Omit<StatCard, "value">[] = [
+  { label: "Services", href: "/admin/services" },
+  { label: "Projets", href: "/admin/projects" },
+  { label: "Articles", href: "/admin/posts" },
 ];
 
 export default function AdminDashboardPage() {
-  const latestPosts = [...posts]
-    .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
-    .slice(0, 3);
+  const [services, setServices] = useState<RemoteData<any>>({ loading: true, data: [] });
+  const [projects, setProjects] = useState<RemoteData<any>>({ loading: true, data: [] });
+  const [posts, setPosts] = useState<RemoteData<any>>({ loading: true, data: [] });
+
+  useEffect(() => {
+    const fetchAll = async () => {
+      const endpoints: [keyof typeof stateSetters, string][] = [
+        ["services", "/api/admin/services"],
+        ["projects", "/api/admin/projects"],
+        ["posts", "/api/admin/posts"],
+      ];
+
+      const stateSetters = {
+        services: setServices,
+        projects: setProjects,
+        posts: setPosts,
+      } as const;
+
+      await Promise.all(
+        endpoints.map(async ([key, url]) => {
+          try {
+            stateSetters[key]((prev) => ({ ...prev, loading: true }));
+            const response = await fetch(url);
+            const json = await response.json();
+            if (!response.ok) throw new Error(json.error || "Erreur de chargement");
+            stateSetters[key]({ loading: false, data: json.data ?? [], error: null });
+          } catch (error) {
+            console.error(error);
+            stateSetters[key]({ loading: false, data: [], error: "Impossible de charger les données." });
+          }
+        }),
+      );
+    };
+
+    fetchAll();
+  }, []);
+
+  const stats: StatCard[] = useMemo(
+    () => [
+      { ...statConfig[0], value: services.data.length },
+      { ...statConfig[1], value: projects.data.length },
+      { ...statConfig[2], value: posts.data.length },
+    ],
+    [services.data.length, projects.data.length, posts.data.length],
+  );
+
+  const latestPosts = useMemo(() => posts.data.slice(0, 4), [posts.data]);
 
   return (
     <div className="space-y-8">
       <AdminPageHeader
         title="Tableau de bord"
-        subtitle="Vue d'ensemble du back-office SMOVE."
+        subtitle="Une vue rapide sur l'activité du back-office SMOVE."
+        actions={<Button href="/" variant="secondary">Voir le site public</Button>}
       />
 
-      <div className="grid gap-6 md:grid-cols-3">
-        {stats.map((stat) => (
-          <Card
-            key={stat.label}
-            className="border-white/10 bg-white/5 p-6 shadow-lg shadow-emerald-500/10"
-          >
-            <p className="text-sm text-slate-300">{stat.label}</p>
-            <p className="mt-3 text-3xl font-semibold text-white">{stat.value}</p>
-            <Link
-              href={stat.href}
-              className="mt-4 inline-flex text-sm font-medium text-emerald-200 hover:text-emerald-100"
-            >
-              Gérer
-            </Link>
-          </Card>
+      <div className="grid gap-4 md:grid-cols-3">
+        {stats.map((stat, index) => (
+          <StatCardBlock key={stat.label} stat={stat} loading={services.loading && projects.loading && posts.loading} index={index} />
         ))}
       </div>
 
       <div className="grid gap-6 lg:grid-cols-[1.1fr_0.9fr]">
-        <Card className="border-white/10 bg-white/5 p-6 shadow-lg shadow-emerald-500/10">
-          <div className="mb-4 flex items-center justify-between">
-            <h2 className="text-lg font-semibold text-white">Articles récents</h2>
-            <Link href="/admin/posts" className="text-sm text-emerald-200 hover:text-emerald-100">
-              Voir tout
-            </Link>
+        <Card className="relative overflow-hidden border-white/10 bg-gradient-to-br from-white/10 via-white/5 to-white/10 p-6">
+          <div className="pointer-events-none absolute inset-0">
+            <div className="absolute right-10 top-2 h-24 w-24 rounded-full bg-emerald-500/10 blur-3xl" />
           </div>
-          <div className="space-y-4">
-            {latestPosts.map((post) => (
-              <div
-                key={post.slug}
-                className="flex items-center justify-between rounded-xl border border-white/5 bg-white/5 px-4 py-3"
-              >
-                <div>
-                  <p className="text-sm font-medium text-white">{post.title}</p>
-                  <p className="text-xs text-slate-400">
-                    {new Date(post.date).toLocaleDateString("fr-FR", {
-                      year: "numeric",
-                      month: "short",
-                      day: "numeric",
-                    })}
-                  </p>
-                </div>
-                <Link
-                  href={`/admin/posts?slug=${post.slug}`}
-                  className="text-sm text-emerald-200 hover:text-emerald-100"
+          <div className="relative mb-6 flex items-center justify-between">
+            <div>
+              <p className="text-xs uppercase tracking-[0.3em] text-emerald-200/80">Contenus</p>
+              <h2 className="text-lg font-semibold text-white">Articles récents</h2>
+            </div>
+            <Button href="/admin/posts" variant="ghost" className="border border-white/10 px-3 py-2 text-sm">
+              Voir tout
+            </Button>
+          </div>
+          <div className="space-y-3">
+            {posts.loading ? (
+              <SkeletonList rows={3} />
+            ) : latestPosts.length ? (
+              latestPosts.map((post) => (
+                <motion.div
+                  key={post.id}
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className="flex items-center justify-between rounded-xl border border-white/5 bg-white/5 px-4 py-3"
                 >
-                  Modifier
-                </Link>
-              </div>
-            ))}
+                  <div>
+                    <p className="text-sm font-medium text-white">{post.title}</p>
+                    <p className="text-xs text-slate-400">
+                      {new Date(post.publishedAt).toLocaleDateString("fr-FR", {
+                        year: "numeric",
+                        month: "short",
+                        day: "numeric",
+                      })}
+                    </p>
+                  </div>
+                  <Link
+                    href={`/admin/posts?slug=${post.slug}`}
+                    className="text-sm text-emerald-200 transition hover:text-emerald-100"
+                  >
+                    Modifier
+                  </Link>
+                </motion.div>
+              ))
+            ) : (
+              <EmptyState message="Aucun article publié pour l'instant." />
+            )}
           </div>
         </Card>
 
-        <Card className="border-white/10 bg-white/5 p-6 shadow-lg shadow-emerald-500/10">
-          <h2 className="text-lg font-semibold text-white">Actions rapides</h2>
-          <p className="mt-2 text-sm text-slate-300">
-            Raccourcis vers les principales sections du back-office.
-          </p>
-          <div className="mt-4 space-y-3">
-            <QuickLink href="/admin/services" label="Ajouter un service" />
-            <QuickLink href="/admin/projects" label="Ajouter un projet" />
-            <QuickLink href="/admin/posts" label="Publier un article" />
+        <Card className="relative overflow-hidden border-white/10 bg-gradient-to-br from-white/10 via-white/5 to-white/10 p-6">
+          <div className="pointer-events-none absolute inset-0">
+            <div className="absolute left-6 top-0 h-24 w-24 rounded-full bg-cyan-400/10 blur-3xl" />
+          </div>
+          <div className="relative">
+            <h2 className="text-lg font-semibold text-white">Actions rapides</h2>
+            <p className="mt-2 text-sm text-slate-300">Accès immédiat aux tâches clés.</p>
+            <div className="mt-5 grid gap-3">
+              <QuickLink href="/admin/services" label="Ajouter un service" />
+              <QuickLink href="/admin/projects" label="Ajouter un projet" />
+              <QuickLink href="/admin/posts" label="Publier un article" />
+            </div>
           </div>
         </Card>
       </div>
     </div>
+  );
+}
+
+type StatCardBlockProps = {
+  stat: StatCard;
+  loading: boolean;
+  index: number;
+};
+
+function StatCardBlock({ stat, loading, index }: StatCardBlockProps) {
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 12 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.3, delay: 0.05 * index, ease: "easeOut" }}
+    >
+      <Card className="relative overflow-hidden border-white/10 bg-gradient-to-br from-white/10 via-white/5 to-white/10 p-5">
+        <div className="pointer-events-none absolute inset-0">
+          <div className="absolute right-0 top-0 h-20 w-20 rounded-full bg-emerald-500/10 blur-2xl" />
+        </div>
+        <div className="relative flex items-center justify-between">
+          <div>
+            <p className="text-xs uppercase tracking-[0.3em] text-emerald-200/80">{stat.label}</p>
+            {loading ? (
+              <div className="mt-3 h-6 w-14 animate-pulse rounded-lg bg-white/10" />
+            ) : (
+              <p className="mt-2 text-3xl font-semibold text-white">{stat.value}</p>
+            )}
+          </div>
+          <Button
+            href={stat.href}
+            variant="ghost"
+            className="border border-white/10 px-3 py-2 text-xs text-emerald-100 hover:border-emerald-300/50"
+          >
+            Gérer
+          </Button>
+        </div>
+      </Card>
+    </motion.div>
   );
 }
 
@@ -103,10 +206,32 @@ function QuickLink({ href, label }: QuickLinkProps) {
   return (
     <Link
       href={href}
-      className="flex items-center justify-between rounded-xl border border-white/5 bg-white/5 px-4 py-3 text-sm font-medium text-white transition hover:border-emerald-300/40 hover:text-emerald-50"
+      className="group flex items-center justify-between rounded-xl border border-white/5 bg-white/5 px-4 py-3 text-sm font-medium text-white transition hover:border-emerald-300/50 hover:bg-white/10"
     >
       <span>{label}</span>
-      <span className="text-emerald-200">→</span>
+      <span className="text-emerald-200 transition group-hover:translate-x-0.5">→</span>
     </Link>
   );
+}
+
+type SkeletonListProps = {
+  rows: number;
+};
+
+function SkeletonList({ rows }: SkeletonListProps) {
+  return (
+    <div className="space-y-3">
+      {Array.from({ length: rows }).map((_, index) => (
+        <div key={index} className="h-14 animate-pulse rounded-xl border border-white/5 bg-white/5" />
+      ))}
+    </div>
+  );
+}
+
+type EmptyStateProps = {
+  message: string;
+};
+
+function EmptyState({ message }: EmptyStateProps) {
+  return <p className="text-sm text-slate-300">{message}</p>;
 }

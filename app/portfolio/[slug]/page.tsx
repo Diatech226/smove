@@ -1,19 +1,22 @@
+// file: app/portfolio/[slug]/page.tsx
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import Link from "next/link";
+import { motion } from "framer-motion";
+
+import { prisma } from "@/lib/prisma";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { Container } from "@/components/ui/Container";
 import { SectionHeader } from "@/components/ui/SectionHeader";
-import { projects } from "@/lib/config/projects";
 import { createMetadata } from "@/lib/config/seo";
 
 type ProjectPageProps = {
   params: { slug: string };
 };
 
-export function generateMetadata({ params }: ProjectPageProps): Metadata {
-  const project = projects.find((item) => item.slug === params.slug);
+export async function generateMetadata({ params }: ProjectPageProps): Promise<Metadata> {
+  const project = await prisma.project.findUnique({ where: { slug: params.slug } });
 
   if (!project) {
     return createMetadata({
@@ -30,28 +33,41 @@ export function generateMetadata({ params }: ProjectPageProps): Metadata {
   });
 }
 
-export default function ProjectPage({ params }: ProjectPageProps) {
-  const project = projects.find((item) => item.slug === params.slug);
+export default async function ProjectPage({ params }: ProjectPageProps) {
+  const project = await prisma.project.findUnique({ where: { slug: params.slug } });
 
   if (!project) {
     notFound();
   }
 
   return (
-    <div className="bg-slate-950 pb-16 pt-10">
-      <Container className="space-y-10">
-        <SectionHeader
-          eyebrow={project.client}
-          title={project.title}
-          subtitle={`Secteur : ${project.sector}`}
-        />
+    <div className="relative bg-slate-950 pb-20 pt-12">
+      <div className="pointer-events-none absolute inset-0">
+        <div className="absolute left-12 top-12 h-64 w-64 rounded-full bg-emerald-500/15 blur-[110px]" />
+        <div className="absolute right-14 top-24 h-64 w-64 rounded-full bg-indigo-500/10 blur-[110px]" />
+      </div>
+      <Container className="relative space-y-10">
+        <SectionHeader eyebrow={project.client} title={project.title} subtitle={`Secteur : ${project.sector}`} />
 
-        <Card className="space-y-4">
-          <p className="text-lg text-slate-200">{project.summary}</p>
-          <p className="text-slate-300">
-            Notre équipe a conçu la stratégie, produit les assets et orchestré la diffusion pour générer un impact mesurable
-            sur les objectifs business du client.
-          </p>
+        <Card className="space-y-4 border-white/10 bg-gradient-to-br from-white/10 via-white/5 to-white/10 p-8 shadow-xl shadow-emerald-500/10">
+          <motion.p
+            initial={{ opacity: 0, y: 12 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.35 }}
+            className="text-lg text-slate-200"
+          >
+            {project.summary}
+          </motion.p>
+          {project.body ? (
+            <motion.p
+              initial={{ opacity: 0, y: 12 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.35, delay: 0.05 }}
+              className="text-slate-300"
+            >
+              {project.body}
+            </motion.p>
+          ) : null}
 
           {project.results && project.results.length > 0 ? (
             <div className="space-y-2">
@@ -74,7 +90,11 @@ export default function ProjectPage({ params }: ProjectPageProps) {
 
         <div className="text-sm text-slate-400">
           <p>
-            Besoin d'un cas d'usage détaillé ? <Link href="/contact" className="text-emerald-300 hover:text-emerald-200">Contactez-nous</Link> pour recevoir un dossier complet.
+            Besoin d'un cas d'usage détaillé ?{" "}
+            <Link href="/contact" className="text-emerald-300 hover:text-emerald-200">
+              Contactez-nous
+            </Link>{" "}
+            pour recevoir un dossier complet.
           </p>
         </div>
       </Container>
