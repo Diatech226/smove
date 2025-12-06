@@ -1,4 +1,6 @@
 // file: components/admin/AdminShell.tsx
+"use client";
+
 import { ReactNode, useTransition } from "react";
 
 import { useRouter } from "next/navigation";

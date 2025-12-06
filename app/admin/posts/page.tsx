@@ -55,7 +55,7 @@ export default function AdminPostsPage() {
     <div className="space-y-8">
       <AdminPageHeader
         title="Articles"
-        description="Gérez les contenus du blog. Les modifications sont locales à cette session."
+        subtitle="Gérez les contenus du blog. Les modifications sont locales à cette session."
         actions={
           <Button
             variant="secondary"

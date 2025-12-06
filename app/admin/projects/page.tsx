@@ -58,7 +58,7 @@ export default function AdminProjectsPage() {
     <div className="space-y-8">
       <AdminPageHeader
         title="Projets"
-        description="Gérez les études de cas et références clients. Les modifications sont locales à cette session."
+        subtitle="Gérez les études de cas et références clients. Les modifications sont locales à cette session."
         actions={
           <Button
             variant="secondary"

@@ -7,7 +7,7 @@ export default function AdminSettingsPage() {
     <div className="space-y-8">
       <AdminPageHeader
         title="Paramètres"
-        description="Préparez les futures configurations de la plateforme."
+        subtitle="Préparez les futures configurations de la plateforme."
       />
 
       <Card className="border-white/10 bg-white/5 p-6 shadow-lg shadow-emerald-500/10">

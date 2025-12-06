@@ -21,8 +21,8 @@ export default function AdminDashboardPage() {
   return (
     <div className="space-y-8">
       <AdminPageHeader
-        title="Dashboard"
-        description="Vue d'ensemble du back-office SMOVE."
+        title="Tableau de bord"
+        subtitle="Vue d'ensemble du back-office SMOVE."
       />
 
       <div className="grid gap-6 md:grid-cols-3">
