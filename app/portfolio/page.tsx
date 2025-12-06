@@ -1,8 +1,6 @@
 // file: app/portfolio/page.tsx
 import type { Metadata } from "next";
 import Link from "next/link";
-import { motion } from "framer-motion";
-
 import { prisma } from "@/lib/prisma";
 import { Card } from "@/components/ui/Card";
 import { Container } from "@/components/ui/Container";
@@ -33,30 +31,13 @@ export default async function PortfolioPage() {
           subtitle="Branding, campagnes, production, expériences digitales : un aperçu des résultats obtenus pour nos clients."
         />
 
-        <div className="grid gap-6 md:grid-cols-2">
-          {projects.map((project, index) => (
-            <motion.div
-              key={project.id}
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.35, delay: 0.05 * index, ease: "easeOut" }}
-            >
-              <Card as="article" className="flex h-full flex-col gap-3 overflow-hidden border-white/10 bg-gradient-to-br from-white/10 via-white/5 to-white/10 p-6 shadow-xl shadow-emerald-500/10 transition duration-300 hover:-translate-y-1 hover:border-emerald-400/40 hover:shadow-emerald-400/20">
-                <div className="flex items-center justify-between gap-3">
-                  <div>
-                    <p className="text-xs uppercase tracking-[0.2em] text-emerald-200">{project.client}</p>
-                    <h3 className="mt-1 text-2xl font-semibold text-white">{project.title}</h3>
-                  </div>
-                  <span className="rounded-full bg-white/5 px-3 py-1 text-xs font-semibold text-slate-100">{project.sector}</span>
-                </div>
-                <p className="text-slate-200">{project.summary}</p>
-                <div className="flex flex-wrap gap-2 pt-1">
-                  <Link
-                    href={`/portfolio/${project.slug}`}
-                    className="text-sm font-semibold text-emerald-300 transition hover:text-emerald-200"
-                  >
-                    Voir le projet →
-                  </Link>
+        <div className="grid gap-5 md:grid-cols-2">
+          {projects.map((project) => (
+            <Card key={project.id} as="article" className="flex flex-col gap-3">
+              <div className="flex items-center justify-between gap-3">
+                <div>
+                  <p className="text-xs uppercase tracking-[0.2em] text-emerald-200">{project.client}</p>
+                  <h3 className="mt-1 text-2xl font-semibold text-white">{project.title}</h3>
                 </div>
               </Card>
             </motion.div>

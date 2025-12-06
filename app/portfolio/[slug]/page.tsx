@@ -2,8 +2,6 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import Link from "next/link";
-import { motion } from "framer-motion";
-
 import { prisma } from "@/lib/prisma";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
@@ -49,25 +47,9 @@ export default async function ProjectPage({ params }: ProjectPageProps) {
       <Container className="relative space-y-10">
         <SectionHeader eyebrow={project.client} title={project.title} subtitle={`Secteur : ${project.sector}`} />
 
-        <Card className="space-y-4 border-white/10 bg-gradient-to-br from-white/10 via-white/5 to-white/10 p-8 shadow-xl shadow-emerald-500/10">
-          <motion.p
-            initial={{ opacity: 0, y: 12 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.35 }}
-            className="text-lg text-slate-200"
-          >
-            {project.summary}
-          </motion.p>
-          {project.body ? (
-            <motion.p
-              initial={{ opacity: 0, y: 12 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.35, delay: 0.05 }}
-              className="text-slate-300"
-            >
-              {project.body}
-            </motion.p>
-          ) : null}
+        <Card className="space-y-4">
+          <p className="text-lg text-slate-200">{project.summary}</p>
+          {project.body ? <p className="text-slate-300">{project.body}</p> : null}
 
           {project.results && project.results.length > 0 ? (
             <div className="space-y-2">

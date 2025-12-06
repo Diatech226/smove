@@ -1,8 +1,6 @@
 // file: app/blog/page.tsx
 import type { Metadata } from "next";
 import Link from "next/link";
-import { motion } from "framer-motion";
-
 import { prisma } from "@/lib/prisma";
 import { Card } from "@/components/ui/Card";
 import { Container } from "@/components/ui/Container";
@@ -36,19 +34,21 @@ export default async function BlogPage() {
           subtitle="Analyses, méthodes et retours d'expérience pour piloter votre visibilité avec impact."
         />
 
-        <div className="grid gap-6 md:grid-cols-2">
-          {posts.map((post, index) => (
-            <motion.div
-              key={post.id}
-              initial={{ opacity: 0, y: 18 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.35, delay: 0.05 * index, ease: "easeOut" }}
-            >
-              <Card as="article" className="flex h-full flex-col gap-3 overflow-hidden border-white/10 bg-gradient-to-br from-white/10 via-white/5 to-white/10 p-6 shadow-xl shadow-emerald-500/10 transition duration-300 hover:-translate-y-1 hover:border-emerald-400/40 hover:shadow-emerald-400/20">
-                <div className="flex items-start justify-between gap-3">
-                  <div>
-                    <p className="text-xs uppercase tracking-[0.2em] text-emerald-200">{formatDate(post.publishedAt)}</p>
-                    <h3 className="mt-1 text-2xl font-semibold text-white">{post.title}</h3>
+        <div className="grid gap-5 md:grid-cols-2">
+          {posts.map((post) => (
+            <Card key={post.id} as="article" className="flex flex-col gap-3">
+              <div className="flex items-start justify-between gap-3">
+                <div>
+                  <p className="text-xs uppercase tracking-[0.2em] text-emerald-200">{formatDate(post.publishedAt)}</p>
+                  <h3 className="mt-1 text-2xl font-semibold text-white">{post.title}</h3>
+                </div>
+                {post.tags && post.tags.length > 0 ? (
+                  <div className="flex flex-wrap gap-1">
+                    {post.tags.map((tag) => (
+                      <span key={tag} className="rounded-full bg-white/5 px-3 py-1 text-xs font-semibold text-slate-100">
+                        {tag}
+                      </span>
+                    ))}
                   </div>
                   {post.tags && post.tags.length > 0 ? (
                     <div className="flex flex-wrap gap-1">

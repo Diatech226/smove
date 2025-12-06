@@ -1,7 +1,5 @@
 // file: app/services/page.tsx
 import type { Metadata } from "next";
-import { motion } from "framer-motion";
-
 import { prisma } from "@/lib/prisma";
 import { Card } from "@/components/ui/Card";
 import { Container } from "@/components/ui/Container";
@@ -56,8 +54,13 @@ export default async function ServicesPage() {
                     </span>
                   ) : null}
                 </div>
-              </Card>
-            </motion.div>
+                {service.slug ? (
+                  <span className="rounded-full bg-white/5 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-emerald-200">
+                    {service.slug}
+                  </span>
+                ) : null}
+              </div>
+            </Card>
           ))}
           {!services.length ? <p className="text-slate-200">Aucun service pour le moment.</p> : null}
         </div>
