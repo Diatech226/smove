@@ -5,14 +5,14 @@ import { cn } from "@/lib/utils";
 
 type AdminPageHeaderProps = {
   title: string;
-  description?: string;
+  subtitle?: string;
   actions?: ReactNode;
   className?: string;
 };
 
 export function AdminPageHeader({
   title,
-  description,
+  subtitle,
   actions,
   className,
 }: AdminPageHeaderProps) {
@@ -25,8 +25,8 @@ export function AdminPageHeader({
     >
       <div>
         <h1 className="text-2xl font-semibold text-white">{title}</h1>
-        {description ? (
-          <p className="mt-2 text-sm text-slate-300">{description}</p>
+        {subtitle ? (
+          <p className="mt-2 text-sm text-slate-300">{subtitle}</p>
         ) : null}
       </div>
       {actions ? <div className="flex gap-3">{actions}</div> : null}

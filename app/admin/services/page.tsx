@@ -51,7 +51,7 @@ export default function AdminServicesPage() {
     <div className="space-y-8">
       <AdminPageHeader
         title="Services"
-        description="Gérez la liste des services proposés. Les modifications sont locales à cette session."
+        subtitle="Gérez la liste des services proposés. Les modifications sont locales à cette session."
         actions={
           <Button
             variant="secondary"
