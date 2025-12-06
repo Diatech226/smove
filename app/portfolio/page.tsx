@@ -1,9 +1,10 @@
+// file: app/portfolio/page.tsx
 import type { Metadata } from "next";
 import Link from "next/link";
+import { prisma } from "@/lib/prisma";
 import { Card } from "@/components/ui/Card";
 import { Container } from "@/components/ui/Container";
 import { SectionHeader } from "@/components/ui/SectionHeader";
-import { projects } from "@/lib/config/projects";
 import { Button } from "@/components/ui/Button";
 import { createMetadata } from "@/lib/config/seo";
 
@@ -14,7 +15,9 @@ export const metadata: Metadata = createMetadata({
   path: "/portfolio",
 });
 
-export default function PortfolioPage() {
+export default async function PortfolioPage() {
+  const projects = await prisma.project.findMany({ orderBy: { createdAt: "desc" } });
+
   return (
     <div className="bg-slate-950 pb-16 pt-10">
       <Container className="space-y-10">
@@ -26,7 +29,7 @@ export default function PortfolioPage() {
 
         <div className="grid gap-5 md:grid-cols-2">
           {projects.map((project) => (
-            <Card key={project.slug} as="article" className="flex flex-col gap-3">
+            <Card key={project.id} as="article" className="flex flex-col gap-3">
               <div className="flex items-center justify-between gap-3">
                 <div>
                   <p className="text-xs uppercase tracking-[0.2em] text-emerald-200">{project.client}</p>
@@ -47,6 +50,7 @@ export default function PortfolioPage() {
               </div>
             </Card>
           ))}
+          {!projects.length ? <p className="text-slate-200">Aucun projet pour le moment.</p> : null}
         </div>
 
         <div className="flex justify-center">

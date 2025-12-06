@@ -1,19 +1,20 @@
+// file: app/portfolio/[slug]/page.tsx
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import Link from "next/link";
+import { prisma } from "@/lib/prisma";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { Container } from "@/components/ui/Container";
 import { SectionHeader } from "@/components/ui/SectionHeader";
-import { projects } from "@/lib/config/projects";
 import { createMetadata } from "@/lib/config/seo";
 
 type ProjectPageProps = {
   params: { slug: string };
 };
 
-export function generateMetadata({ params }: ProjectPageProps): Metadata {
-  const project = projects.find((item) => item.slug === params.slug);
+export async function generateMetadata({ params }: ProjectPageProps): Promise<Metadata> {
+  const project = await prisma.project.findUnique({ where: { slug: params.slug } });
 
   if (!project) {
     return createMetadata({
@@ -30,8 +31,8 @@ export function generateMetadata({ params }: ProjectPageProps): Metadata {
   });
 }
 
-export default function ProjectPage({ params }: ProjectPageProps) {
-  const project = projects.find((item) => item.slug === params.slug);
+export default async function ProjectPage({ params }: ProjectPageProps) {
+  const project = await prisma.project.findUnique({ where: { slug: params.slug } });
 
   if (!project) {
     notFound();
@@ -48,10 +49,7 @@ export default function ProjectPage({ params }: ProjectPageProps) {
 
         <Card className="space-y-4">
           <p className="text-lg text-slate-200">{project.summary}</p>
-          <p className="text-slate-300">
-            Notre équipe a conçu la stratégie, produit les assets et orchestré la diffusion pour générer un impact mesurable
-            sur les objectifs business du client.
-          </p>
+          {project.body ? <p className="text-slate-300">{project.body}</p> : null}
 
           {project.results && project.results.length > 0 ? (
             <div className="space-y-2">

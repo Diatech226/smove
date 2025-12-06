@@ -1,66 +1,136 @@
 // file: app/admin/posts/page.tsx
 "use client";
 
-import { FormEvent, useMemo, useState } from "react";
+import { FormEvent, useEffect, useMemo, useState } from "react";
+import type { Post } from "@prisma/client";
 
 import { AdminPageHeader } from "@/components/admin/AdminPageHeader";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
-import { posts as initialPosts, Post } from "@/lib/config/posts";
 
-const emptyPost: Post = {
+const emptyForm: Pick<Post, "slug" | "title" | "excerpt" | "body"> & {
+  tags?: string[];
+  publishedAt?: string;
+} = {
   slug: "",
   title: "",
-  date: new Date().toISOString().slice(0, 10),
   excerpt: "",
+  body: "",
   tags: [],
-  content: "",
+  publishedAt: new Date().toISOString().slice(0, 10),
 };
 
 export default function AdminPostsPage() {
-  const [postList, setPostList] = useState<Post[]>(initialPosts);
-  const [editing, setEditing] = useState<Post>(initialPosts[0] ?? emptyPost);
+  const [items, setItems] = useState<Post[]>([]);
+  const [form, setForm] = useState(emptyForm);
+  const [editingId, setEditingId] = useState<string | null>(null);
   const [statusMessage, setStatusMessage] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  const isCreating = useMemo(() => !initialPosts.some((item) => item.slug === editing.slug), [editing.slug]);
+  const isCreating = useMemo(() => !editingId, [editingId]);
 
-  const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
+  useEffect(() => {
+    const fetchPosts = async () => {
+      try {
+        setLoading(true);
+        const response = await fetch("/api/admin/posts");
+        const data = await response.json();
+        if (!response.ok) {
+          throw new Error(data.error || "Impossible de charger les articles");
+        }
+        setItems(data.data ?? []);
+      } catch (fetchError) {
+        console.error(fetchError);
+        setError("Impossible de charger les articles. Réessayez plus tard.");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchPosts();
+  }, []);
+
+  const resetForm = () => {
+    setForm(emptyForm);
+    setEditingId(null);
+  };
+
+  const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    if (!editing.slug || !editing.title) {
-      setStatusMessage("Merci de renseigner au minimum un slug et un titre.");
+    setStatusMessage(null);
+    setError(null);
+
+    const { slug, title, excerpt, body, tags, publishedAt } = form;
+    if (!slug || !title || !excerpt || !body || !publishedAt) {
+      setStatusMessage("Merci de renseigner le slug, le titre, l'extrait, le contenu et la date de publication.");
       return;
     }
 
-    setPostList((prev) => {
-      const existingIndex = prev.findIndex((item) => item.slug === editing.slug);
-      if (existingIndex !== -1) {
-        const updated = [...prev];
-        updated[existingIndex] = editing;
-        return updated;
+    try {
+      const method = isCreating ? "POST" : "PUT";
+      const url = isCreating ? "/api/admin/posts" : `/api/admin/posts/${editingId}`;
+      const payload = {
+        slug,
+        title,
+        excerpt,
+        body,
+        tags,
+        publishedAt,
+      };
+      const response = await fetch(url, {
+        method,
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+      const data = await response.json();
+      if (!response.ok) {
+        throw new Error(data.error || "Erreur lors de l'enregistrement");
       }
-      return [...prev, editing];
-    });
-    setStatusMessage(isCreating ? "Article ajouté (non persistant)." : "Article mis à jour (non persistant).");
+
+      setStatusMessage(isCreating ? "Article ajouté." : "Article mis à jour.");
+      if (isCreating && data.data) {
+        setItems((prev) => [data.data, ...prev]);
+      } else if (data.data) {
+        setItems((prev) => prev.map((item) => (item.id === data.data.id ? data.data : item)));
+      }
+      resetForm();
+    } catch (submitError) {
+      console.error(submitError);
+      setError("Impossible d'enregistrer cet article.");
+    }
   };
 
-  const handleDelete = (slug: string) => {
-    setPostList((prev) => prev.filter((item) => item.slug !== slug));
-    setStatusMessage("Article supprimé (non persistant).");
-    setEditing(emptyPost);
+  const handleDelete = async (id: string) => {
+    setStatusMessage(null);
+    setError(null);
+    try {
+      const response = await fetch(`/api/admin/posts/${id}`, { method: "DELETE" });
+      const data = await response.json();
+      if (!response.ok) {
+        throw new Error(data.error || "Erreur lors de la suppression");
+      }
+      setItems((prev) => prev.filter((item) => item.id !== id));
+      setStatusMessage("Article supprimé.");
+      resetForm();
+    } catch (deleteError) {
+      console.error(deleteError);
+      setError("Impossible de supprimer cet article.");
+    }
   };
 
-  const tagsValue = editing.tags?.join(", ") ?? "";
+  const tagsValue = (form.tags ?? []).join(", ");
 
   return (
     <div className="space-y-8">
       <AdminPageHeader
         title="Articles"
-        subtitle="Gérez les contenus du blog. Les modifications sont locales à cette session."
+        subtitle="Gérez les contenus du blog."
         actions={
           <Button
             variant="secondary"
             onClick={() => {
-              setEditing(emptyPost);
+              resetForm();
               setStatusMessage(null);
             }}
           >
@@ -69,23 +139,22 @@ export default function AdminPostsPage() {
         }
       />
 
-      <p className="text-sm text-amber-200/80">
-        Les modifications ne sont pas encore sauvegardées de manière permanente (prototype).
-      </p>
+      {loading ? <p className="text-sm text-slate-200">Chargement des articles...</p> : null}
+      {error ? <p className="text-sm text-rose-200">{error}</p> : null}
 
       <div className="grid gap-6 lg:grid-cols-[1.1fr_0.9fr]">
         <Card className="border-white/10 bg-white/5 p-6 shadow-lg shadow-emerald-500/10">
           <h2 className="text-lg font-semibold text-white">Liste des articles</h2>
           <div className="mt-4 space-y-3">
-            {postList.map((post) => (
+            {items.map((post) => (
               <div
-                key={post.slug}
+                key={post.id}
                 className="flex items-start justify-between gap-3 rounded-xl border border-white/5 bg-white/5 p-4"
               >
                 <div className="space-y-1">
                   <p className="text-sm font-medium text-white">{post.title}</p>
                   <p className="text-xs text-emerald-200/80">
-                    {new Date(post.date).toLocaleDateString("fr-FR", {
+                    {new Date(post.publishedAt).toLocaleDateString("fr-FR", {
                       year: "numeric",
                       month: "short",
                       day: "numeric",
@@ -98,7 +167,15 @@ export default function AdminPostsPage() {
                     variant="ghost"
                     className="border border-white/10 px-3 py-2"
                     onClick={() => {
-                      setEditing(post);
+                      setEditingId(post.id);
+                      setForm({
+                        slug: post.slug,
+                        title: post.title,
+                        excerpt: post.excerpt,
+                        body: post.body,
+                        tags: post.tags ?? [],
+                        publishedAt: post.publishedAt.toString().slice(0, 10),
+                      });
                       setStatusMessage(null);
                     }}
                   >
@@ -107,13 +184,16 @@ export default function AdminPostsPage() {
                   <Button
                     variant="ghost"
                     className="border border-white/10 px-3 py-2 text-rose-200 hover:text-rose-100"
-                    onClick={() => handleDelete(post.slug)}
+                    onClick={() => handleDelete(post.id)}
                   >
                     Supprimer
                   </Button>
                 </div>
               </div>
             ))}
+            {!items.length && !loading ? (
+              <p className="text-sm text-slate-300">Aucun article pour le moment.</p>
+            ) : null}
           </div>
         </Card>
 
@@ -130,8 +210,8 @@ export default function AdminPostsPage() {
               <input
                 id="slug"
                 type="text"
-                value={editing.slug}
-                onChange={(event) => setEditing({ ...editing, slug: event.target.value })}
+                value={form.slug}
+                onChange={(event) => setForm({ ...form, slug: event.target.value })}
                 className="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-white outline-none transition focus:border-emerald-400 focus:ring-2 focus:ring-emerald-400/50"
                 placeholder="tendances-social-media-2024"
               />
@@ -143,22 +223,22 @@ export default function AdminPostsPage() {
               <input
                 id="title"
                 type="text"
-                value={editing.title}
-                onChange={(event) => setEditing({ ...editing, title: event.target.value })}
+                value={form.title}
+                onChange={(event) => setForm({ ...form, title: event.target.value })}
                 className="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-white outline-none transition focus:border-emerald-400 focus:ring-2 focus:ring-emerald-400/50"
                 placeholder="Tendances social media 2024"
               />
             </div>
             <div className="grid gap-4 sm:grid-cols-2">
               <div className="space-y-2">
-                <label className="text-sm font-medium text-white" htmlFor="date">
-                  Date
+                <label className="text-sm font-medium text-white" htmlFor="publishedAt">
+                  Date de publication
                 </label>
                 <input
-                  id="date"
+                  id="publishedAt"
                   type="date"
-                  value={editing.date}
-                  onChange={(event) => setEditing({ ...editing, date: event.target.value })}
+                  value={form.publishedAt}
+                  onChange={(event) => setForm({ ...form, publishedAt: event.target.value })}
                   className="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-white outline-none transition focus:border-emerald-400 focus:ring-2 focus:ring-emerald-400/50"
                 />
               </div>
@@ -171,7 +251,13 @@ export default function AdminPostsPage() {
                   type="text"
                   value={tagsValue}
                   onChange={(event) =>
-                    setEditing({ ...editing, tags: event.target.value.split(",").map((tag) => tag.trim()).filter(Boolean) })
+                    setForm({
+                      ...form,
+                      tags: event.target.value
+                        .split(",")
+                        .map((tag) => tag.trim())
+                        .filter(Boolean),
+                    })
                   }
                   className="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-white outline-none transition focus:border-emerald-400 focus:ring-2 focus:ring-emerald-400/50"
                   placeholder="social media, tendances"
@@ -184,22 +270,22 @@ export default function AdminPostsPage() {
               </label>
               <textarea
                 id="excerpt"
-                value={editing.excerpt}
-                onChange={(event) => setEditing({ ...editing, excerpt: event.target.value })}
+                value={form.excerpt}
+                onChange={(event) => setForm({ ...form, excerpt: event.target.value })}
                 className="min-h-[100px] w-full rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-white outline-none transition focus:border-emerald-400 focus:ring-2 focus:ring-emerald-400/50"
                 placeholder="Résumé court de l'article"
               />
             </div>
             <div className="space-y-2">
-              <label className="text-sm font-medium text-white" htmlFor="content">
+              <label className="text-sm font-medium text-white" htmlFor="body">
                 Contenu
               </label>
               <textarea
-                id="content"
-                value={editing.content ?? ""}
-                onChange={(event) => setEditing({ ...editing, content: event.target.value })}
+                id="body"
+                value={form.body ?? ""}
+                onChange={(event) => setForm({ ...form, body: event.target.value })}
                 className="min-h-[140px] w-full rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-white outline-none transition focus:border-emerald-400 focus:ring-2 focus:ring-emerald-400/50"
-                placeholder="Contenu principal (optionnel)"
+                placeholder="Contenu principal"
               />
             </div>
             {statusMessage ? <p className="text-sm text-emerald-200">{statusMessage}</p> : null}
@@ -207,12 +293,7 @@ export default function AdminPostsPage() {
               <Button type="submit" className="justify-center">
                 {isCreating ? "Ajouter" : "Enregistrer"}
               </Button>
-              <Button
-                type="button"
-                variant="secondary"
-                className="justify-center"
-                onClick={() => setEditing(emptyPost)}
-              >
+              <Button type="button" variant="secondary" className="justify-center" onClick={resetForm}>
                 Réinitialiser
               </Button>
             </div>
