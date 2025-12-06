@@ -1,9 +1,10 @@
+// file: app/blog/page.tsx
 import type { Metadata } from "next";
 import Link from "next/link";
+import { prisma } from "@/lib/prisma";
 import { Card } from "@/components/ui/Card";
 import { Container } from "@/components/ui/Container";
 import { SectionHeader } from "@/components/ui/SectionHeader";
-import { posts } from "@/lib/config/posts";
 import { createMetadata } from "@/lib/config/seo";
 
 function formatDate(dateString: string) {
@@ -17,7 +18,9 @@ export const metadata: Metadata = createMetadata({
   path: "/blog",
 });
 
-export default function BlogPage() {
+export default async function BlogPage() {
+  const posts = await prisma.post.findMany({ orderBy: { publishedAt: "desc" } });
+
   return (
     <div className="bg-slate-950 pb-16 pt-10">
       <Container className="space-y-10">
@@ -29,10 +32,10 @@ export default function BlogPage() {
 
         <div className="grid gap-5 md:grid-cols-2">
           {posts.map((post) => (
-            <Card key={post.slug} as="article" className="flex flex-col gap-3">
+            <Card key={post.id} as="article" className="flex flex-col gap-3">
               <div className="flex items-start justify-between gap-3">
                 <div>
-                  <p className="text-xs uppercase tracking-[0.2em] text-emerald-200">{formatDate(post.date)}</p>
+                  <p className="text-xs uppercase tracking-[0.2em] text-emerald-200">{formatDate(post.publishedAt)}</p>
                   <h3 className="mt-1 text-2xl font-semibold text-white">{post.title}</h3>
                 </div>
                 {post.tags && post.tags.length > 0 ? (
@@ -54,6 +57,7 @@ export default function BlogPage() {
               </Link>
             </Card>
           ))}
+          {!posts.length ? <p className="text-slate-200">Aucun article pour le moment.</p> : null}
         </div>
       </Container>
     </div>

@@ -1,8 +1,9 @@
+// file: app/services/page.tsx
 import type { Metadata } from "next";
+import { prisma } from "@/lib/prisma";
 import { Card } from "@/components/ui/Card";
 import { Container } from "@/components/ui/Container";
 import { SectionHeader } from "@/components/ui/SectionHeader";
-import { services } from "@/lib/config/services";
 import { createMetadata } from "@/lib/config/seo";
 
 export const metadata: Metadata = createMetadata({
@@ -12,7 +13,11 @@ export const metadata: Metadata = createMetadata({
   path: "/services",
 });
 
-export default function ServicesPage() {
+export default async function ServicesPage() {
+  const services = await prisma.service.findMany({
+    orderBy: { createdAt: "asc" },
+  });
+
   return (
     <div className="bg-slate-950 pb-16 pt-10">
       <Container className="space-y-10">
@@ -33,14 +38,15 @@ export default function ServicesPage() {
                     Livrables, processus et études de cas détaillés sur demande.
                   </p>
                 </div>
-                {service.category ? (
+                {service.slug ? (
                   <span className="rounded-full bg-white/5 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-emerald-200">
-                    {service.category}
+                    {service.slug}
                   </span>
                 ) : null}
               </div>
             </Card>
           ))}
+          {!services.length ? <p className="text-slate-200">Aucun service pour le moment.</p> : null}
         </div>
       </Container>
     </div>
