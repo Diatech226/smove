@@ -1,8 +1,6 @@
 // file: app/blog/[slug]/page.tsx
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
-import { motion } from "framer-motion";
-
 import { prisma } from "@/lib/prisma";
 import { Container } from "@/components/ui/Container";
 import { SectionHeader } from "@/components/ui/SectionHeader";
@@ -44,20 +42,11 @@ export default async function BlogPostPage({ params }: BlogPostPageProps) {
   }
 
   return (
-    <div className="relative bg-slate-950 pb-20 pt-12">
-      <div className="pointer-events-none absolute inset-0">
-        <div className="absolute left-10 top-12 h-64 w-64 rounded-full bg-emerald-500/15 blur-[110px]" />
-        <div className="absolute right-12 top-16 h-64 w-64 rounded-full bg-pink-500/10 blur-[110px]" />
-      </div>
-      <Container className="relative space-y-10">
+    <div className="bg-slate-950 pb-16 pt-10">
+      <Container className="space-y-8">
         <SectionHeader eyebrow="Article" title={post.title} subtitle={formatDate(post.publishedAt)} />
 
-        <motion.div
-          initial={{ opacity: 0, y: 12 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.35 }}
-          className="space-y-4 rounded-2xl border border-white/10 bg-gradient-to-br from-white/10 via-white/5 to-white/10 p-8 text-lg text-slate-200 shadow-xl shadow-emerald-500/10"
-        >
+        <div className="space-y-4 text-lg text-slate-200">
           <p>{post.body}</p>
           <p>
             Chez SMOVE Communication, nous combinons stratégie éditoriale, production créative et pilotage des campagnes pour
