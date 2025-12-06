@@ -52,7 +52,7 @@ export default async function BlogPostPage({ params }: BlogPostPageProps) {
             Chez SMOVE Communication, nous combinons stratégie éditoriale, production créative et pilotage des campagnes pour
             transformer ces idées en résultats concrets.
           </p>
-        </div>
+        </motion.div>
       </Container>
     </div>
   );

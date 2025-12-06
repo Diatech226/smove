@@ -19,8 +19,12 @@ export default async function PortfolioPage() {
   const projects = await prisma.project.findMany({ orderBy: { createdAt: "desc" } });
 
   return (
-    <div className="bg-slate-950 pb-16 pt-10">
-      <Container className="space-y-10">
+    <div className="relative bg-slate-950 pb-20 pt-12">
+      <div className="pointer-events-none absolute inset-0">
+        <div className="absolute left-12 top-12 h-64 w-64 rounded-full bg-emerald-500/15 blur-[110px]" />
+        <div className="absolute right-12 top-20 h-64 w-64 rounded-full bg-cyan-500/10 blur-[110px]" />
+      </div>
+      <Container className="relative space-y-12">
         <SectionHeader
           eyebrow="Portfolio"
           title="Des projets qui font bouger les lignes"
@@ -35,20 +39,8 @@ export default async function PortfolioPage() {
                   <p className="text-xs uppercase tracking-[0.2em] text-emerald-200">{project.client}</p>
                   <h3 className="mt-1 text-2xl font-semibold text-white">{project.title}</h3>
                 </div>
-                <span className="rounded-full bg-white/5 px-3 py-1 text-xs font-semibold text-slate-100">
-                  {project.sector}
-                </span>
-              </div>
-              <p className="text-slate-200">{project.summary}</p>
-              <div className="flex flex-wrap gap-2 pt-1">
-                <Link
-                  href={`/portfolio/${project.slug}`}
-                  className="text-sm font-semibold text-emerald-300 transition hover:text-emerald-200"
-                >
-                  Voir le projet →
-                </Link>
-              </div>
-            </Card>
+              </Card>
+            </motion.div>
           ))}
           {!projects.length ? <p className="text-slate-200">Aucun projet pour le moment.</p> : null}
         </div>

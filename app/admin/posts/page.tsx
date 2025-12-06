@@ -134,7 +134,7 @@ export default function AdminPostsPage() {
               setStatusMessage(null);
             }}
           >
-            Ajouter un article
+            Nouvel article
           </Button>
         }
       />
@@ -165,7 +165,7 @@ export default function AdminPostsPage() {
                 <div className="flex flex-col gap-2 text-sm">
                   <Button
                     variant="ghost"
-                    className="border border-white/10 px-3 py-2"
+                    className="border border-white/10 px-3 py-1 text-xs"
                     onClick={() => {
                       setEditingId(post.id);
                       setForm({
@@ -300,6 +300,88 @@ export default function AdminPostsPage() {
           </form>
         </Card>
       </div>
+    </div>
+  );
+}
+
+type ToastProps = ToastState & { onClose: () => void };
+
+function Toast({ type, message, onClose }: ToastProps) {
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: -10 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0, y: -10 }}
+      className={`fixed right-6 top-6 z-20 flex items-center gap-3 rounded-xl border px-4 py-3 shadow-xl backdrop-blur ${
+        type === "success"
+          ? "border-emerald-400/40 bg-emerald-500/20 text-emerald-50"
+          : "border-rose-400/30 bg-rose-500/15 text-rose-50"
+      }`}
+    >
+      <span className="text-sm font-medium">{message}</span>
+      <button className="text-xs text-white/80" onClick={onClose}>
+        fermer
+      </button>
+    </motion.div>
+  );
+}
+
+type InputFieldProps = {
+  id: string;
+  label: string;
+  placeholder?: string;
+  value: string;
+  onChange: (value: string) => void;
+  multiline?: boolean;
+  type?: string;
+};
+
+function InputField({ id, label, placeholder, value, onChange, multiline, type }: InputFieldProps) {
+  const InputTag = multiline ? "textarea" : "input";
+  return (
+    <div className="space-y-2">
+      <label className="text-sm font-medium text-white" htmlFor={id}>
+        {label}
+      </label>
+      <InputTag
+        id={id}
+        value={value}
+        onChange={(event) => onChange(event.target.value)}
+        placeholder={placeholder}
+        className="w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-white outline-none transition focus:border-emerald-400 focus:ring-2 focus:ring-emerald-400/50"
+        {...(multiline ? { rows: 4 } : { type: type ?? "text" })}
+      />
+    </div>
+  );
+}
+
+type SkeletonTableProps = {
+  rows: number;
+  columns: number;
+};
+
+function SkeletonTable({ rows, columns }: SkeletonTableProps) {
+  return (
+    <div className="space-y-2">
+      {Array.from({ length: rows }).map((_, rowIndex) => (
+        <div key={rowIndex} className={`grid animate-pulse grid-cols-[1.1fr_0.9fr_0.9fr_160px] gap-3 rounded-xl border border-white/5 bg-white/5 px-4 py-3`}>
+          {Array.from({ length: columns }).map((_, colIndex) => (
+            <div key={colIndex} className="h-4 rounded-full bg-white/10" />
+          ))}
+        </div>
+      ))}
+    </div>
+  );
+}
+
+type EmptyStateProps = {
+  message: string;
+};
+
+function EmptyState({ message }: EmptyStateProps) {
+  return (
+    <div className="rounded-2xl border border-dashed border-white/10 bg-white/5 p-6 text-center text-sm text-slate-300">
+      {message}
     </div>
   );
 }

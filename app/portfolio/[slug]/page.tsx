@@ -39,13 +39,13 @@ export default async function ProjectPage({ params }: ProjectPageProps) {
   }
 
   return (
-    <div className="bg-slate-950 pb-16 pt-10">
-      <Container className="space-y-10">
-        <SectionHeader
-          eyebrow={project.client}
-          title={project.title}
-          subtitle={`Secteur : ${project.sector}`}
-        />
+    <div className="relative bg-slate-950 pb-20 pt-12">
+      <div className="pointer-events-none absolute inset-0">
+        <div className="absolute left-12 top-12 h-64 w-64 rounded-full bg-emerald-500/15 blur-[110px]" />
+        <div className="absolute right-14 top-24 h-64 w-64 rounded-full bg-indigo-500/10 blur-[110px]" />
+      </div>
+      <Container className="relative space-y-10">
+        <SectionHeader eyebrow={project.client} title={project.title} subtitle={`Secteur : ${project.sector}`} />
 
         <Card className="space-y-4">
           <p className="text-lg text-slate-200">{project.summary}</p>
@@ -72,7 +72,11 @@ export default async function ProjectPage({ params }: ProjectPageProps) {
 
         <div className="text-sm text-slate-400">
           <p>
-            Besoin d'un cas d'usage détaillé ? <Link href="/contact" className="text-emerald-300 hover:text-emerald-200">Contactez-nous</Link> pour recevoir un dossier complet.
+            Besoin d'un cas d'usage détaillé ?{" "}
+            <Link href="/contact" className="text-emerald-300 hover:text-emerald-200">
+              Contactez-nous
+            </Link>{" "}
+            pour recevoir un dossier complet.
           </p>
         </div>
       </Container>

@@ -22,8 +22,12 @@ export default async function BlogPage() {
   const posts = await prisma.post.findMany({ orderBy: { publishedAt: "desc" } });
 
   return (
-    <div className="bg-slate-950 pb-16 pt-10">
-      <Container className="space-y-10">
+    <div className="relative bg-slate-950 pb-20 pt-12">
+      <div className="pointer-events-none absolute inset-0">
+        <div className="absolute left-12 top-12 h-64 w-64 rounded-full bg-emerald-500/15 blur-[110px]" />
+        <div className="absolute right-12 top-24 h-64 w-64 rounded-full bg-pink-500/10 blur-[110px]" />
+      </div>
+      <Container className="relative space-y-12">
         <SectionHeader
           eyebrow="Actualités"
           title="Le regard SMOVE sur la communication"
@@ -46,16 +50,25 @@ export default async function BlogPage() {
                       </span>
                     ))}
                   </div>
-                ) : null}
-              </div>
-              <p className="text-slate-200">{post.excerpt}</p>
-              <Link
-                href={`/blog/${post.slug}`}
-                className="text-sm font-semibold text-emerald-300 transition hover:text-emerald-200"
-              >
-                Lire l'article →
-              </Link>
-            </Card>
+                  {post.tags && post.tags.length > 0 ? (
+                    <div className="flex flex-wrap gap-1">
+                      {post.tags.map((tag) => (
+                        <span key={tag} className="rounded-full bg-white/5 px-3 py-1 text-xs font-semibold text-slate-100">
+                          {tag}
+                        </span>
+                      ))}
+                    </div>
+                  ) : null}
+                </div>
+                <p className="text-slate-200">{post.excerpt}</p>
+                <Link
+                  href={`/blog/${post.slug}`}
+                  className="text-sm font-semibold text-emerald-300 transition hover:text-emerald-200"
+                >
+                  Lire l'article →
+                </Link>
+              </Card>
+            </motion.div>
           ))}
           {!posts.length ? <p className="text-slate-200">Aucun article pour le moment.</p> : null}
         </div>
