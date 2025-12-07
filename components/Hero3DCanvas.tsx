@@ -37,7 +37,7 @@ function CoreSculpt() {
 
 function FloatingOrb({ position, color, delay = 0 }: { position: [number, number, number]; color: string; delay?: number }) {
   return (
-    <Float speed={1.5} rotationIntensity={0.8} floatIntensity={0.8} floatingRange={[0.05, 0.35]}>
+    <Float speed={1.5} rotationIntensity={0.8} floatIntensity={0.8}>
       <mesh position={position} castShadow receiveShadow>
         <sphereGeometry args={[0.25, 24, 24]} />
         <meshStandardMaterial color={color} emissive={color} emissiveIntensity={0.25 + delay * 0.05} roughness={0.3} />

@@ -7,8 +7,19 @@ import { Container } from "@/components/ui/Container";
 import { SectionHeader } from "@/components/ui/SectionHeader";
 import { createMetadata } from "@/lib/config/seo";
 
-function formatDate(dateString: string) {
-  return new Intl.DateTimeFormat("fr-FR", { dateStyle: "medium" }).format(new Date(dateString));
+export const dynamic = "force-dynamic";
+
+type BlogListPost = {
+  id: string;
+  slug: string;
+  title: string;
+  excerpt: string;
+  publishedAt: string | Date;
+  tags: string[];
+};
+
+function formatDate(dateValue: string | Date) {
+  return new Intl.DateTimeFormat("fr-FR", { dateStyle: "medium" }).format(new Date(dateValue));
 }
 
 export const metadata: Metadata = createMetadata({
@@ -19,7 +30,7 @@ export const metadata: Metadata = createMetadata({
 });
 
 export default async function BlogPage() {
-  const posts = await prisma.post.findMany({ orderBy: { publishedAt: "desc" } });
+  const posts = (await prisma.post.findMany({ orderBy: { publishedAt: "desc" } })) as BlogListPost[];
 
   return (
     <div className="relative bg-slate-950 pb-20 pt-12">
@@ -36,7 +47,11 @@ export default async function BlogPage() {
 
         <div className="grid gap-5 md:grid-cols-2">
           {posts.map((post) => (
-            <Card key={post.id} as="article" className="flex flex-col gap-3">
+            <Card
+              key={post.id}
+              as="article"
+              className="flex flex-col gap-3 transition duration-200 hover:-translate-y-1 hover:border-emerald-400/50 hover:shadow-xl hover:shadow-emerald-500/10"
+            >
               <div className="flex items-start justify-between gap-3">
                 <div>
                   <p className="text-xs uppercase tracking-[0.2em] text-emerald-200">{formatDate(post.publishedAt)}</p>
@@ -50,25 +65,16 @@ export default async function BlogPage() {
                       </span>
                     ))}
                   </div>
-                  {post.tags && post.tags.length > 0 ? (
-                    <div className="flex flex-wrap gap-1">
-                      {post.tags.map((tag) => (
-                        <span key={tag} className="rounded-full bg-white/5 px-3 py-1 text-xs font-semibold text-slate-100">
-                          {tag}
-                        </span>
-                      ))}
-                    </div>
-                  ) : null}
-                </div>
-                <p className="text-slate-200">{post.excerpt}</p>
-                <Link
-                  href={`/blog/${post.slug}`}
-                  className="text-sm font-semibold text-emerald-300 transition hover:text-emerald-200"
-                >
-                  Lire l'article →
-                </Link>
-              </Card>
-            </motion.div>
+                ) : null}
+              </div>
+              <p className="text-slate-200">{post.excerpt}</p>
+              <Link
+                href={`/blog/${post.slug}`}
+                className="text-sm font-semibold text-emerald-300 transition hover:text-emerald-200"
+              >
+                Lire l'article →
+              </Link>
+            </Card>
           ))}
           {!posts.length ? <p className="text-slate-200">Aucun article pour le moment.</p> : null}
         </div>

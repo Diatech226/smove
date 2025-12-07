@@ -29,19 +29,16 @@ export function Button({
   className,
   type = "button",
   ...props
-}: ButtonProps) {
-  const classes = cn(
-    "inline-flex items-center justify-center rounded-full px-5 py-3 text-sm font-semibold transition focus:outline-none focus:ring-2 focus:ring-emerald-400 focus:ring-offset-2 focus:ring-offset-slate-950",
-    variantClasses[variant],
-    className,
-  );
+  }: ButtonProps) {
+    const classes = cn(
+      "inline-flex items-center justify-center rounded-full px-5 py-3 text-sm font-semibold transition focus:outline-none focus:ring-2 focus:ring-emerald-400 focus:ring-offset-2 focus:ring-offset-slate-950",
+      variantClasses[variant],
+      className,
+    );
 
   if (href) {
-    // Avoid passing button-only attributes to link-rendered buttons
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    const { type: _type, ...linkProps } = props;
     return (
-      <Link href={href} className={classes} {...linkProps}>
+      <Link href={href} className={classes}>
         {children}
       </Link>
     );

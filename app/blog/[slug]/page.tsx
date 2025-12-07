@@ -6,8 +6,10 @@ import { Container } from "@/components/ui/Container";
 import { SectionHeader } from "@/components/ui/SectionHeader";
 import { createMetadata } from "@/lib/config/seo";
 
-function formatDate(dateString: string) {
-  return new Intl.DateTimeFormat("fr-FR", { dateStyle: "long" }).format(new Date(dateString));
+export const dynamic = "force-dynamic";
+
+function formatDate(dateValue: string | Date) {
+  return new Intl.DateTimeFormat("fr-FR", { dateStyle: "long" }).format(new Date(dateValue));
 }
 
 type BlogPostPageProps = {
@@ -52,7 +54,7 @@ export default async function BlogPostPage({ params }: BlogPostPageProps) {
             Chez SMOVE Communication, nous combinons stratégie éditoriale, production créative et pilotage des campagnes pour
             transformer ces idées en résultats concrets.
           </p>
-        </motion.div>
+        </div>
       </Container>
     </div>
   );

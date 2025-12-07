@@ -144,7 +144,11 @@ export default function ContactPageContent() {
                   <input
                     id="name"
                     name="name"
-                    ref={errors.name ? firstErrorRef : null}
+                    ref={(element) => {
+                      if (errors.name) {
+                        firstErrorRef.current = element;
+                      }
+                    }}
                     type="text"
                     autoComplete="name"
                     required

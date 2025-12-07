@@ -6,17 +6,26 @@ import { Card } from "@/components/ui/Card";
 import { Container } from "@/components/ui/Container";
 import { SectionHeader } from "@/components/ui/SectionHeader";
 import { Button } from "@/components/ui/Button";
-import { createMetadata } from "@/lib/config/seo";
 
-export const metadata: Metadata = createMetadata({
-  title: "Portfolio – SMOVE Communication",
-  description:
-    "Découvrez les projets et campagnes orchestrés par SMOVE Communication pour des clients variés : tech, industrie, services et culture.",
-  path: "/portfolio",
-});
+export const dynamic = "force-dynamic";
+
+type PortfolioListProject = {
+  id: string;
+  slug: string;
+  client: string;
+  title: string;
+  sector: string;
+  summary: string;
+  createdAt: string | Date;
+};
+
+export const metadata: Metadata = {
+  title: "Nos projets – SMOVE Communication",
+  description: "Découvrez les projets réalisés par SMOVE Communication pour ses clients.",
+};
 
 export default async function PortfolioPage() {
-  const projects = await prisma.project.findMany({ orderBy: { createdAt: "desc" } });
+  const projects = (await prisma.project.findMany({ orderBy: { createdAt: "desc" } })) as PortfolioListProject[];
 
   return (
     <div className="relative bg-slate-950 pb-20 pt-12">
@@ -31,16 +40,32 @@ export default async function PortfolioPage() {
           subtitle="Branding, campagnes, production, expériences digitales : un aperçu des résultats obtenus pour nos clients."
         />
 
-        <div className="grid gap-5 md:grid-cols-2">
+        <div className="grid gap-6 md:grid-cols-2">
           {projects.map((project) => (
-            <Card key={project.id} as="article" className="flex flex-col gap-3">
-              <div className="flex items-center justify-between gap-3">
+            <Card
+              key={project.id}
+              as="article"
+              className="flex h-full flex-col gap-3 transition duration-200 hover:-translate-y-1 hover:border-emerald-400/50 hover:shadow-xl hover:shadow-emerald-500/10"
+            >
+              <div className="flex items-start justify-between gap-3">
                 <div>
                   <p className="text-xs uppercase tracking-[0.2em] text-emerald-200">{project.client}</p>
                   <h3 className="mt-1 text-2xl font-semibold text-white">{project.title}</h3>
+                  <p className="text-sm text-slate-300">Secteur : {project.sector}</p>
                 </div>
-              </Card>
-            </motion.div>
+              </div>
+              <p className="text-slate-200">{project.summary}</p>
+              <div className="mt-auto flex items-center justify-between pt-2 text-sm font-semibold text-emerald-300">
+                <span>{new Date(project.createdAt).toLocaleDateString("fr-FR")}</span>
+                <Link
+                  href={`/portfolio/${project.slug}`}
+                  className="inline-flex items-center gap-2 text-emerald-300 hover:text-emerald-200"
+                >
+                  Voir le projet
+                  <span aria-hidden>→</span>
+                </Link>
+              </div>
+            </Card>
           ))}
           {!projects.length ? <p className="text-slate-200">Aucun projet pour le moment.</p> : null}
         </div>

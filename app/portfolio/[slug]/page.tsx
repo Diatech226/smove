@@ -7,32 +7,41 @@ import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { Container } from "@/components/ui/Container";
 import { SectionHeader } from "@/components/ui/SectionHeader";
-import { createMetadata } from "@/lib/config/seo";
 
-type ProjectPageProps = {
-  params: { slug: string };
+export const dynamic = "force-dynamic";
+
+type PortfolioProject = {
+  id: string;
+  slug: string;
+  client: string;
+  title: string;
+  sector: string;
+  summary: string;
+  body?: string | null;
+  results: string[];
 };
 
+interface ProjectPageProps {
+  params: { slug: string };
+}
+
 export async function generateMetadata({ params }: ProjectPageProps): Promise<Metadata> {
-  const project = await prisma.project.findUnique({ where: { slug: params.slug } });
+  const project = (await prisma.project.findUnique({ where: { slug: params.slug } })) as PortfolioProject | null;
 
   if (!project) {
-    return createMetadata({
+    return {
       title: "Projet introuvable – SMOVE Communication",
-      description: "Le projet que vous recherchez n'existe pas ou a été déplacé.",
-      path: `/portfolio/${params.slug}`,
-    });
+    };
   }
 
-  return createMetadata({
+  return {
     title: `${project.title} – ${project.client} – SMOVE Communication`,
-    description: project.summary ?? "Découvrez les réalisations et résultats portés par SMOVE Communication.",
-    path: `/portfolio/${project.slug}`,
-  });
+    description: project.summary,
+  };
 }
 
 export default async function ProjectPage({ params }: ProjectPageProps) {
-  const project = await prisma.project.findUnique({ where: { slug: params.slug } });
+  const project = (await prisma.project.findUnique({ where: { slug: params.slug } })) as PortfolioProject | null;
 
   if (!project) {
     notFound();
@@ -72,7 +81,7 @@ export default async function ProjectPage({ params }: ProjectPageProps) {
 
         <div className="text-sm text-slate-400">
           <p>
-            Besoin d'un cas d'usage détaillé ?{" "}
+            Besoin d'un cas d'usage détaillé?{" "}
             <Link href="/contact" className="text-emerald-300 hover:text-emerald-200">
               Contactez-nous
             </Link>{" "}
