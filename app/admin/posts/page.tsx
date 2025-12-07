@@ -2,13 +2,22 @@
 "use client";
 
 import { FormEvent, useEffect, useMemo, useState } from "react";
-import type { Post } from "@prisma/client";
 
 import { AdminPageHeader } from "@/components/admin/AdminPageHeader";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 
-const emptyForm: Pick<Post, "slug" | "title" | "excerpt" | "body"> & {
+type AdminPost = {
+  id: string;
+  slug: string;
+  title: string;
+  excerpt: string;
+  body: string;
+  tags?: string[];
+  publishedAt: string | Date;
+};
+
+const emptyForm: Pick<AdminPost, "slug" | "title" | "excerpt" | "body"> & {
   tags?: string[];
   publishedAt?: string;
 } = {
@@ -21,7 +30,7 @@ const emptyForm: Pick<Post, "slug" | "title" | "excerpt" | "body"> & {
 };
 
 export default function AdminPostsPage() {
-  const [items, setItems] = useState<Post[]>([]);
+  const [items, setItems] = useState<AdminPost[]>([]);
   const [form, setForm] = useState(emptyForm);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [statusMessage, setStatusMessage] = useState<string | null>(null);
@@ -174,7 +183,7 @@ export default function AdminPostsPage() {
                         excerpt: post.excerpt,
                         body: post.body,
                         tags: post.tags ?? [],
-                        publishedAt: post.publishedAt.toString().slice(0, 10),
+                        publishedAt: new Date(post.publishedAt).toISOString().slice(0, 10),
                       });
                       setStatusMessage(null);
                     }}
@@ -198,190 +207,99 @@ export default function AdminPostsPage() {
         </Card>
 
         <Card className="border-white/10 bg-white/5 p-6 shadow-lg shadow-emerald-500/10">
-          <h2 className="text-lg font-semibold text-white">
-            {isCreating ? "Nouvel article" : "Modifier l'article"}
-          </h2>
-          <p className="text-sm text-slate-300">Complétez les informations ci-dessous.</p>
+          <h2 className="text-lg font-semibold text-white">{isCreating ? "Nouvel article" : "Modifier l'article"}</h2>
           <form className="mt-4 space-y-4" onSubmit={handleSubmit}>
             <div className="space-y-2">
-              <label className="text-sm font-medium text-white" htmlFor="slug">
+              <label className="text-sm font-semibold text-white" htmlFor="slug">
                 Slug
               </label>
               <input
                 id="slug"
-                type="text"
+                name="slug"
                 value={form.slug}
-                onChange={(event) => setForm({ ...form, slug: event.target.value })}
-                className="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-white outline-none transition focus:border-emerald-400 focus:ring-2 focus:ring-emerald-400/50"
-                placeholder="tendances-social-media-2024"
+                onChange={(event) => setForm((prev) => ({ ...prev, slug: event.target.value }))}
+                className="w-full rounded-lg border border-white/10 bg-slate-900 px-3 py-2 text-sm text-white focus:border-emerald-400 focus:outline-none"
               />
             </div>
+
             <div className="space-y-2">
-              <label className="text-sm font-medium text-white" htmlFor="title">
+              <label className="text-sm font-semibold text-white" htmlFor="title">
                 Titre
               </label>
               <input
                 id="title"
-                type="text"
+                name="title"
                 value={form.title}
-                onChange={(event) => setForm({ ...form, title: event.target.value })}
-                className="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-white outline-none transition focus:border-emerald-400 focus:ring-2 focus:ring-emerald-400/50"
-                placeholder="Tendances social media 2024"
+                onChange={(event) => setForm((prev) => ({ ...prev, title: event.target.value }))}
+                className="w-full rounded-lg border border-white/10 bg-slate-900 px-3 py-2 text-sm text-white focus:border-emerald-400 focus:outline-none"
               />
             </div>
-            <div className="grid gap-4 sm:grid-cols-2">
-              <div className="space-y-2">
-                <label className="text-sm font-medium text-white" htmlFor="publishedAt">
-                  Date de publication
-                </label>
-                <input
-                  id="publishedAt"
-                  type="date"
-                  value={form.publishedAt}
-                  onChange={(event) => setForm({ ...form, publishedAt: event.target.value })}
-                  className="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-white outline-none transition focus:border-emerald-400 focus:ring-2 focus:ring-emerald-400/50"
-                />
-              </div>
-              <div className="space-y-2">
-                <label className="text-sm font-medium text-white" htmlFor="tags">
-                  Tags (séparés par des virgules)
-                </label>
-                <input
-                  id="tags"
-                  type="text"
-                  value={tagsValue}
-                  onChange={(event) =>
-                    setForm({
-                      ...form,
-                      tags: event.target.value
-                        .split(",")
-                        .map((tag) => tag.trim())
-                        .filter(Boolean),
-                    })
-                  }
-                  className="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-white outline-none transition focus:border-emerald-400 focus:ring-2 focus:ring-emerald-400/50"
-                  placeholder="social media, tendances"
-                />
-              </div>
-            </div>
+
             <div className="space-y-2">
-              <label className="text-sm font-medium text-white" htmlFor="excerpt">
+              <label className="text-sm font-semibold text-white" htmlFor="excerpt">
                 Extrait
               </label>
               <textarea
                 id="excerpt"
+                name="excerpt"
+                rows={3}
                 value={form.excerpt}
-                onChange={(event) => setForm({ ...form, excerpt: event.target.value })}
-                className="min-h-[100px] w-full rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-white outline-none transition focus:border-emerald-400 focus:ring-2 focus:ring-emerald-400/50"
-                placeholder="Résumé court de l'article"
+                onChange={(event) => setForm((prev) => ({ ...prev, excerpt: event.target.value }))}
+                className="w-full rounded-lg border border-white/10 bg-slate-900 px-3 py-2 text-sm text-white focus:border-emerald-400 focus:outline-none"
               />
             </div>
+
             <div className="space-y-2">
-              <label className="text-sm font-medium text-white" htmlFor="body">
+              <label className="text-sm font-semibold text-white" htmlFor="body">
                 Contenu
               </label>
               <textarea
                 id="body"
-                value={form.body ?? ""}
-                onChange={(event) => setForm({ ...form, body: event.target.value })}
-                className="min-h-[140px] w-full rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-white outline-none transition focus:border-emerald-400 focus:ring-2 focus:ring-emerald-400/50"
-                placeholder="Contenu principal"
+                name="body"
+                rows={6}
+                value={form.body}
+                onChange={(event) => setForm((prev) => ({ ...prev, body: event.target.value }))}
+                className="w-full rounded-lg border border-white/10 bg-slate-900 px-3 py-2 text-sm text-white focus:border-emerald-400 focus:outline-none"
               />
             </div>
-            {statusMessage ? <p className="text-sm text-emerald-200">{statusMessage}</p> : null}
-            <div className="flex gap-3">
-              <Button type="submit" className="justify-center">
-                {isCreating ? "Ajouter" : "Enregistrer"}
-              </Button>
-              <Button type="button" variant="secondary" className="justify-center" onClick={resetForm}>
-                Réinitialiser
-              </Button>
+
+            <div className="space-y-2">
+              <label className="text-sm font-semibold text-white" htmlFor="tags">
+                Tags (séparés par des virgules)
+              </label>
+              <input
+                id="tags"
+                name="tags"
+                value={tagsValue}
+                onChange={(event) =>
+                  setForm((prev) => ({ ...prev, tags: event.target.value.split(",").map((tag) => tag.trim()) }))
+                }
+                className="w-full rounded-lg border border-white/10 bg-slate-900 px-3 py-2 text-sm text-white focus:border-emerald-400 focus:outline-none"
+              />
             </div>
+
+            <div className="space-y-2">
+              <label className="text-sm font-semibold text-white" htmlFor="publishedAt">
+                Date de publication
+              </label>
+              <input
+                type="date"
+                id="publishedAt"
+                name="publishedAt"
+                value={form.publishedAt}
+                onChange={(event) => setForm((prev) => ({ ...prev, publishedAt: event.target.value }))}
+                className="w-full rounded-lg border border-white/10 bg-slate-900 px-3 py-2 text-sm text-white focus:border-emerald-400 focus:outline-none"
+              />
+            </div>
+
+            <div className="flex items-center gap-3">
+              <Button type="submit">{isCreating ? "Créer" : "Mettre à jour"}</Button>
+              {statusMessage ? <p className="text-sm text-emerald-200">{statusMessage}</p> : null}
+            </div>
+            {error ? <p className="text-sm text-rose-200">{error}</p> : null}
           </form>
         </Card>
       </div>
-    </div>
-  );
-}
-
-type ToastProps = ToastState & { onClose: () => void };
-
-function Toast({ type, message, onClose }: ToastProps) {
-  return (
-    <motion.div
-      initial={{ opacity: 0, y: -10 }}
-      animate={{ opacity: 1, y: 0 }}
-      exit={{ opacity: 0, y: -10 }}
-      className={`fixed right-6 top-6 z-20 flex items-center gap-3 rounded-xl border px-4 py-3 shadow-xl backdrop-blur ${
-        type === "success"
-          ? "border-emerald-400/40 bg-emerald-500/20 text-emerald-50"
-          : "border-rose-400/30 bg-rose-500/15 text-rose-50"
-      }`}
-    >
-      <span className="text-sm font-medium">{message}</span>
-      <button className="text-xs text-white/80" onClick={onClose}>
-        fermer
-      </button>
-    </motion.div>
-  );
-}
-
-type InputFieldProps = {
-  id: string;
-  label: string;
-  placeholder?: string;
-  value: string;
-  onChange: (value: string) => void;
-  multiline?: boolean;
-  type?: string;
-};
-
-function InputField({ id, label, placeholder, value, onChange, multiline, type }: InputFieldProps) {
-  const InputTag = multiline ? "textarea" : "input";
-  return (
-    <div className="space-y-2">
-      <label className="text-sm font-medium text-white" htmlFor={id}>
-        {label}
-      </label>
-      <InputTag
-        id={id}
-        value={value}
-        onChange={(event) => onChange(event.target.value)}
-        placeholder={placeholder}
-        className="w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-white outline-none transition focus:border-emerald-400 focus:ring-2 focus:ring-emerald-400/50"
-        {...(multiline ? { rows: 4 } : { type: type ?? "text" })}
-      />
-    </div>
-  );
-}
-
-type SkeletonTableProps = {
-  rows: number;
-  columns: number;
-};
-
-function SkeletonTable({ rows, columns }: SkeletonTableProps) {
-  return (
-    <div className="space-y-2">
-      {Array.from({ length: rows }).map((_, rowIndex) => (
-        <div key={rowIndex} className={`grid animate-pulse grid-cols-[1.1fr_0.9fr_0.9fr_160px] gap-3 rounded-xl border border-white/5 bg-white/5 px-4 py-3`}>
-          {Array.from({ length: columns }).map((_, colIndex) => (
-            <div key={colIndex} className="h-4 rounded-full bg-white/10" />
-          ))}
-        </div>
-      ))}
-    </div>
-  );
-}
-
-type EmptyStateProps = {
-  message: string;
-};
-
-function EmptyState({ message }: EmptyStateProps) {
-  return (
-    <div className="rounded-2xl border border-dashed border-white/10 bg-white/5 p-6 text-center text-sm text-slate-300">
-      {message}
     </div>
   );
 }

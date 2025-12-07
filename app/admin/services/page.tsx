@@ -2,13 +2,19 @@
 "use client";
 
 import { FormEvent, useEffect, useMemo, useState } from "react";
-import type { Service } from "@prisma/client";
 
 import { AdminPageHeader } from "@/components/admin/AdminPageHeader";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 
-const emptyForm: Pick<Service, "name" | "slug" | "description"> = {
+type AdminService = {
+  id: string;
+  name: string;
+  slug: string;
+  description: string;
+};
+
+const emptyForm: Pick<AdminService, "name" | "slug" | "description"> = {
   name: "",
   slug: "",
   description: "",
@@ -20,7 +26,7 @@ type ToastState = {
 };
 
 export default function AdminServicesPage() {
-  const [items, setItems] = useState<Service[]>([]);
+  const [items, setItems] = useState<AdminService[]>([]);
   const [form, setForm] = useState(emptyForm);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [statusMessage, setStatusMessage] = useState<string | null>(null);
@@ -128,9 +134,7 @@ export default function AdminServicesPage() {
         }
       />
 
-      {loading ? (
-        <p className="text-sm text-slate-200">Chargement des services...</p>
-      ) : null}
+      {loading ? <p className="text-sm text-slate-200">Chargement des services...</p> : null}
       {error ? <p className="text-sm text-rose-200">{error}</p> : null}
 
       <div className="grid gap-6 lg:grid-cols-[1.1fr_0.9fr]">
@@ -157,154 +161,73 @@ export default function AdminServicesPage() {
                       setStatusMessage(null);
                     }}
                   >
-                    Fermer
+                    Modifier
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    className="border border-white/10 px-3 py-2 text-rose-200 hover:text-rose-100"
+                    onClick={() => handleDelete(service.id)}
+                  >
+                    Supprimer
                   </Button>
                 </div>
               </div>
             ))}
-            {!items.length && !loading ? (
-              <p className="text-sm text-slate-300">Aucun service pour le moment.</p>
-            ) : null}
+            {!items.length && !loading ? <p className="text-sm text-slate-300">Aucun service pour le moment.</p> : null}
           </div>
         </Card>
 
         <Card className="border-white/10 bg-white/5 p-6 shadow-lg shadow-emerald-500/10">
-          <h2 className="text-lg font-semibold text-white">
-            {isCreating ? "Nouveau service" : "Modifier le service"}
-          </h2>
-          <p className="text-sm text-slate-300">Complétez les informations ci-dessous.</p>
+          <h2 className="text-lg font-semibold text-white">{isCreating ? "Nouveau service" : "Modifier le service"}</h2>
           <form className="mt-4 space-y-4" onSubmit={handleSubmit}>
             <div className="space-y-2">
-              <label className="text-sm font-medium text-white" htmlFor="name">
+              <label className="text-sm font-semibold text-white" htmlFor="name">
                 Nom
               </label>
               <input
                 id="name"
-                type="text"
+                name="name"
                 value={form.name}
-                onChange={(event) => setForm({ ...form, name: event.target.value })}
-                className="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-white outline-none transition focus:border-emerald-400 focus:ring-2 focus:ring-emerald-400/50"
-                placeholder="Communication digitale"
+                onChange={(event) => setForm((prev) => ({ ...prev, name: event.target.value }))}
+                className="w-full rounded-lg border border-white/10 bg-slate-900 px-3 py-2 text-sm text-white focus:border-emerald-400 focus:outline-none"
               />
             </div>
+
             <div className="space-y-2">
-              <label className="text-sm font-medium text-white" htmlFor="slug">
+              <label className="text-sm font-semibold text-white" htmlFor="slug">
                 Slug
               </label>
               <input
                 id="slug"
-                type="text"
+                name="slug"
                 value={form.slug}
-                onChange={(event) => setForm({ ...form, slug: event.target.value })}
-                className="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-white outline-none transition focus:border-emerald-400 focus:ring-2 focus:ring-emerald-400/50"
-                placeholder="communication-digitale"
+                onChange={(event) => setForm((prev) => ({ ...prev, slug: event.target.value }))}
+                className="w-full rounded-lg border border-white/10 bg-slate-900 px-3 py-2 text-sm text-white focus:border-emerald-400 focus:outline-none"
               />
             </div>
+
             <div className="space-y-2">
-              <label className="text-sm font-medium text-white" htmlFor="description">
+              <label className="text-sm font-semibold text-white" htmlFor="description">
                 Description
               </label>
               <textarea
                 id="description"
+                name="description"
+                rows={4}
                 value={form.description}
-                onChange={(event) => setForm({ ...form, description: event.target.value })}
-                className="min-h-[120px] w-full rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-white outline-none transition focus:border-emerald-400 focus:ring-2 focus:ring-emerald-400/50"
-                placeholder="Décrivez le service"
+                onChange={(event) => setForm((prev) => ({ ...prev, description: event.target.value }))}
+                className="w-full rounded-lg border border-white/10 bg-slate-900 px-3 py-2 text-sm text-white focus:border-emerald-400 focus:outline-none"
               />
             </div>
-            {statusMessage ? <p className="text-sm text-emerald-200">{statusMessage}</p> : null}
-            <div className="flex gap-3">
-              <Button type="submit" className="justify-center">
-                {isCreating ? "Ajouter" : "Enregistrer"}
-              </Button>
-              <Button type="button" variant="secondary" className="justify-center" onClick={resetForm}>
-                Réinitialiser
-              </Button>
+
+            <div className="flex items-center gap-3">
+              <Button type="submit">{isCreating ? "Créer" : "Mettre à jour"}</Button>
+              {statusMessage ? <p className="text-sm text-emerald-200">{statusMessage}</p> : null}
             </div>
+            {error ? <p className="text-sm text-rose-200">{error}</p> : null}
           </form>
         </Card>
       </div>
-    </div>
-  );
-}
-
-type ToastProps = ToastState & { onClose: () => void };
-
-function Toast({ type, message, onClose }: ToastProps) {
-  return (
-    <motion.div
-      initial={{ opacity: 0, y: -10 }}
-      animate={{ opacity: 1, y: 0 }}
-      exit={{ opacity: 0, y: -10 }}
-      className={`fixed right-6 top-6 z-20 flex items-center gap-3 rounded-xl border px-4 py-3 shadow-xl backdrop-blur ${
-        type === "success"
-          ? "border-emerald-400/40 bg-emerald-500/20 text-emerald-50"
-          : "border-rose-400/30 bg-rose-500/15 text-rose-50"
-      }`}
-    >
-      <span className="text-sm font-medium">{message}</span>
-      <button className="text-xs text-white/80" onClick={onClose}>
-        fermer
-      </button>
-    </motion.div>
-  );
-}
-
-type InputFieldProps = {
-  id: string;
-  label: string;
-  placeholder?: string;
-  value: string;
-  onChange: (value: string) => void;
-  multiline?: boolean;
-};
-
-function InputField({ id, label, placeholder, value, onChange, multiline }: InputFieldProps) {
-  const InputTag = multiline ? "textarea" : "input";
-  return (
-    <div className="space-y-2">
-      <label className="text-sm font-medium text-white" htmlFor={id}>
-        {label}
-      </label>
-      <InputTag
-        id={id}
-        value={value}
-        onChange={(event) => onChange(event.target.value)}
-        placeholder={placeholder}
-        className="w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-white outline-none transition focus:border-emerald-400 focus:ring-2 focus:ring-emerald-400/50"
-        {...(multiline ? { rows: 4 } : { type: "text" })}
-      />
-    </div>
-  );
-}
-
-type SkeletonTableProps = {
-  rows: number;
-  columns: number;
-};
-
-function SkeletonTable({ rows, columns }: SkeletonTableProps) {
-  return (
-    <div className="space-y-2">
-      {Array.from({ length: rows }).map((_, rowIndex) => (
-        <div key={rowIndex} className="grid animate-pulse grid-cols-[1.2fr_1fr_140px] gap-3 rounded-xl border border-white/5 bg-white/5 px-4 py-3">
-          {Array.from({ length: columns }).map((_, colIndex) => (
-            <div key={colIndex} className="h-4 rounded-full bg-white/10" />
-          ))}
-        </div>
-      ))}
-    </div>
-  );
-}
-
-type EmptyStateProps = {
-  message: string;
-};
-
-function EmptyState({ message }: EmptyStateProps) {
-  return (
-    <div className="rounded-2xl border border-dashed border-white/10 bg-white/5 p-6 text-center text-sm text-slate-300">
-      {message}
     </div>
   );
 }

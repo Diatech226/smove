@@ -6,6 +6,15 @@ import { Container } from "@/components/ui/Container";
 import { SectionHeader } from "@/components/ui/SectionHeader";
 import { createMetadata } from "@/lib/config/seo";
 
+export const dynamic = "force-dynamic";
+
+type ServiceListItem = {
+  id: string;
+  name: string;
+  slug: string;
+  description: string;
+};
+
 export const metadata: Metadata = createMetadata({
   title: "Services – SMOVE Communication",
   description:
@@ -14,9 +23,9 @@ export const metadata: Metadata = createMetadata({
 });
 
 export default async function ServicesPage() {
-  const services = await prisma.service.findMany({
+  const services = (await prisma.service.findMany({
     orderBy: { createdAt: "asc" },
-  });
+  })) as ServiceListItem[];
 
   return (
     <div className="relative bg-slate-950 pb-20 pt-12">
@@ -32,27 +41,18 @@ export default async function ServicesPage() {
         />
 
         <div className="grid gap-5 md:grid-cols-2">
-          {services.map((service, index) => (
-            <motion.div
+          {services.map((service) => (
+            <Card
               key={service.id}
-              initial={{ opacity: 0, y: 16, scale: 0.98 }}
-              animate={{ opacity: 1, y: 0, scale: 1 }}
-              transition={{ delay: 0.05 * index, duration: 0.35, ease: "easeOut" }}
+              className="group h-full overflow-hidden border-white/10 bg-gradient-to-br from-white/10 via-white/5 to-white/10 p-6 shadow-xl shadow-emerald-500/10 transition duration-300 hover:-translate-y-1 hover:border-emerald-400/40 hover:shadow-emerald-400/20"
             >
-              <Card className="group h-full overflow-hidden border-white/10 bg-gradient-to-br from-white/10 via-white/5 to-white/10 p-6 shadow-xl shadow-emerald-500/10 transition duration-300 hover:-translate-y-1 hover:border-emerald-400/40 hover:shadow-emerald-400/20">
-                <div className="flex items-start justify-between gap-3">
-                  <div>
-                    <h2 className="text-xl font-semibold text-white">{service.name}</h2>
-                    <p className="mt-2 text-slate-200">{service.description}</p>
-                    <p className="mt-3 text-sm text-slate-400">
-                      Livrables, processus et études de cas détaillés sur demande.
-                    </p>
-                  </div>
-                  {service.slug ? (
-                    <span className="rounded-full bg-white/5 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-emerald-200">
-                      {service.slug}
-                    </span>
-                  ) : null}
+              <div className="flex items-start justify-between gap-3">
+                <div>
+                  <h2 className="text-xl font-semibold text-white">{service.name}</h2>
+                  <p className="mt-2 text-slate-200">{service.description}</p>
+                  <p className="mt-3 text-sm text-slate-400">
+                    Livrables, processus et études de cas détaillés sur demande.
+                  </p>
                 </div>
                 {service.slug ? (
                   <span className="rounded-full bg-white/5 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-emerald-200">

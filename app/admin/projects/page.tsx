@@ -2,13 +2,23 @@
 "use client";
 
 import { FormEvent, useEffect, useMemo, useState } from "react";
-import type { Project } from "@prisma/client";
 
 import { AdminPageHeader } from "@/components/admin/AdminPageHeader";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 
-const emptyForm: Pick<Project, "slug" | "title" | "client" | "sector" | "summary"> & {
+type AdminProject = {
+  id: string;
+  slug: string;
+  title: string;
+  client: string;
+  sector: string;
+  summary: string;
+  body?: string;
+  results?: string[];
+};
+
+const emptyForm: Pick<AdminProject, "slug" | "title" | "client" | "sector" | "summary"> & {
   body?: string;
   results?: string[];
 } = {
@@ -27,7 +37,7 @@ type ToastState = {
 };
 
 export default function AdminProjectsPage() {
-  const [items, setItems] = useState<Project[]>([]);
+  const [items, setItems] = useState<AdminProject[]>([]);
   const [form, setForm] = useState(emptyForm);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [statusMessage, setStatusMessage] = useState<string | null>(null);
@@ -202,199 +212,112 @@ export default function AdminProjectsPage() {
         </Card>
 
         <Card className="border-white/10 bg-white/5 p-6 shadow-lg shadow-emerald-500/10">
-          <h2 className="text-lg font-semibold text-white">
-            {isCreating ? "Nouveau projet" : "Modifier le projet"}
-          </h2>
-          <p className="text-sm text-slate-300">Complétez les informations ci-dessous.</p>
+          <h2 className="text-lg font-semibold text-white">{isCreating ? "Nouveau projet" : "Modifier le projet"}</h2>
           <form className="mt-4 space-y-4" onSubmit={handleSubmit}>
             <div className="space-y-2">
-              <label className="text-sm font-medium text-white" htmlFor="slug">
+              <label className="text-sm font-semibold text-white" htmlFor="slug">
                 Slug
               </label>
               <input
                 id="slug"
-                type="text"
+                name="slug"
                 value={form.slug}
-                onChange={(event) => setForm({ ...form, slug: event.target.value })}
-                className="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-white outline-none transition focus:border-emerald-400 focus:ring-2 focus:ring-emerald-400/50"
-                placeholder="lancement-application-mobilite"
+                onChange={(event) => setForm((prev) => ({ ...prev, slug: event.target.value }))}
+                className="w-full rounded-lg border border-white/10 bg-slate-900 px-3 py-2 text-sm text-white focus:border-emerald-400 focus:outline-none"
               />
             </div>
+
             <div className="space-y-2">
-              <label className="text-sm font-medium text-white" htmlFor="title">
+              <label className="text-sm font-semibold text-white" htmlFor="title">
                 Titre
               </label>
               <input
                 id="title"
-                type="text"
+                name="title"
                 value={form.title}
-                onChange={(event) => setForm({ ...form, title: event.target.value })}
-                className="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-white outline-none transition focus:border-emerald-400 focus:ring-2 focus:ring-emerald-400/50"
-                placeholder="Lancement d'une application de mobilité urbaine"
+                onChange={(event) => setForm((prev) => ({ ...prev, title: event.target.value }))}
+                className="w-full rounded-lg border border-white/10 bg-slate-900 px-3 py-2 text-sm text-white focus:border-emerald-400 focus:outline-none"
               />
             </div>
-            <div className="grid gap-4 sm:grid-cols-2">
-              <div className="space-y-2">
-                <label className="text-sm font-medium text-white" htmlFor="client">
-                  Client
-                </label>
-                <input
-                  id="client"
-                  type="text"
-                  value={form.client}
-                  onChange={(event) => setForm({ ...form, client: event.target.value })}
-                  className="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-white outline-none transition focus:border-emerald-400 focus:ring-2 focus:ring-emerald-400/50"
-                  placeholder="MoveCity"
-                />
-              </div>
-              <div className="space-y-2">
-                <label className="text-sm font-medium text-white" htmlFor="sector">
-                  Secteur
-                </label>
-                <input
-                  id="sector"
-                  type="text"
-                  value={form.sector}
-                  onChange={(event) => setForm({ ...form, sector: event.target.value })}
-                  className="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-white outline-none transition focus:border-emerald-400 focus:ring-2 focus:ring-emerald-400/50"
-                  placeholder="Tech & mobilité"
-                />
-              </div>
-            </div>
+
             <div className="space-y-2">
-              <label className="text-sm font-medium text-white" htmlFor="summary">
+              <label className="text-sm font-semibold text-white" htmlFor="client">
+                Client
+              </label>
+              <input
+                id="client"
+                name="client"
+                value={form.client}
+                onChange={(event) => setForm((prev) => ({ ...prev, client: event.target.value }))}
+                className="w-full rounded-lg border border-white/10 bg-slate-900 px-3 py-2 text-sm text-white focus:border-emerald-400 focus:outline-none"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <label className="text-sm font-semibold text-white" htmlFor="sector">
+                Secteur
+              </label>
+              <input
+                id="sector"
+                name="sector"
+                value={form.sector}
+                onChange={(event) => setForm((prev) => ({ ...prev, sector: event.target.value }))}
+                className="w-full rounded-lg border border-white/10 bg-slate-900 px-3 py-2 text-sm text-white focus:border-emerald-400 focus:outline-none"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <label className="text-sm font-semibold text-white" htmlFor="summary">
                 Résumé
               </label>
               <textarea
                 id="summary"
+                name="summary"
+                rows={3}
                 value={form.summary}
-                onChange={(event) => setForm({ ...form, summary: event.target.value })}
-                className="min-h-[120px] w-full rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-white outline-none transition focus:border-emerald-400 focus:ring-2 focus:ring-emerald-400/50"
-                placeholder="Décrivez brièvement le projet"
+                onChange={(event) => setForm((prev) => ({ ...prev, summary: event.target.value }))}
+                className="w-full rounded-lg border border-white/10 bg-slate-900 px-3 py-2 text-sm text-white focus:border-emerald-400 focus:outline-none"
               />
             </div>
+
             <div className="space-y-2">
-              <label className="text-sm font-medium text-white" htmlFor="body">
-                Corps (optionnel)
+              <label className="text-sm font-semibold text-white" htmlFor="body">
+                Description détaillée
               </label>
               <textarea
                 id="body"
-                value={form.body ?? ""}
-                onChange={(event) => setForm({ ...form, body: event.target.value })}
-                className="min-h-[120px] w-full rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-white outline-none transition focus:border-emerald-400 focus:ring-2 focus:ring-emerald-400/50"
-                placeholder="Détails supplémentaires du projet"
+                name="body"
+                rows={6}
+                value={form.body}
+                onChange={(event) => setForm((prev) => ({ ...prev, body: event.target.value }))}
+                className="w-full rounded-lg border border-white/10 bg-slate-900 px-3 py-2 text-sm text-white focus:border-emerald-400 focus:outline-none"
               />
             </div>
+
             <div className="space-y-2">
-              <label className="text-sm font-medium text-white" htmlFor="results">
-                Résultats (une ligne par élément)
+              <label className="text-sm font-semibold text-white" htmlFor="results">
+                Résultats (un par ligne)
               </label>
               <textarea
                 id="results"
+                name="results"
+                rows={4}
                 value={resultsValue}
                 onChange={(event) =>
-                  setForm({
-                    ...form,
-                    results: event.target.value.split("\n").filter(Boolean),
-                  })
+                  setForm((prev) => ({ ...prev, results: event.target.value.split("\n").map((item) => item.trim()) }))
                 }
-                className="min-h-[120px] w-full rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-white outline-none transition focus:border-emerald-400 focus:ring-2 focus:ring-emerald-400/50"
-                placeholder={"+35% d'inscriptions\nCampagne vidéo vue 250K fois"}
+                className="w-full rounded-lg border border-white/10 bg-slate-900 px-3 py-2 text-sm text-white focus:border-emerald-400 focus:outline-none"
               />
             </div>
-            {statusMessage ? <p className="text-sm text-emerald-200">{statusMessage}</p> : null}
-            <div className="flex gap-3">
-              <Button type="submit" className="justify-center">
-                {isCreating ? "Ajouter" : "Enregistrer"}
-              </Button>
-              <Button type="button" variant="secondary" className="justify-center" onClick={resetForm}>
-                Réinitialiser
-              </Button>
+
+            <div className="flex items-center gap-3">
+              <Button type="submit">{isCreating ? "Créer" : "Mettre à jour"}</Button>
+              {statusMessage ? <p className="text-sm text-emerald-200">{statusMessage}</p> : null}
             </div>
+            {error ? <p className="text-sm text-rose-200">{error}</p> : null}
           </form>
         </Card>
       </div>
-    </div>
-  );
-}
-
-type ToastProps = ToastState & { onClose: () => void };
-
-function Toast({ type, message, onClose }: ToastProps) {
-  return (
-    <motion.div
-      initial={{ opacity: 0, y: -10 }}
-      animate={{ opacity: 1, y: 0 }}
-      exit={{ opacity: 0, y: -10 }}
-      className={`fixed right-6 top-6 z-20 flex items-center gap-3 rounded-xl border px-4 py-3 shadow-xl backdrop-blur ${
-        type === "success"
-          ? "border-emerald-400/40 bg-emerald-500/20 text-emerald-50"
-          : "border-rose-400/30 bg-rose-500/15 text-rose-50"
-      }`}
-    >
-      <span className="text-sm font-medium">{message}</span>
-      <button className="text-xs text-white/80" onClick={onClose}>
-        fermer
-      </button>
-    </motion.div>
-  );
-}
-
-type InputFieldProps = {
-  id: string;
-  label: string;
-  placeholder?: string;
-  value: string;
-  onChange: (value: string) => void;
-  multiline?: boolean;
-};
-
-function InputField({ id, label, placeholder, value, onChange, multiline }: InputFieldProps) {
-  const InputTag = multiline ? "textarea" : "input";
-  return (
-    <div className="space-y-2">
-      <label className="text-sm font-medium text-white" htmlFor={id}>
-        {label}
-      </label>
-      <InputTag
-        id={id}
-        value={value}
-        onChange={(event) => onChange(event.target.value)}
-        placeholder={placeholder}
-        className="w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-white outline-none transition focus:border-emerald-400 focus:ring-2 focus:ring-emerald-400/50"
-        {...(multiline ? { rows: 3 } : { type: "text" })}
-      />
-    </div>
-  );
-}
-
-type SkeletonTableProps = {
-  rows: number;
-  columns: number;
-};
-
-function SkeletonTable({ rows, columns }: SkeletonTableProps) {
-  return (
-    <div className="space-y-2">
-      {Array.from({ length: rows }).map((_, rowIndex) => (
-        <div key={rowIndex} className={`grid animate-pulse grid-cols-[1fr_1fr_1fr_160px] gap-3 rounded-xl border border-white/5 bg-white/5 px-4 py-3`}>
-          {Array.from({ length: columns }).map((_, colIndex) => (
-            <div key={colIndex} className="h-4 rounded-full bg-white/10" />
-          ))}
-        </div>
-      ))}
-    </div>
-  );
-}
-
-type EmptyStateProps = {
-  message: string;
-};
-
-function EmptyState({ message }: EmptyStateProps) {
-  return (
-    <div className="rounded-2xl border border-dashed border-white/10 bg-white/5 p-6 text-center text-sm text-slate-300">
-      {message}
     </div>
   );
 }
