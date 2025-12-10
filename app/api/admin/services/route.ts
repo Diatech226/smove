@@ -16,10 +16,10 @@ export async function GET() {
 
 export async function POST(request: Request) {
   try {
-    const body = await request.json();
-    const { name, slug, description } = body ?? {};
+    const body = await request.json().catch(() => null);
+    const { name, slug, description } = (body as Record<string, unknown>) ?? {};
 
-    if (!name || !slug || !description) {
+    if (![name, slug, description].every((value) => typeof value === "string" && value.trim().length)) {
       return NextResponse.json(
         { success: false, error: "Name, slug and description are required" },
         { status: 400 },

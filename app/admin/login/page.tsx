@@ -20,21 +20,28 @@ export default function AdminLoginPage() {
     setIsSubmitting(true);
     setError(null);
 
-    const response = await fetch("/api/admin/login", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ password }),
-    });
+    try {
+      const response = await fetch("/api/admin/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ password }),
+      });
 
-    const result = await response.json();
+      const result = await response.json();
 
-    if (!response.ok || !result.success) {
-      setError(result.error ?? "Mot de passe incorrect.");
+      if (!response.ok || !result.success) {
+        const errorMessage = result.error ?? (response.status === 500 ? "Configuration serveur manquante." : "Mot de passe incorrect.");
+        setError(errorMessage);
+        setIsSubmitting(false);
+        return;
+      }
+
+      router.push("/admin/dashboard");
+    } catch (submitError) {
+      console.error(submitError);
+      setError("Impossible de se connecter pour le moment. Réessayez.");
       setIsSubmitting(false);
-      return;
     }
-
-    router.push("/admin/dashboard");
   };
 
   return (

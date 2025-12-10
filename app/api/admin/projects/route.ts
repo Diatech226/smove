@@ -16,10 +16,12 @@ export async function GET() {
 
 export async function POST(request: Request) {
   try {
-    const body = await request.json();
-    const { slug, title, client, sector, summary, body: content, results } = body ?? {};
+    const body = await request.json().catch(() => null);
+    const { slug, title, client, sector, summary, body: content, results } = (body as Record<string, unknown>) ?? {};
 
-    if (!slug || !title || !client || !sector || !summary) {
+    const requiredFields = [slug, title, client, sector, summary];
+
+    if (!requiredFields.every((value) => typeof value === "string" && value.trim().length)) {
       return NextResponse.json(
         { success: false, error: "Slug, title, client, sector and summary are required" },
         { status: 400 },
@@ -34,7 +36,9 @@ export async function POST(request: Request) {
         sector,
         summary,
         body: content ?? null,
-        results: Array.isArray(results) ? results : [],
+        results: Array.isArray(results)
+          ? results.map((item) => (typeof item === "string" ? item : String(item))).filter(Boolean)
+          : [],
       },
     });
 

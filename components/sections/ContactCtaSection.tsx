@@ -32,7 +32,7 @@ export default function ContactCtaSection({ onSectionIn }: SectionProps) {
             Contact direct
           </Link>
           <Link
-            href="/portfolio"
+            href="/projects"
             className="rounded-full border border-slate-700 px-5 py-3 text-sm font-semibold text-white transition hover:-translate-y-0.5 hover:border-emerald-400"
           >
             Voir nos projets

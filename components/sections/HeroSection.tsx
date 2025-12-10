@@ -57,7 +57,7 @@ export default function HeroSection({ onSectionIn }: SectionProps) {
               Contact
             </Button>
             <Button
-              href="/portfolio"
+              href="/projects"
               variant="secondary"
               onClick={() => trackEvent({ name: "cta_click", payload: { label: "voir_portfolio" } })}
             >
