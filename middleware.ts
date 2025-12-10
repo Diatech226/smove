@@ -2,7 +2,6 @@
 import { NextRequest, NextResponse } from "next/server";
 
 const AUTH_COOKIE_NAME = "smove_admin_auth";
-const AUTH_COOKIE_VALUE = "smove-admin-session";
 const LOGIN_PATH = "/admin/login";
 
 export function middleware(request: NextRequest) {
@@ -13,8 +12,9 @@ export function middleware(request: NextRequest) {
   }
 
   const authCookie = request.cookies.get(AUTH_COOKIE_NAME);
+  const adminSecret = process.env.SMOVE_ADMIN_SECRET;
 
-  if (authCookie?.value === AUTH_COOKIE_VALUE) {
+  if (authCookie?.value && adminSecret && authCookie.value === adminSecret) {
     return NextResponse.next();
   }
 

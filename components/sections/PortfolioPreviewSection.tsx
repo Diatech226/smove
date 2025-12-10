@@ -34,7 +34,7 @@ export default function PortfolioPreviewSection({ onSectionIn }: SectionProps) {
             subtitle="Des campagnes intégrées qui combinent storytelling, production premium et pilotage media."
           />
           <div className="flex justify-start sm:justify-end">
-            <Button href="/portfolio" variant="secondary">
+            <Button href="/projects" variant="secondary">
               Explorer tous les projets
             </Button>
           </div>
@@ -62,7 +62,7 @@ export default function PortfolioPreviewSection({ onSectionIn }: SectionProps) {
                     {project.sector}
                   </span>
                   <Link
-                    href={`/portfolio/${project.slug}`}
+                    href={`/projects/${project.slug}`}
                     className="text-sm font-semibold text-emerald-300 transition hover:text-emerald-200"
                   >
                     Voir le projet →

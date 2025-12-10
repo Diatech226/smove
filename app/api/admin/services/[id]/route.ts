@@ -8,10 +8,14 @@ type Params = {
 
 export async function PUT(request: Request, { params }: Params) {
   try {
-    const body = await request.json();
-    const { name, slug, description } = body ?? {};
+    const body = await request.json().catch(() => null);
+    const { name, slug, description } = (body as Record<string, unknown>) ?? {};
 
-    if (!name || !slug || !description) {
+    if (!params.id) {
+      return NextResponse.json({ success: false, error: "Service id is required" }, { status: 400 });
+    }
+
+    if (![name, slug, description].every((value) => typeof value === "string" && value.trim().length)) {
       return NextResponse.json(
         { success: false, error: "Name, slug and description are required" },
         { status: 400 },
@@ -32,6 +36,9 @@ export async function PUT(request: Request, { params }: Params) {
 
 export async function DELETE(_request: Request, { params }: Params) {
   try {
+    if (!params.id) {
+      return NextResponse.json({ success: false, error: "Service id is required" }, { status: 400 });
+    }
     await prisma.service.delete({ where: { id: params.id } });
     return NextResponse.json({ success: true });
   } catch (error) {

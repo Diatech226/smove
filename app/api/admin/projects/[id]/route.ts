@@ -8,10 +8,16 @@ type Params = {
 
 export async function PUT(request: Request, { params }: Params) {
   try {
-    const body = await request.json();
-    const { slug, title, client, sector, summary, body: content, results } = body ?? {};
+    const body = await request.json().catch(() => null);
+    const { slug, title, client, sector, summary, body: content, results } = (body as Record<string, unknown>) ?? {};
 
-    if (!slug || !title || !client || !sector || !summary) {
+    if (!params.id) {
+      return NextResponse.json({ success: false, error: "Project id is required" }, { status: 400 });
+    }
+
+    const requiredFields = [slug, title, client, sector, summary];
+
+    if (!requiredFields.every((value) => typeof value === "string" && value.trim().length)) {
       return NextResponse.json(
         { success: false, error: "Slug, title, client, sector and summary are required" },
         { status: 400 },
@@ -27,7 +33,9 @@ export async function PUT(request: Request, { params }: Params) {
         sector,
         summary,
         body: content ?? null,
-        results: Array.isArray(results) ? results : [],
+        results: Array.isArray(results)
+          ? results.map((item) => (typeof item === "string" ? item : String(item))).filter(Boolean)
+          : [],
       },
     });
 
@@ -40,6 +48,9 @@ export async function PUT(request: Request, { params }: Params) {
 
 export async function DELETE(_request: Request, { params }: Params) {
   try {
+    if (!params.id) {
+      return NextResponse.json({ success: false, error: "Project id is required" }, { status: 400 });
+    }
     await prisma.project.delete({ where: { id: params.id } });
     return NextResponse.json({ success: true });
   } catch (error) {

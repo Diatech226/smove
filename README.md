@@ -1,42 +1,67 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# SMOVE
 
-## Getting Started
+SMOVE – site vitrine avec hero 3D et back-office CMS pour une agence de communication digitale.
 
-First, run the development server:
+## Stack technique
+- Next.js (App Router) & TypeScript
+- Tailwind CSS
+- Framer Motion
+- React Three Fiber (section hero 3D)
+- Prisma & MongoDB
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+## Structure des dossiers
+- `/app` : pages publiques et admin (App Router, API routes incluses)
+- `/components` : composants UI, layout, sections et 3D
+- `/lib` : utilitaires (Prisma, hooks, configuration)
+- `/prisma` : schéma Prisma
+
+## Variables d'environnement (`.env.local`)
+Créez un fichier `.env.local` à la racine avec :
+
+```
+SMOVE_ADMIN_PASSWORD=change-me
+SMOVE_ADMIN_SECRET=any-strong-random-string
+DATABASE_URL="mongodb+srv://user:pass@cluster0.xxxxxx.mongodb.net/smove?retryWrites=true&w=majority"
+NEXT_PUBLIC_SITE_URL=https://example.com
+NEXT_PUBLIC_BRAND_NAME=SMOVE
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+> Assurez-vous que `DATABASE_URL` utilise `mongodb://` ou `mongodb+srv://` et inclut le nom de la base.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Mise en route
+1. Installer les dépendances :
+   ```bash
+   npm install
+   ```
+2. Créer `.env.local` avec les variables ci-dessus.
+3. Pousser le schéma vers MongoDB :
+   ```bash
+   npx prisma db push
+   ```
+4. Lancer le serveur de développement :
+   ```bash
+   npm run dev
+   ```
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## Accès à l'admin
+- URL : `/admin/login`
+- Définissez `SMOVE_ADMIN_PASSWORD` pour le mot de passe d'accès.
+- `SMOVE_ADMIN_SECRET` est utilisé pour signer le cookie de session (middleware `/admin/**`).
+- Après connexion, vous êtes redirigé vers `/admin/dashboard`.
 
-## Learn More
+## Modèles de données
+Les modèles Prisma/MongoDB sont définis dans `prisma/schema.prisma` :
+- `Service` : nom, slug, description
+- `Project` : slug, client, titre, secteur, résumé, corps, résultats
+- `Post` : slug, titre, extrait, contenu, tags, date de publication
 
-To learn more about Next.js, take a look at the following resources:
+## Gestion du contenu
+- `admin/services` : lister, créer, mettre à jour et supprimer les services.
+- `admin/projects` : CRUD projets (slug, client, secteur, résumé, description, résultats).
+- `admin/posts` : CRUD articles (slug, titre, extrait, contenu, tags, date de publication).
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+Les données sont persistées via Prisma/MongoDB et utilisées par les pages publiques (`/projects`, `/blog`, etc.).
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
-
-## Repository guidelines
-
-- Keep commits limited to text-based assets (TypeScript/TSX, Markdown, JSON, CSS, etc.).
-- Prefer inline SVGs or Tailwind-styled components instead of committing binary media (PNG, JPG, GIF, MP4, MOV, CAD files, etc.).
-- If a binary asset is accidentally added, remove it from the index with `git rm --cached <path>` and recommit.
+## Notes supplémentaires
+- Le hero 3D utilise des primitives Three compatibles pour éviter les erreurs Troika/Text.
+- Les routes `/portfolio` redirigent vers la convention unique `/projects`.
