@@ -34,7 +34,7 @@ export async function PUT(request: Request, { params }: Params) {
     return NextResponse.json({ success: true, data: updated });
   } catch (error) {
     console.error("Error updating project", error);
-    return NextResponse.json({ success: false, error: "Unable to update project" }, { status: 500 });
+    return NextResponse.json({ success: false, error: "Internal server error" }, { status: 500 });
   }
 }
 
@@ -44,6 +44,6 @@ export async function DELETE(_request: Request, { params }: Params) {
     return NextResponse.json({ success: true });
   } catch (error) {
     console.error("Error deleting project", error);
-    return NextResponse.json({ success: false, error: "Unable to delete project" }, { status: 500 });
+    return NextResponse.json({ success: false, error: "Internal server error" }, { status: 500 });
   }
 }

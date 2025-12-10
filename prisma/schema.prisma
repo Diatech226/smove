@@ -11,7 +11,7 @@ generator client {
 }
 
 model Service {
-  id          String   @id @default(auto()) @map("_id") @db.ObjectId
+  id          String   @id @default(auto()) @map("_id")
   name        String
   slug        String   @unique
   description String
@@ -20,7 +20,7 @@ model Service {
 }
 
 model Project {
-  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  id        String   @id @default(auto()) @map("_id")
   slug      String   @unique
   client    String
   title     String
@@ -33,7 +33,7 @@ model Project {
 }
 
 model Post {
-  id          String   @id @default(auto()) @map("_id") @db.ObjectId
+  id          String   @id @default(auto()) @map("_id")
   slug        String   @unique
   title       String
   excerpt     String

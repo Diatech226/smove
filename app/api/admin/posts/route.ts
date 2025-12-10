@@ -10,7 +10,7 @@ export async function GET() {
     return NextResponse.json({ success: true, data: posts });
   } catch (error) {
     console.error("Error fetching posts", error);
-    return NextResponse.json({ success: false, error: "Unable to fetch posts" }, { status: 500 });
+    return NextResponse.json({ success: false, error: "Internal server error" }, { status: 500 });
   }
 }
 
@@ -40,6 +40,6 @@ export async function POST(request: Request) {
     return NextResponse.json({ success: true, data: created }, { status: 201 });
   } catch (error) {
     console.error("Error creating post", error);
-    return NextResponse.json({ success: false, error: "Unable to create post" }, { status: 500 });
+    return NextResponse.json({ success: false, error: "Internal server error" }, { status: 500 });
   }
 }
