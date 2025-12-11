@@ -28,6 +28,9 @@ NEXT_PUBLIC_BRAND_NAME=SMOVE
 
 > Assurez-vous que `DATABASE_URL` utilise `mongodb://` ou `mongodb+srv://` et inclut le nom de la base.
 
+> Avec MongoDB, déclarez les identifiants de modèle comme `String @id @default(auto()) @map("_id") @db.ObjectId`. La base utilisée est `smove` et l'URL ressemble à :
+> `DATABASE_URL="mongodb+srv://USER:PASS@cluster0.wxdxz04.mongodb.net/smove?retryWrites=true&w=majority"`.
+
 ## Mise en route
 1. Installer les dépendances :
    ```bash
