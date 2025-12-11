@@ -34,10 +34,10 @@ export default function AdminDashboardPage() {
 
   useEffect(() => {
     const fetchAll = async () => {
-      const endpoints: [keyof typeof stateSetters, string][] = [
-        ["services", "/api/admin/services"],
-        ["projects", "/api/admin/projects"],
-        ["posts", "/api/admin/posts"],
+      const endpoints: [keyof typeof stateSetters, string, string][] = [
+        ["services", "/api/admin/services", "services"],
+        ["projects", "/api/admin/projects", "projects"],
+        ["posts", "/api/admin/posts", "posts"],
       ];
 
       const stateSetters = {
@@ -47,13 +47,13 @@ export default function AdminDashboardPage() {
       } as const;
 
       await Promise.all(
-        endpoints.map(async ([key, url]) => {
+        endpoints.map(async ([key, url, payloadKey]) => {
           try {
             stateSetters[key]((prev) => ({ ...prev, loading: true }));
             const response = await fetch(url);
             const json = await response.json();
             if (!response.ok) throw new Error(json.error || "Erreur de chargement");
-            stateSetters[key]({ loading: false, data: json.data ?? [], error: null });
+            stateSetters[key]({ loading: false, data: json[payloadKey] ?? [], error: null });
           } catch (error) {
             console.error(error);
             stateSetters[key]({ loading: false, data: [], error: "Impossible de charger les données." });
@@ -118,7 +118,7 @@ export default function AdminDashboardPage() {
                   <div>
                     <p className="text-sm font-medium text-white">{post.title}</p>
                     <p className="text-xs text-slate-400">
-                      {new Date(post.publishedAt).toLocaleDateString("fr-FR", {
+                      {new Date(post.createdAt).toLocaleDateString("fr-FR", {
                         year: "numeric",
                         month: "short",
                         day: "numeric",

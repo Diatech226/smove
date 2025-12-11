@@ -59,14 +59,23 @@ NEXT_PUBLIC_BRAND_NAME=SMOVE
 Les modèles Prisma/MongoDB sont définis dans `prisma/schema.prisma` :
 - `Service` : nom, slug, description
 - `Project` : slug, client, titre, secteur, résumé, corps, résultats
-- `Post` : slug, titre, extrait, contenu, tags, date de publication
+- `Post` : slug unique, titre, catégorie optionnelle, extrait, contenu, statut `published`, dates de création/mise à jour
 
 ## Gestion du contenu
 - `admin/services` : lister, créer, mettre à jour et supprimer les services.
 - `admin/projects` : CRUD projets (slug, client, secteur, résumé, description, résultats).
-- `admin/posts` : CRUD articles (slug, titre, extrait, contenu, tags, date de publication).
+- `admin/posts` : CRUD articles (slug, titre, catégorie, extrait, contenu, publication).
 
 Les données sont persistées via Prisma/MongoDB et utilisées par les pages publiques (`/projects`, `/blog`, etc.).
+
+## Blog & CMS
+- Pages publiques : `/blog` (listing éditorial) et `/blog/[slug]` (détail de l'article).
+- Administration : `/admin/posts` pour gérer les articles (création, édition, suppression).
+
+Flux de gestion :
+1. **Créer un article** : cliquez sur "Nouvel article" dans `/admin/posts`, renseignez le titre/slug (auto-généré), la catégorie, l'extrait, le contenu et le statut de publication.
+2. **Modifier un article** : depuis la liste `/admin/posts`, utilisez l'action "Modifier" pour ajuster le contenu ou le statut, puis sauvegardez.
+3. **Supprimer un article** : cliquez sur "Supprimer" dans la ligne concernée et confirmez la suppression.
 
 ## Notes supplémentaires
 - Le hero 3D utilise des versions compatibles de `three`, `@react-three/fiber` et `@react-three/drei` pour éviter les warnings `PlaneBufferGeometry` de `troika-three-text`.
