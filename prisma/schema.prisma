@@ -14,7 +14,7 @@ model Service {
   id          String   @id @default(auto()) @map("_id") @db.ObjectId
   name        String
   slug        String   @unique
-  description String
+  description String?
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 }
@@ -25,7 +25,7 @@ model Project {
   client    String
   title     String
   sector    String
-  summary   String
+  summary   String?
   body      String?
   results   String[] @default([])
   createdAt DateTime @default(now())
@@ -36,10 +36,10 @@ model Post {
   id          String   @id @default(auto()) @map("_id") @db.ObjectId
   slug        String   @unique
   title       String
-  excerpt     String
-  body        String
+  excerpt     String?
+  body        String?
   tags        String[] @default([])
-  publishedAt DateTime
+  publishedAt DateTime @default(now())
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 }

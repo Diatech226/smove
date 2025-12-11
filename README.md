@@ -15,33 +15,36 @@ SMOVE – site vitrine avec hero 3D et back-office CMS pour une agence de commun
 - `/lib` : utilitaires (Prisma, hooks, configuration)
 - `/prisma` : schéma Prisma
 
-## Variables d'environnement (`.env.local`)
-Créez un fichier `.env.local` à la racine avec :
+## Variables d'environnement (`.env` / `.env.local`)
+Créez un fichier `.env` (ou `.env.local` pour Next.js) à la racine avec :
 
 ```
+DATABASE_URL="mongodb+srv://diaexpressofficial:Smove@cluster0.wxdxz04.mongodb.net/smove?retryWrites=true&w=majority&appName=Cluster0"
 SMOVE_ADMIN_PASSWORD=change-me
 SMOVE_ADMIN_SECRET=any-strong-random-string
-DATABASE_URL="mongodb+srv://user:pass@cluster0.xxxxxx.mongodb.net/smove?retryWrites=true&w=majority"
 NEXT_PUBLIC_SITE_URL=https://example.com
 NEXT_PUBLIC_BRAND_NAME=SMOVE
 ```
 
-> Assurez-vous que `DATABASE_URL` utilise `mongodb://` ou `mongodb+srv://` et inclut le nom de la base.
-
-> Avec MongoDB, déclarez les identifiants de modèle comme `String @id @default(auto()) @map("_id") @db.ObjectId`. La base utilisée est `smove` et l'URL ressemble à :
-> `DATABASE_URL="mongodb+srv://USER:PASS@cluster0.wxdxz04.mongodb.net/smove?retryWrites=true&w=majority"`.
+- **Toujours** inclure le nom de base de données `/smove` dans le chemin. Les erreurs `P2010` / "empty database name" viennent généralement d'une URL tronquée.
+- Le client Prisma est initialisé via `env("DATABASE_URL")` (voir `prisma/schema.prisma` et `lib/prisma.ts`).
+- Pour MongoDB, les identifiants utilisent `String @id @default(auto()) @map("_id") @db.ObjectId`.
 
 ## Mise en route
 1. Installer les dépendances :
    ```bash
    npm install
    ```
-2. Créer `.env.local` avec les variables ci-dessus.
-3. Pousser le schéma vers MongoDB :
+2. Créer `.env` ou `.env.local` avec les variables ci-dessus.
+3. Générer/mettre à jour la base MongoDB :
    ```bash
    npx prisma db push
    ```
-4. Lancer le serveur de développement :
+4. Générer le client Prisma (automatique avec `next dev`, mais possible manuellement) :
+   ```bash
+   npx prisma generate
+   ```
+5. Lancer le serveur de développement :
    ```bash
    npm run dev
    ```
@@ -50,7 +53,7 @@ NEXT_PUBLIC_BRAND_NAME=SMOVE
 - URL : `/admin/login`
 - Définissez `SMOVE_ADMIN_PASSWORD` pour le mot de passe d'accès.
 - `SMOVE_ADMIN_SECRET` est utilisé pour signer le cookie de session (middleware `/admin/**`).
-- Après connexion, vous êtes redirigé vers `/admin/dashboard`.
+- Après connexion, vous êtes redirigé vers `/admin/dashboard` et pouvez gérer services, projets et articles.
 
 ## Modèles de données
 Les modèles Prisma/MongoDB sont définis dans `prisma/schema.prisma` :
@@ -66,5 +69,10 @@ Les modèles Prisma/MongoDB sont définis dans `prisma/schema.prisma` :
 Les données sont persistées via Prisma/MongoDB et utilisées par les pages publiques (`/projects`, `/blog`, etc.).
 
 ## Notes supplémentaires
-- Le hero 3D utilise des primitives Three compatibles pour éviter les erreurs Troika/Text.
+- Le hero 3D utilise des versions compatibles de `three`, `@react-three/fiber` et `@react-three/drei` pour éviter les warnings `PlaneBufferGeometry` de `troika-three-text`.
 - Les routes `/portfolio` redirigent vers la convention unique `/projects`.
+
+## Améliorations futures proposées
+- Design : enrichir les pages publiques (services/projets/blog) avec plus de visuels et d'animations micro-interactions.
+- Animations 3D : affiner les matériaux/éclairages du hero et proposer des variantes mobiles plus légères.
+- CMS : ajouter la prévisualisation côté public, la gestion des brouillons/publications programmées et une recherche plein texte.

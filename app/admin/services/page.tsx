@@ -42,9 +42,12 @@ export default function AdminServicesPage() {
         const response = await fetch("/api/admin/services");
         const data = await response.json();
         if (!response.ok || data?.success === false) {
-          throw new Error(data?.message || data?.error || "Impossible de charger les services");
+          const errorMessage = data?.error || data?.message || "Impossible de charger les services";
+          setError(errorMessage);
+          setItems([]);
+          return;
         }
-        setItems(data.services ?? []);
+        setItems(Array.isArray(data.services) ? data.services : []);
       } catch (fetchError) {
         console.error(fetchError);
         setError("Impossible de charger les services. Vérifiez votre connexion ou réessayez.");
@@ -82,7 +85,9 @@ export default function AdminServicesPage() {
       });
       const data = await response.json();
       if (!response.ok || data?.success === false) {
-        throw new Error(data?.message || data?.error || "Erreur lors de l'enregistrement");
+        const errorMessage = data?.error || data?.message || "Erreur lors de l'enregistrement";
+        setError(errorMessage);
+        return;
       }
 
       setStatusMessage(isCreating ? "Service ajouté." : "Service mis à jour.");
@@ -104,8 +109,10 @@ export default function AdminServicesPage() {
     try {
       const response = await fetch(`/api/admin/services/${id}`, { method: "DELETE" });
       const data = await response.json();
-      if (!response.ok) {
-        throw new Error(data.error || "Erreur lors de la suppression");
+      if (!response.ok || data?.success === false) {
+        const errorMessage = data?.error || data?.message || "Erreur lors de la suppression";
+        setError(errorMessage);
+        return;
       }
       setItems((prev) => prev.filter((item) => item.id !== id));
       setStatusMessage("Service supprimé.");
