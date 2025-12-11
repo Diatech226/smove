@@ -45,10 +45,10 @@ export default function AdminPostsPage() {
         setLoading(true);
         const response = await fetch("/api/admin/posts");
         const data = await response.json();
-        if (!response.ok) {
-          throw new Error(data.error || "Impossible de charger les articles");
+        if (!response.ok || data?.success === false) {
+          throw new Error(data?.message || data?.error || "Impossible de charger les articles");
         }
-        setItems(data.data ?? []);
+        setItems(data.posts ?? []);
       } catch (fetchError) {
         console.error(fetchError);
         setError("Impossible de charger les articles. Réessayez plus tard.");
@@ -93,15 +93,15 @@ export default function AdminPostsPage() {
         body: JSON.stringify(payload),
       });
       const data = await response.json();
-      if (!response.ok) {
-        throw new Error(data.error || "Erreur lors de l'enregistrement");
+      if (!response.ok || data?.success === false) {
+        throw new Error(data?.message || data?.error || "Erreur lors de l'enregistrement");
       }
 
       setStatusMessage(isCreating ? "Article ajouté." : "Article mis à jour.");
-      if (isCreating && data.data) {
-        setItems((prev) => [data.data, ...prev]);
-      } else if (data.data) {
-        setItems((prev) => prev.map((item) => (item.id === data.data.id ? data.data : item)));
+      if (isCreating && data.post) {
+        setItems((prev) => [data.post, ...prev]);
+      } else if (data.post) {
+        setItems((prev) => prev.map((item) => (item.id === data.post.id ? data.post : item)));
       }
       resetForm();
     } catch (submitError) {

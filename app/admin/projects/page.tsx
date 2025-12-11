@@ -52,10 +52,10 @@ export default function AdminProjectsPage() {
         setLoading(true);
         const response = await fetch("/api/admin/projects");
         const data = await response.json();
-        if (!response.ok) {
-          throw new Error(data.error || "Impossible de charger les projets");
+        if (!response.ok || data?.success === false) {
+          throw new Error(data?.message || data?.error || "Impossible de charger les projets");
         }
-        setItems(data.data ?? []);
+        setItems(data.projects ?? []);
       } catch (fetchError) {
         console.error(fetchError);
         setError("Impossible de charger les projets. Réessayez plus tard.");
@@ -101,15 +101,15 @@ export default function AdminProjectsPage() {
         body: JSON.stringify(payload),
       });
       const data = await response.json();
-      if (!response.ok) {
-        throw new Error(data.error || "Erreur lors de l'enregistrement");
+      if (!response.ok || data?.success === false) {
+        throw new Error(data?.message || data?.error || "Erreur lors de l'enregistrement");
       }
 
       setStatusMessage(isCreating ? "Projet ajouté." : "Projet mis à jour.");
-      if (isCreating && data.data) {
-        setItems((prev) => [data.data, ...prev]);
-      } else if (data.data) {
-        setItems((prev) => prev.map((item) => (item.id === data.data.id ? data.data : item)));
+      if (isCreating && data.project) {
+        setItems((prev) => [data.project, ...prev]);
+      } else if (data.project) {
+        setItems((prev) => prev.map((item) => (item.id === data.project.id ? data.project : item)));
       }
       resetForm();
     } catch (submitError) {
