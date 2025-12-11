@@ -8,7 +8,7 @@ import { useRouter } from "next/navigation";
 import { AdminPageHeader } from "@/components/admin/AdminPageHeader";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
-import { cn } from "@/lib/utils";
+import { cn, slugify } from "@/lib/utils";
 
 export type PostFormValues = {
   title: string;
@@ -16,18 +16,11 @@ export type PostFormValues = {
   category?: string | null;
   excerpt?: string | null;
   body?: string | null;
+  coverImage?: string | null;
+  galleryImages?: string[];
+  videoUrl?: string | null;
   published?: boolean;
 };
-
-const slugify = (value: string) =>
-  value
-    .normalize("NFD")
-    .replace(/\p{Diacritic}/gu, "")
-    .toLowerCase()
-    .trim()
-    .replace(/[^a-z0-9\s-]/g, "")
-    .replace(/\s+/g, "-")
-    .replace(/-+/g, "-");
 
 type PostFormProps = {
   initialValues?: PostFormValues;
@@ -38,7 +31,17 @@ type PostFormProps = {
 export function PostForm({ initialValues, postId, mode }: PostFormProps) {
   const router = useRouter();
   const [form, setForm] = useState<PostFormValues>(
-    initialValues ?? { title: "", slug: "", category: "", excerpt: "", body: "", published: true },
+    initialValues ?? {
+      title: "",
+      slug: "",
+      category: "",
+      excerpt: "",
+      body: "",
+      published: true,
+      coverImage: "",
+      galleryImages: [],
+      videoUrl: "",
+    },
   );
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
@@ -57,6 +60,8 @@ export function PostForm({ initialValues, postId, mode }: PostFormProps) {
     return slugify(form.title);
   }, [form.slug, form.title]);
 
+  const gallery = useMemo(() => form.galleryImages ?? [], [form.galleryImages]);
+
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     setError(null);
@@ -65,6 +70,7 @@ export function PostForm({ initialValues, postId, mode }: PostFormProps) {
     const payload = {
       ...form,
       slug: computedSlug,
+      galleryImages: gallery.filter((item) => item.trim()),
     };
 
     if (!payload.title.trim() || !payload.slug.trim() || !(payload.body ?? "").trim()) {
@@ -197,6 +203,84 @@ export function PostForm({ initialValues, postId, mode }: PostFormProps) {
               placeholder="Résumé court qui apparaîtra dans les listes d'articles."
             />
             <p className="text-xs text-slate-300">Idéalement entre 140 et 200 caractères.</p>
+          </div>
+
+          <div className="grid gap-4 md:grid-cols-2">
+            <div className="space-y-2">
+              <label className="text-sm font-semibold text-white" htmlFor="coverImage">
+                Image de couverture
+              </label>
+              <input
+                id="coverImage"
+                name="coverImage"
+                value={form.coverImage ?? ""}
+                onChange={(event) => setForm((prev) => ({ ...prev, coverImage: event.target.value }))}
+                className="w-full rounded-lg border border-white/10 bg-slate-900 px-3 py-2 text-sm text-white focus:border-emerald-400 focus:outline-none"
+                placeholder="https://..."
+              />
+              <p className="text-xs text-slate-300">Grande image utilisée sur la page article et les cartes.</p>
+            </div>
+
+            <div className="space-y-2">
+              <label className="text-sm font-semibold text-white" htmlFor="videoUrl">
+                Vidéo (YouTube, Vimeo ou MP4)
+              </label>
+              <input
+                id="videoUrl"
+                name="videoUrl"
+                value={form.videoUrl ?? ""}
+                onChange={(event) => setForm((prev) => ({ ...prev, videoUrl: event.target.value }))}
+                className="w-full rounded-lg border border-white/10 bg-slate-900 px-3 py-2 text-sm text-white focus:border-emerald-400 focus:outline-none"
+                placeholder="https://www.youtube.com/embed/..."
+              />
+              <p className="text-xs text-slate-300">Affichée sous le header si renseignée.</p>
+            </div>
+          </div>
+
+          <div className="space-y-3">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-semibold text-white">Galerie d'images</p>
+                <p className="text-xs text-slate-300">Ajoutez plusieurs visuels pour enrichir l'article.</p>
+              </div>
+              <Button
+                type="button"
+                variant="secondary"
+                onClick={() => setForm((prev) => ({ ...prev, galleryImages: [...gallery, ""] }))}
+                className="text-xs"
+              >
+                Ajouter une image
+              </Button>
+            </div>
+
+            <div className="space-y-2">
+              {gallery.map((image, index) => (
+                <div key={index} className="flex items-center gap-3">
+                  <input
+                    value={image}
+                    onChange={(event) => {
+                      const next = [...gallery];
+                      next[index] = event.target.value;
+                      setForm((prev) => ({ ...prev, galleryImages: next }));
+                    }}
+                    className="w-full rounded-lg border border-white/10 bg-slate-900 px-3 py-2 text-sm text-white focus:border-emerald-400 focus:outline-none"
+                    placeholder="https://..."
+                  />
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    onClick={() => {
+                      const next = gallery.filter((_, i) => i !== index);
+                      setForm((prev) => ({ ...prev, galleryImages: next }));
+                    }}
+                    className="border border-white/10 px-3 py-2 text-xs text-rose-200 hover:text-rose-100"
+                  >
+                    Retirer
+                  </Button>
+                </div>
+              ))}
+              {!gallery.length ? <p className="text-sm text-slate-300">Aucune image dans la galerie.</p> : null}
+            </div>
           </div>
 
           <div className="space-y-2">

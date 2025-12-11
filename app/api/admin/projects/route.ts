@@ -26,7 +26,8 @@ export async function GET() {
 export async function POST(request: Request) {
   try {
     const body = await request.json().catch(() => null);
-    const { slug, title, client, sector, summary, body: content, results } = (body as Record<string, unknown>) ?? {};
+    const { slug, title, client, sector, summary, body: content, results, category, coverImage } =
+      (body as Record<string, unknown>) ?? {};
 
     const requiredFields = [slug, title, client, sector, summary];
 
@@ -48,6 +49,8 @@ export async function POST(request: Request) {
         results: Array.isArray(results)
           ? results.map((item) => (typeof item === "string" ? item : String(item))).filter(Boolean)
           : [],
+        category: typeof category === "string" ? category : null,
+        coverImage: typeof coverImage === "string" ? coverImage : null,
       },
     });
 
@@ -57,6 +60,9 @@ export async function POST(request: Request) {
       code: error?.code,
       message: error?.message,
     });
+    if (error?.code === "P2002") {
+      return NextResponse.json({ success: false, error: "Un projet utilise déjà ce slug." }, { status: 400 });
+    }
     return NextResponse.json(
       {
         success: false,

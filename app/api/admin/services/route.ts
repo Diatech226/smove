@@ -26,14 +26,20 @@ export async function GET() {
 export async function POST(request: Request) {
   try {
     const body = await request.json().catch(() => null);
-    const { name, slug, description } = (body as Record<string, unknown>) ?? {};
+    const { name, slug, description, category, coverImage } = (body as Record<string, unknown>) ?? {};
 
     if (![name, slug, description].every((value) => typeof value === "string" && value.trim().length)) {
       return NextResponse.json({ success: false, error: "Name, slug and description are required" }, { status: 400 });
     }
 
     const created = await prisma.service.create({
-      data: { name, slug, description },
+      data: {
+        name,
+        slug,
+        description,
+        category: typeof category === "string" ? category : null,
+        coverImage: typeof coverImage === "string" ? coverImage : null,
+      },
     });
 
     return NextResponse.json({ success: true, service: created }, { status: 201 });
@@ -42,6 +48,9 @@ export async function POST(request: Request) {
       code: error?.code,
       message: error?.message,
     });
+    if (error?.code === "P2002") {
+      return NextResponse.json({ success: false, error: "Un service utilise déjà ce slug." }, { status: 400 });
+    }
     return NextResponse.json(
       {
         success: false,

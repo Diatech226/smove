@@ -57,9 +57,10 @@ NEXT_PUBLIC_BRAND_NAME=SMOVE
 
 ## Modèles de données
 Les modèles Prisma/MongoDB sont définis dans `prisma/schema.prisma` :
-- `Service` : nom, slug, description
-- `Project` : slug, client, titre, secteur, résumé, corps, résultats
-- `Post` : slug unique, titre, catégorie optionnelle, extrait, contenu, statut `published`, dates de création/mise à jour
+- `Service` : nom, slug unique, description, catégorie/type et `coverImage` pour les cartes.
+- `Project` : slug unique, client, titre, secteur, résumé, corps, résultats, catégorie/type et `coverImage`.
+- `Post` : slug unique, titre, catégorie optionnelle, extrait, contenu, `coverImage`, `galleryImages`, `videoUrl`, métriques `views`/`commentsCount`, statut `published`, dates de création/mise à jour.
+- `Event` : slug unique, titre, date, lieu, description, catégorie/type et `coverImage`.
 
 ## Gestion du contenu
 - `admin/services` : lister, créer, mettre à jour et supprimer les services.

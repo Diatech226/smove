@@ -6,18 +6,26 @@ import { FormEvent, useEffect, useMemo, useState } from "react";
 import { AdminPageHeader } from "@/components/admin/AdminPageHeader";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
+import { slugify } from "@/lib/utils";
 
 type AdminService = {
   id: string;
   name: string;
   slug: string;
   description: string;
+  category?: string | null;
+  coverImage?: string | null;
 };
 
-const emptyForm: Pick<AdminService, "name" | "slug" | "description"> = {
+const emptyForm: Pick<AdminService, "name" | "slug" | "description"> & {
+  category?: string;
+  coverImage?: string;
+} = {
   name: "",
   slug: "",
   description: "",
+  category: "",
+  coverImage: "",
 };
 
 type ToastState = {
@@ -34,6 +42,7 @@ export default function AdminServicesPage() {
   const [error, setError] = useState<string | null>(null);
 
   const isCreating = useMemo(() => !editingId, [editingId]);
+  const computedSlug = useMemo(() => (form.slug.trim() ? form.slug : slugify(form.name)), [form.slug, form.name]);
 
   useEffect(() => {
     const fetchServices = async () => {
@@ -69,8 +78,8 @@ export default function AdminServicesPage() {
     setStatusMessage(null);
     setError(null);
 
-    const { name, slug, description } = form;
-    if (!name || !slug || !description) {
+    const { name, description, category, coverImage } = form;
+    if (!name || !computedSlug || !description) {
       setStatusMessage("Merci de renseigner le nom, le slug et la description.");
       return;
     }
@@ -81,7 +90,7 @@ export default function AdminServicesPage() {
       const response = await fetch(url, {
         method,
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name, slug, description }),
+        body: JSON.stringify({ name, slug: computedSlug, description, category, coverImage }),
       });
       const data = await response.json();
       if (!response.ok || data?.success === false) {
@@ -164,7 +173,13 @@ export default function AdminServicesPage() {
                     className="border border-white/10 px-3 py-1 text-xs"
                     onClick={() => {
                       setEditingId(service.id);
-                      setForm({ name: service.name, slug: service.slug, description: service.description });
+                      setForm({
+                        name: service.name,
+                        slug: service.slug,
+                        description: service.description,
+                        category: service.category ?? "",
+                        coverImage: service.coverImage ?? "",
+                      });
                       setStatusMessage(null);
                     }}
                   >
@@ -195,7 +210,9 @@ export default function AdminServicesPage() {
                 id="name"
                 name="name"
                 value={form.name}
-                onChange={(event) => setForm((prev) => ({ ...prev, name: event.target.value }))}
+                onChange={(event) =>
+                  setForm((prev) => ({ ...prev, name: event.target.value, slug: prev.slug || slugify(event.target.value) }))
+                }
                 className="w-full rounded-lg border border-white/10 bg-slate-900 px-3 py-2 text-sm text-white focus:border-emerald-400 focus:outline-none"
               />
             </div>
@@ -207,8 +224,34 @@ export default function AdminServicesPage() {
               <input
                 id="slug"
                 name="slug"
-                value={form.slug}
+                value={computedSlug}
                 onChange={(event) => setForm((prev) => ({ ...prev, slug: event.target.value }))}
+                className="w-full rounded-lg border border-white/10 bg-slate-900 px-3 py-2 text-sm text-white focus:border-emerald-400 focus:outline-none"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <label className="text-sm font-semibold text-white" htmlFor="category">
+                Catégorie / type
+              </label>
+              <input
+                id="category"
+                name="category"
+                value={form.category ?? ""}
+                onChange={(event) => setForm((prev) => ({ ...prev, category: event.target.value }))}
+                className="w-full rounded-lg border border-white/10 bg-slate-900 px-3 py-2 text-sm text-white focus:border-emerald-400 focus:outline-none"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <label className="text-sm font-semibold text-white" htmlFor="coverImage">
+                Image de couverture
+              </label>
+              <input
+                id="coverImage"
+                name="coverImage"
+                value={form.coverImage ?? ""}
+                onChange={(event) => setForm((prev) => ({ ...prev, coverImage: event.target.value }))}
                 className="w-full rounded-lg border border-white/10 bg-slate-900 px-3 py-2 text-sm text-white focus:border-emerald-400 focus:outline-none"
               />
             </div>

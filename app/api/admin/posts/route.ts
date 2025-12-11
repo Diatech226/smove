@@ -26,7 +26,8 @@ export async function GET() {
 export async function POST(request: Request) {
   try {
     const body = await request.json().catch(() => null);
-    const { slug, title, excerpt, body: content, category, published } = (body as Record<string, unknown>) ?? {};
+    const { slug, title, excerpt, body: content, category, published, coverImage, galleryImages, videoUrl } =
+      (body as Record<string, unknown>) ?? {};
 
     if (![slug, title, content].every((value) => typeof value === "string" && value.trim().length)) {
       return NextResponse.json(
@@ -50,6 +51,11 @@ export async function POST(request: Request) {
         excerpt: typeof excerpt === "string" ? excerpt : null,
         body: typeof content === "string" ? content : null,
         category: typeof category === "string" ? category : null,
+        coverImage: typeof coverImage === "string" ? coverImage : null,
+        galleryImages: Array.isArray(galleryImages)
+          ? galleryImages.map((item) => (typeof item === "string" ? item : String(item))).filter(Boolean)
+          : [],
+        videoUrl: typeof videoUrl === "string" ? videoUrl : null,
         published: Boolean(published ?? true),
       },
     });
@@ -60,6 +66,9 @@ export async function POST(request: Request) {
       code: error?.code,
       message: error?.message,
     });
+    if (error?.code === "P2002") {
+      return NextResponse.json({ success: false, error: "Un article utilise déjà ce slug." }, { status: 400 });
+    }
     return NextResponse.json(
       {
         success: false,

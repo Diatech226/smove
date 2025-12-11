@@ -9,7 +9,7 @@ type Params = {
 export async function PUT(request: Request, { params }: Params) {
   try {
     const body = await request.json().catch(() => null);
-    const { name, slug, description } = (body as Record<string, unknown>) ?? {};
+    const { name, slug, description, category, coverImage } = (body as Record<string, unknown>) ?? {};
 
     if (!params.id) {
       return NextResponse.json({ success: false, error: "Service id is required" }, { status: 400 });
@@ -24,7 +24,13 @@ export async function PUT(request: Request, { params }: Params) {
 
     const updated = await prisma.service.update({
       where: { id: params.id },
-      data: { name, slug, description },
+      data: {
+        name,
+        slug,
+        description,
+        category: typeof category === "string" ? category : null,
+        coverImage: typeof coverImage === "string" ? coverImage : null,
+      },
     });
 
     return NextResponse.json({ success: true, service: updated });
@@ -33,6 +39,9 @@ export async function PUT(request: Request, { params }: Params) {
       code: error?.code,
       message: error?.message,
     });
+    if (error?.code === "P2002") {
+      return NextResponse.json({ success: false, error: "Un autre service utilise déjà ce slug." }, { status: 400 });
+    }
     return NextResponse.json({ success: false, error: "Failed to update service" }, { status: 500 });
   }
 }
