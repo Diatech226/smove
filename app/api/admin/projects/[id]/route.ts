@@ -39,10 +39,13 @@ export async function PUT(request: Request, { params }: Params) {
       },
     });
 
-    return NextResponse.json({ success: true, data: updated });
-  } catch (error) {
-    console.error("Error updating project", error);
-    return NextResponse.json({ success: false, error: "Internal server error" }, { status: 500 });
+    return NextResponse.json({ success: true, project: updated });
+  } catch (error: any) {
+    console.error("Error updating project", {
+      code: error?.code,
+      message: error?.message,
+    });
+    return NextResponse.json({ success: false, error: "Failed to update project" }, { status: 500 });
   }
 }
 
@@ -53,8 +56,11 @@ export async function DELETE(_request: Request, { params }: Params) {
     }
     await prisma.project.delete({ where: { id: params.id } });
     return NextResponse.json({ success: true });
-  } catch (error) {
-    console.error("Error deleting project", error);
-    return NextResponse.json({ success: false, error: "Internal server error" }, { status: 500 });
+  } catch (error: any) {
+    console.error("Error deleting project", {
+      code: error?.code,
+      message: error?.message,
+    });
+    return NextResponse.json({ success: false, error: "Failed to delete project" }, { status: 500 });
   }
 }

@@ -7,17 +7,16 @@ export async function GET() {
     const services = await prisma.service.findMany({
       orderBy: { createdAt: "desc" },
     });
-    return NextResponse.json({ success: true, services });
+    return NextResponse.json({ success: true, services }, { status: 200 });
   } catch (error: any) {
-    console.error("Error fetching services:", error);
+    console.error("Error fetching services", {
+      code: error?.code,
+      message: error?.message,
+    });
     return NextResponse.json(
       {
         success: false,
-        message: "Error fetching services",
-        error: {
-          code: error?.code ?? null,
-          message: error?.message ?? "Unknown error",
-        },
+        error: "Failed to fetch services",
       },
       { status: 500 },
     );
@@ -30,10 +29,7 @@ export async function POST(request: Request) {
     const { name, slug, description } = (body as Record<string, unknown>) ?? {};
 
     if (![name, slug, description].every((value) => typeof value === "string" && value.trim().length)) {
-      return NextResponse.json(
-        { success: false, error: "Name, slug and description are required" },
-        { status: 400 },
-      );
+      return NextResponse.json({ success: false, error: "Name, slug and description are required" }, { status: 400 });
     }
 
     const created = await prisma.service.create({
@@ -42,15 +38,14 @@ export async function POST(request: Request) {
 
     return NextResponse.json({ success: true, service: created }, { status: 201 });
   } catch (error: any) {
-    console.error("Error creating service:", error);
+    console.error("Error creating service", {
+      code: error?.code,
+      message: error?.message,
+    });
     return NextResponse.json(
       {
         success: false,
-        message: "Error creating service",
-        error: {
-          code: error?.code ?? null,
-          message: error?.message ?? "Unknown error",
-        },
+        error: "Failed to create service",
       },
       { status: 500 },
     );

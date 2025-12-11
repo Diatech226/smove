@@ -38,10 +38,13 @@ export async function PUT(request: Request, { params }: Params) {
       },
     });
 
-    return NextResponse.json({ success: true, data: updated });
-  } catch (error) {
-    console.error("Error updating post", error);
-    return NextResponse.json({ success: false, error: "Internal server error" }, { status: 500 });
+    return NextResponse.json({ success: true, post: updated });
+  } catch (error: any) {
+    console.error("Error updating post", {
+      code: error?.code,
+      message: error?.message,
+    });
+    return NextResponse.json({ success: false, error: "Failed to update post" }, { status: 500 });
   }
 }
 
@@ -52,8 +55,11 @@ export async function DELETE(_request: Request, { params }: Params) {
     }
     await prisma.post.delete({ where: { id: params.id } });
     return NextResponse.json({ success: true });
-  } catch (error) {
-    console.error("Error deleting post", error);
-    return NextResponse.json({ success: false, error: "Internal server error" }, { status: 500 });
+  } catch (error: any) {
+    console.error("Error deleting post", {
+      code: error?.code,
+      message: error?.message,
+    });
+    return NextResponse.json({ success: false, error: "Failed to delete post" }, { status: 500 });
   }
 }

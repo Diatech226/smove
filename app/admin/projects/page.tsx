@@ -53,9 +53,12 @@ export default function AdminProjectsPage() {
         const response = await fetch("/api/admin/projects");
         const data = await response.json();
         if (!response.ok || data?.success === false) {
-          throw new Error(data?.message || data?.error || "Impossible de charger les projets");
+          const errorMessage = data?.error || data?.message || "Impossible de charger les projets";
+          setError(errorMessage);
+          setItems([]);
+          return;
         }
-        setItems(data.projects ?? []);
+        setItems(Array.isArray(data.projects) ? data.projects : []);
       } catch (fetchError) {
         console.error(fetchError);
         setError("Impossible de charger les projets. Réessayez plus tard.");
@@ -102,7 +105,9 @@ export default function AdminProjectsPage() {
       });
       const data = await response.json();
       if (!response.ok || data?.success === false) {
-        throw new Error(data?.message || data?.error || "Erreur lors de l'enregistrement");
+        const errorMessage = data?.error || data?.message || "Erreur lors de l'enregistrement";
+        setError(errorMessage);
+        return;
       }
 
       setStatusMessage(isCreating ? "Projet ajouté." : "Projet mis à jour.");
@@ -124,8 +129,10 @@ export default function AdminProjectsPage() {
     try {
       const response = await fetch(`/api/admin/projects/${id}`, { method: "DELETE" });
       const data = await response.json();
-      if (!response.ok) {
-        throw new Error(data.error || "Erreur lors de la suppression");
+      if (!response.ok || data?.success === false) {
+        const errorMessage = data?.error || data?.message || "Erreur lors de la suppression";
+        setError(errorMessage);
+        return;
       }
       setItems((prev) => prev.filter((item) => item.id !== id));
       setStatusMessage("Projet supprimé.");

@@ -27,10 +27,13 @@ export async function PUT(request: Request, { params }: Params) {
       data: { name, slug, description },
     });
 
-    return NextResponse.json({ success: true, data: updated });
-  } catch (error) {
-    console.error("Error updating service", error);
-    return NextResponse.json({ success: false, error: "Internal server error" }, { status: 500 });
+    return NextResponse.json({ success: true, service: updated });
+  } catch (error: any) {
+    console.error("Error updating service", {
+      code: error?.code,
+      message: error?.message,
+    });
+    return NextResponse.json({ success: false, error: "Failed to update service" }, { status: 500 });
   }
 }
 
@@ -41,8 +44,11 @@ export async function DELETE(_request: Request, { params }: Params) {
     }
     await prisma.service.delete({ where: { id: params.id } });
     return NextResponse.json({ success: true });
-  } catch (error) {
-    console.error("Error deleting service", error);
-    return NextResponse.json({ success: false, error: "Internal server error" }, { status: 500 });
+  } catch (error: any) {
+    console.error("Error deleting service", {
+      code: error?.code,
+      message: error?.message,
+    });
+    return NextResponse.json({ success: false, error: "Failed to delete service" }, { status: 500 });
   }
 }

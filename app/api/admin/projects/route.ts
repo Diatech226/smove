@@ -7,17 +7,16 @@ export async function GET() {
     const projects = await prisma.project.findMany({
       orderBy: { createdAt: "desc" },
     });
-    return NextResponse.json({ success: true, projects });
+    return NextResponse.json({ success: true, projects }, { status: 200 });
   } catch (error: any) {
-    console.error("Error fetching projects:", error);
+    console.error("Error fetching projects", {
+      code: error?.code,
+      message: error?.message,
+    });
     return NextResponse.json(
       {
         success: false,
-        message: "Error fetching projects",
-        error: {
-          code: error?.code ?? null,
-          message: error?.message ?? "Unknown error",
-        },
+        error: "Failed to fetch projects",
       },
       { status: 500 },
     );
@@ -54,15 +53,14 @@ export async function POST(request: Request) {
 
     return NextResponse.json({ success: true, project: created }, { status: 201 });
   } catch (error: any) {
-    console.error("Error creating project:", error);
+    console.error("Error creating project", {
+      code: error?.code,
+      message: error?.message,
+    });
     return NextResponse.json(
       {
         success: false,
-        message: "Error creating project",
-        error: {
-          code: error?.code ?? null,
-          message: error?.message ?? "Unknown error",
-        },
+        error: "Failed to create project",
       },
       { status: 500 },
     );

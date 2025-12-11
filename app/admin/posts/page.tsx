@@ -46,9 +46,12 @@ export default function AdminPostsPage() {
         const response = await fetch("/api/admin/posts");
         const data = await response.json();
         if (!response.ok || data?.success === false) {
-          throw new Error(data?.message || data?.error || "Impossible de charger les articles");
+          const errorMessage = data?.error || data?.message || "Impossible de charger les articles";
+          setError(errorMessage);
+          setItems([]);
+          return;
         }
-        setItems(data.posts ?? []);
+        setItems(Array.isArray(data.posts) ? data.posts : []);
       } catch (fetchError) {
         console.error(fetchError);
         setError("Impossible de charger les articles. Réessayez plus tard.");
@@ -94,7 +97,9 @@ export default function AdminPostsPage() {
       });
       const data = await response.json();
       if (!response.ok || data?.success === false) {
-        throw new Error(data?.message || data?.error || "Erreur lors de l'enregistrement");
+        const errorMessage = data?.error || data?.message || "Erreur lors de l'enregistrement";
+        setError(errorMessage);
+        return;
       }
 
       setStatusMessage(isCreating ? "Article ajouté." : "Article mis à jour.");
@@ -116,8 +121,10 @@ export default function AdminPostsPage() {
     try {
       const response = await fetch(`/api/admin/posts/${id}`, { method: "DELETE" });
       const data = await response.json();
-      if (!response.ok) {
-        throw new Error(data.error || "Erreur lors de la suppression");
+      if (!response.ok || data?.success === false) {
+        const errorMessage = data?.error || data?.message || "Erreur lors de la suppression";
+        setError(errorMessage);
+        return;
       }
       setItems((prev) => prev.filter((item) => item.id !== id));
       setStatusMessage("Article supprimé.");
