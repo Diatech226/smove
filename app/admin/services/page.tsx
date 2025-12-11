@@ -41,10 +41,10 @@ export default function AdminServicesPage() {
         setLoading(true);
         const response = await fetch("/api/admin/services");
         const data = await response.json();
-        if (!response.ok) {
-          throw new Error(data.error || "Impossible de charger les services");
+        if (!response.ok || data?.success === false) {
+          throw new Error(data?.message || data?.error || "Impossible de charger les services");
         }
-        setItems(data.data ?? []);
+        setItems(data.services ?? []);
       } catch (fetchError) {
         console.error(fetchError);
         setError("Impossible de charger les services. Vérifiez votre connexion ou réessayez.");
@@ -81,15 +81,15 @@ export default function AdminServicesPage() {
         body: JSON.stringify({ name, slug, description }),
       });
       const data = await response.json();
-      if (!response.ok) {
-        throw new Error(data.error || "Erreur lors de l'enregistrement");
+      if (!response.ok || data?.success === false) {
+        throw new Error(data?.message || data?.error || "Erreur lors de l'enregistrement");
       }
 
       setStatusMessage(isCreating ? "Service ajouté." : "Service mis à jour.");
-      if (isCreating && data.data) {
-        setItems((prev) => [data.data, ...prev]);
-      } else if (data.data) {
-        setItems((prev) => prev.map((item) => (item.id === data.data.id ? data.data : item)));
+      if (isCreating && data.service) {
+        setItems((prev) => [data.service, ...prev]);
+      } else if (data.service) {
+        setItems((prev) => prev.map((item) => (item.id === data.service.id ? data.service : item)));
       }
       resetForm();
     } catch (submitError) {
