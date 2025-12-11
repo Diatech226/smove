@@ -9,7 +9,8 @@ type Params = {
 export async function PUT(request: Request, { params }: Params) {
   try {
     const body = await request.json().catch(() => null);
-    const { slug, title, client, sector, summary, body: content, results } = (body as Record<string, unknown>) ?? {};
+    const { slug, title, client, sector, summary, body: content, results, category, coverImage } =
+      (body as Record<string, unknown>) ?? {};
 
     if (!params.id) {
       return NextResponse.json({ success: false, error: "Project id is required" }, { status: 400 });
@@ -36,6 +37,8 @@ export async function PUT(request: Request, { params }: Params) {
         results: Array.isArray(results)
           ? results.map((item) => (typeof item === "string" ? item : String(item))).filter(Boolean)
           : [],
+        category: typeof category === "string" ? category : null,
+        coverImage: typeof coverImage === "string" ? coverImage : null,
       },
     });
 
@@ -45,6 +48,9 @@ export async function PUT(request: Request, { params }: Params) {
       code: error?.code,
       message: error?.message,
     });
+    if (error?.code === "P2002") {
+      return NextResponse.json({ success: false, error: "Un autre projet utilise déjà ce slug." }, { status: 400 });
+    }
     return NextResponse.json({ success: false, error: "Failed to update project" }, { status: 500 });
   }
 }

@@ -6,6 +6,7 @@ import { FormEvent, useEffect, useMemo, useState } from "react";
 import { AdminPageHeader } from "@/components/admin/AdminPageHeader";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
+import { slugify } from "@/lib/utils";
 
 type AdminProject = {
   id: string;
@@ -16,11 +17,15 @@ type AdminProject = {
   summary: string;
   body?: string;
   results?: string[];
+  category?: string | null;
+  coverImage?: string | null;
 };
 
 const emptyForm: Pick<AdminProject, "slug" | "title" | "client" | "sector" | "summary"> & {
   body?: string;
   results?: string[];
+  category?: string;
+  coverImage?: string;
 } = {
   slug: "",
   title: "",
@@ -29,6 +34,8 @@ const emptyForm: Pick<AdminProject, "slug" | "title" | "client" | "sector" | "su
   summary: "",
   body: "",
   results: [],
+  category: "",
+  coverImage: "",
 };
 
 type ToastState = {
@@ -45,6 +52,7 @@ export default function AdminProjectsPage() {
   const [error, setError] = useState<string | null>(null);
 
   const isCreating = useMemo(() => !editingId, [editingId]);
+  const computedSlug = useMemo(() => (form.slug.trim() ? form.slug : slugify(form.title)), [form.slug, form.title]);
 
   useEffect(() => {
     const fetchProjects = async () => {
@@ -80,8 +88,8 @@ export default function AdminProjectsPage() {
     setStatusMessage(null);
     setError(null);
 
-    const { slug, title, client, sector, summary, body, results } = form;
-    if (!slug || !title || !client || !sector || !summary) {
+    const { title, client, sector, summary, body, results, category, coverImage } = form;
+    if (!computedSlug || !title || !client || !sector || !summary) {
       setStatusMessage("Merci de renseigner le slug, le titre, le client, le secteur et le résumé.");
       return;
     }
@@ -90,13 +98,15 @@ export default function AdminProjectsPage() {
       const method = isCreating ? "POST" : "PUT";
       const url = isCreating ? "/api/admin/projects" : `/api/admin/projects/${editingId}`;
       const payload = {
-        slug,
+        slug: computedSlug,
         title,
         client,
         sector,
         summary,
         body,
         results,
+        category,
+        coverImage,
       };
       const response = await fetch(url, {
         method,
@@ -196,6 +206,8 @@ export default function AdminProjectsPage() {
                         summary: project.summary,
                         body: project.body ?? "",
                         results: project.results ?? [],
+                        category: project.category ?? "",
+                        coverImage: project.coverImage ?? "",
                       });
                       setStatusMessage(null);
                     }}
@@ -228,7 +240,7 @@ export default function AdminProjectsPage() {
               <input
                 id="slug"
                 name="slug"
-                value={form.slug}
+                value={computedSlug}
                 onChange={(event) => setForm((prev) => ({ ...prev, slug: event.target.value }))}
                 className="w-full rounded-lg border border-white/10 bg-slate-900 px-3 py-2 text-sm text-white focus:border-emerald-400 focus:outline-none"
               />
@@ -242,7 +254,9 @@ export default function AdminProjectsPage() {
                 id="title"
                 name="title"
                 value={form.title}
-                onChange={(event) => setForm((prev) => ({ ...prev, title: event.target.value }))}
+                onChange={(event) =>
+                  setForm((prev) => ({ ...prev, title: event.target.value, slug: prev.slug || slugify(event.target.value) }))
+                }
                 className="w-full rounded-lg border border-white/10 bg-slate-900 px-3 py-2 text-sm text-white focus:border-emerald-400 focus:outline-none"
               />
             </div>
@@ -269,6 +283,32 @@ export default function AdminProjectsPage() {
                 name="sector"
                 value={form.sector}
                 onChange={(event) => setForm((prev) => ({ ...prev, sector: event.target.value }))}
+                className="w-full rounded-lg border border-white/10 bg-slate-900 px-3 py-2 text-sm text-white focus:border-emerald-400 focus:outline-none"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <label className="text-sm font-semibold text-white" htmlFor="category">
+                Catégorie / type
+              </label>
+              <input
+                id="category"
+                name="category"
+                value={form.category ?? ""}
+                onChange={(event) => setForm((prev) => ({ ...prev, category: event.target.value }))}
+                className="w-full rounded-lg border border-white/10 bg-slate-900 px-3 py-2 text-sm text-white focus:border-emerald-400 focus:outline-none"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <label className="text-sm font-semibold text-white" htmlFor="coverImage">
+                Image de couverture
+              </label>
+              <input
+                id="coverImage"
+                name="coverImage"
+                value={form.coverImage ?? ""}
+                onChange={(event) => setForm((prev) => ({ ...prev, coverImage: event.target.value }))}
                 className="w-full rounded-lg border border-white/10 bg-slate-900 px-3 py-2 text-sm text-white focus:border-emerald-400 focus:outline-none"
               />
             </div>

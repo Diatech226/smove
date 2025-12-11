@@ -6,6 +6,7 @@ import { createMetadata } from "@/lib/config/seo";
 import { Card } from "@/components/ui/Card";
 import { Container } from "@/components/ui/Container";
 import { SectionHeader } from "@/components/ui/SectionHeader";
+import { CategoryBadge } from "@/components/ui/CategoryBadge";
 
 export const dynamic = "force-dynamic";
 
@@ -16,6 +17,7 @@ type BlogListPost = {
   excerpt: string | null;
   body: string | null;
   category: string | null;
+  coverImage?: string | null;
   published: boolean;
   createdAt: string | Date;
 };
@@ -66,23 +68,32 @@ export default async function BlogPage() {
             <Card
               key={post.id}
               as="article"
-              className="flex h-full flex-col gap-4 border-white/10 bg-white/5/30 p-6 transition duration-200 hover:-translate-y-1 hover:border-emerald-400/50 hover:shadow-xl hover:shadow-emerald-500/20"
+              className="flex h-full flex-col gap-4 overflow-hidden border-white/10 bg-white/5/30 p-0 transition duration-200 hover:-translate-y-1 hover:border-emerald-400/50 hover:shadow-xl hover:shadow-emerald-500/20"
             >
-              <div className="space-y-2">
-                <p className="text-xs uppercase tracking-[0.2em] text-emerald-200">{formatDate(post.createdAt)}</p>
-                <h3 className="text-2xl font-semibold text-white">{post.title}</h3>
-                {post.category ? (
-                  <span className="inline-flex rounded-full bg-white/5 px-3 py-1 text-xs font-semibold text-emerald-200">
-                    {post.category}
-                  </span>
-                ) : null}
+              <div
+                className="relative aspect-[16/9] w-full overflow-hidden bg-cover bg-center"
+                style={{ backgroundImage: post.coverImage ? `url(${post.coverImage})` : undefined }}
+              >
+                {!post.coverImage ? (
+                  <div className="absolute inset-0 bg-gradient-to-br from-emerald-500/20 via-white/10 to-indigo-500/20" />
+                ) : (
+                  <div className="absolute inset-0 bg-black/20" />
+                )}
               </div>
-              <p className="text-sm leading-relaxed text-slate-200">{buildExcerpt(post)}</p>
-              <div className="mt-auto flex items-center justify-between text-sm font-semibold text-emerald-300">
-                <span className="transition hover:text-emerald-200">
-                  <Link href={`/blog/${post.slug}`}>Lire l'article</Link>
-                </span>
-                <span aria-hidden>→</span>
+
+              <div className="space-y-2 px-6 pb-6 pt-4">
+                <div className="flex items-center justify-between">
+                  <CategoryBadge label={post.category || "Article"} />
+                  <p className="text-xs uppercase tracking-[0.2em] text-emerald-200">{formatDate(post.createdAt)}</p>
+                </div>
+                <h3 className="text-2xl font-semibold text-white">{post.title}</h3>
+                <p className="text-sm leading-relaxed text-slate-200">{buildExcerpt(post)}</p>
+                <div className="mt-auto flex items-center justify-between text-sm font-semibold text-emerald-300">
+                  <span className="transition hover:text-emerald-200">
+                    <Link href={`/blog/${post.slug}`}>Lire l'article</Link>
+                  </span>
+                  <span aria-hidden>→</span>
+                </div>
               </div>
             </Card>
           ))}
