@@ -5,7 +5,7 @@ import { prisma } from "@/lib/prisma";
 export async function GET() {
   try {
     const posts = await prisma.post.findMany({
-      orderBy: { publishedAt: "desc" },
+      orderBy: { createdAt: "desc" },
     });
     return NextResponse.json({ success: true, posts }, { status: 200 });
   } catch (error: any) {
@@ -26,13 +26,19 @@ export async function GET() {
 export async function POST(request: Request) {
   try {
     const body = await request.json().catch(() => null);
-    const { slug, title, excerpt, body: content, tags, publishedAt } = (body as Record<string, unknown>) ?? {};
+    const { slug, title, excerpt, body: content, category, published } = (body as Record<string, unknown>) ?? {};
 
-    const requiredFields = [slug, title, excerpt, content, publishedAt];
-
-    if (!requiredFields.every((value) => typeof value === "string" && value.trim().length)) {
+    if (![slug, title, content].every((value) => typeof value === "string" && value.trim().length)) {
       return NextResponse.json(
-        { success: false, error: "Slug, title, excerpt, body and publishedAt are required" },
+        { success: false, error: "Slug, title and body are required" },
+        { status: 400 },
+      );
+    }
+
+    const existing = await prisma.post.findUnique({ where: { slug } });
+    if (existing) {
+      return NextResponse.json(
+        { success: false, error: "A post with this slug already exists" },
         { status: 400 },
       );
     }
@@ -41,12 +47,10 @@ export async function POST(request: Request) {
       data: {
         slug,
         title,
-        excerpt,
-        body: content,
-        tags: Array.isArray(tags)
-          ? tags.map((tag) => (typeof tag === "string" ? tag : String(tag))).filter(Boolean)
-          : [],
-        publishedAt: new Date(publishedAt),
+        excerpt: typeof excerpt === "string" ? excerpt : null,
+        body: typeof content === "string" ? content : null,
+        category: typeof category === "string" ? category : null,
+        published: Boolean(published ?? true),
       },
     });
 

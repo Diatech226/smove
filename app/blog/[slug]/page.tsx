@@ -1,10 +1,12 @@
 // file: app/blog/[slug]/page.tsx
+import Link from "next/link";
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
-import { prisma } from "@/lib/prisma";
+
 import { Container } from "@/components/ui/Container";
 import { SectionHeader } from "@/components/ui/SectionHeader";
 import { createMetadata } from "@/lib/config/seo";
+import { prisma } from "@/lib/prisma";
 
 export const dynamic = "force-dynamic";
 
@@ -17,7 +19,7 @@ type BlogPostPageProps = {
 };
 
 export async function generateMetadata({ params }: BlogPostPageProps): Promise<Metadata> {
-  const post = await prisma.post.findUnique({ where: { slug: params.slug } });
+  const post = await prisma.post.findFirst({ where: { slug: params.slug, published: true } });
 
   if (!post) {
     return createMetadata({
@@ -37,24 +39,29 @@ export async function generateMetadata({ params }: BlogPostPageProps): Promise<M
 }
 
 export default async function BlogPostPage({ params }: BlogPostPageProps) {
-  const post = await prisma.post.findUnique({ where: { slug: params.slug } });
+  const post = await prisma.post.findFirst({ where: { slug: params.slug, published: true } });
 
   if (!post) {
     notFound();
   }
 
   return (
-    <div className="bg-slate-950 pb-16 pt-10">
-      <Container className="space-y-8">
-        <SectionHeader eyebrow="Article" title={post.title} subtitle={formatDate(post.publishedAt)} />
-
-        <div className="space-y-4 text-lg text-slate-200">
-          <p>{post.body}</p>
-          <p>
-            Chez SMOVE Communication, nous combinons stratégie éditoriale, production créative et pilotage des campagnes pour
-            transformer ces idées en résultats concrets.
-          </p>
+    <div className="bg-slate-950 pb-20 pt-12">
+      <Container className="space-y-10">
+        <div className="space-y-4">
+          <SectionHeader eyebrow={post.category || "Article"} title={post.title} subtitle={formatDate(post.createdAt)} />
+          <div className="h-52 w-full rounded-2xl border border-white/10 bg-gradient-to-r from-white/5 via-white/10 to-white/5" />
         </div>
+
+        <article className="prose prose-lg prose-invert max-w-none prose-headings:text-white prose-p:text-slate-200 prose-strong:text-white prose-a:text-emerald-200">
+          {(post.body ?? "").split(/\n\n+/).map((paragraph, index) => (
+            <p key={index}>{paragraph}</p>
+          ))}
+        </article>
+
+        <Link href="/blog" className="text-sm font-semibold text-emerald-300 transition hover:text-emerald-200">
+          ← Retour au blog
+        </Link>
       </Container>
     </div>
   );
