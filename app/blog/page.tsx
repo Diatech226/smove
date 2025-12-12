@@ -19,6 +19,7 @@ type BlogListPost = {
   category: string | null;
   coverImage?: string | null;
   published: boolean;
+  publishedAt: string | Date | null;
   createdAt: string | Date;
 };
 
@@ -46,7 +47,10 @@ export const metadata: Metadata = createMetadata({
 export default async function BlogPage() {
   const posts = (await prisma.post.findMany({
     where: { published: true },
-    orderBy: { createdAt: "desc" },
+    orderBy: [
+      { publishedAt: "desc" },
+      { createdAt: "desc" },
+    ],
   })) as BlogListPost[];
 
   return (
@@ -84,7 +88,9 @@ export default async function BlogPage() {
               <div className="space-y-2 px-6 pb-6 pt-4">
                 <div className="flex items-center justify-between">
                   <CategoryBadge label={post.category || "Article"} />
-                  <p className="text-xs uppercase tracking-[0.2em] text-emerald-200">{formatDate(post.createdAt)}</p>
+                  <p className="text-xs uppercase tracking-[0.2em] text-emerald-200">
+                    {formatDate(post.publishedAt ?? post.createdAt)}
+                  </p>
                 </div>
                 <h3 className="text-2xl font-semibold text-white">{post.title}</h3>
                 <p className="text-sm leading-relaxed text-slate-200">{buildExcerpt(post)}</p>

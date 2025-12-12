@@ -42,10 +42,18 @@ export async function PUT(request: Request, { params }: Params) {
       return NextResponse.json({ success: false, error: "Slug, title and body are required" }, { status: 400 });
     }
 
+    const existingPost = await prisma.post.findUnique({ where: { id: params.id } });
+    if (!existingPost) {
+      return NextResponse.json({ success: false, error: "Post not found" }, { status: 404 });
+    }
+
     const existingWithSlug = await prisma.post.findUnique({ where: { slug } });
     if (existingWithSlug && existingWithSlug.id !== params.id) {
       return NextResponse.json({ success: false, error: "Another post already uses this slug" }, { status: 400 });
     }
+
+    const desiredPublished = typeof published === "boolean" ? published : existingPost.published;
+    const publishedAt = desiredPublished ? existingPost.publishedAt ?? new Date() : null;
 
     const updated = await prisma.post.update({
       where: { id: params.id },
@@ -60,7 +68,8 @@ export async function PUT(request: Request, { params }: Params) {
           ? galleryImages.map((item) => (typeof item === "string" ? item : String(item))).filter(Boolean)
           : [],
         videoUrl: typeof videoUrl === "string" ? videoUrl : null,
-        published: Boolean(published ?? true),
+        published: desiredPublished,
+        publishedAt,
       },
     });
 

@@ -45,11 +45,13 @@ export default async function BlogPostPage({ params }: BlogPostPageProps) {
     notFound();
   }
 
+  const displayDate = post.publishedAt ?? post.createdAt;
+
   return (
     <div className="bg-slate-950 pb-20 pt-12">
       <Container className="space-y-10">
         <div className="space-y-4">
-          <SectionHeader eyebrow={post.category || "Article"} title={post.title} subtitle={formatDate(post.createdAt)} />
+          <SectionHeader eyebrow={post.category || "Article"} title={post.title} subtitle={formatDate(displayDate)} />
           <div className="h-52 w-full rounded-2xl border border-white/10 bg-gradient-to-r from-white/5 via-white/10 to-white/5" />
         </div>
 

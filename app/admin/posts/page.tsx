@@ -14,13 +14,19 @@ type PostListItem = {
   slug: string;
   category: string | null;
   published: boolean;
+  publishedAt: Date | null;
   createdAt: Date;
 };
 
 export const dynamic = "force-dynamic";
 
 export default async function AdminPostsPage() {
-  const posts = (await prisma.post.findMany({ orderBy: { createdAt: "desc" } })) as PostListItem[];
+  const posts = (await prisma.post.findMany({
+    orderBy: [
+      { publishedAt: "desc" },
+      { createdAt: "desc" },
+    ],
+  })) as PostListItem[];
 
   return (
     <div className="space-y-8">
@@ -48,6 +54,7 @@ export default async function AdminPostsPage() {
                 <th className="px-3 py-2 font-semibold">Slug</th>
                 <th className="px-3 py-2 font-semibold">Catégorie</th>
                 <th className="px-3 py-2 font-semibold">Publié</th>
+                <th className="px-3 py-2 font-semibold">Publié le</th>
                 <th className="px-3 py-2 font-semibold">Créé le</th>
                 <th className="px-3 py-2 font-semibold">Actions</th>
               </tr>
@@ -64,6 +71,15 @@ export default async function AdminPostsPage() {
                     ) : (
                       <span className="rounded-full bg-amber-500/10 px-2 py-1 text-xs text-amber-200">Brouillon</span>
                     )}
+                  </td>
+                  <td className="px-3 py-3 text-slate-300">
+                    {post.publishedAt
+                      ? new Date(post.publishedAt).toLocaleDateString("fr-FR", {
+                          day: "2-digit",
+                          month: "short",
+                          year: "numeric",
+                        })
+                      : "—"}
                   </td>
                   <td className="px-3 py-3 text-slate-300">
                     {new Date(post.createdAt).toLocaleDateString("fr-FR", {
