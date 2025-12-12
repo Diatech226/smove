@@ -1,6 +1,6 @@
 // file: app/api/admin/projects/route.ts
 import { NextResponse } from "next/server";
-import { safePrisma } from "@/lib/prisma";
+import { safePrisma } from "@/lib/safePrisma";
 
 export async function GET() {
   const projectsResult = await safePrisma((db) =>
@@ -10,7 +10,10 @@ export async function GET() {
   );
 
   if (!projectsResult.ok) {
-    return NextResponse.json({ success: false, error: "Failed to fetch projects" }, { status: 503 });
+    return NextResponse.json(
+      { success: false, error: "Failed to fetch projects", detail: projectsResult.message },
+      { status: 503 },
+    );
   }
 
   return NextResponse.json({ success: true, projects: projectsResult.data }, { status: 200 });

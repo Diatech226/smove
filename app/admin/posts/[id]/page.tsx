@@ -1,7 +1,7 @@
 // file: app/admin/posts/[id]/page.tsx
 import { notFound } from "next/navigation";
 
-import { safePrisma } from "@/lib/prisma";
+import { safePrisma } from "@/lib/safePrisma";
 
 import { PostForm } from "../_components/PostForm";
 

@@ -42,7 +42,7 @@ NEXT_PUBLIC_BRAND_NAME="SMOVE Communication"
 4. Copiez l'URI fournie par Atlas dans `DATABASE_URL` (format `mongodb+srv://.../smove?...`).
 5. Poussez le schéma et générez le client Prisma :
    ```bash
-   npx prisma db push
+   npm run prisma:push
    npm run prisma:generate
    ```
 6. Lancez le projet avec `npm run dev`.
@@ -50,8 +50,16 @@ NEXT_PUBLIC_BRAND_NAME="SMOVE Communication"
 ### Dépannage connexion MongoDB
 - **Server selection timeout** : vérifiez que l'IP est bien autorisée dans Atlas et que le cluster est démarré.
 - **Bad auth / authentification échouée** : confirmez l'utilisateur/mot de passe utilisés et les droits sur la base `smove`.
-- **TLS/SSL errors** : assurez-vous d'utiliser l'URI `mongodb+srv://` fournie par Atlas (incluant les paramètres TLS) ou forcez `ssl=true`.
 - **Base manquante** : ajoutez impérativement `/smove` à la fin du chemin dans `DATABASE_URL`.
+- **Chaîne d'URL** : utilisez l'URI `mongodb+srv://.../smove?retryWrites=true&w=majority&appName=Cluster0` fournie par Atlas (n'oubliez pas le nom de la base).
+- **Whitelisting IP** : autorisez l'adresse IP de votre machine (ou `0.0.0.0/0` temporairement) dans l'onglet Network Access.
+- **TLS/SSL errors** : assurez-vous d'utiliser l'URI `mongodb+srv://` fournie par Atlas (incluant les paramètres TLS) ou forcez `ssl=true`.
+- **Version Node.js** : privilégiez Node.js 18 LTS ou 20 LTS.
+- **Après changement d'env** : redémarrez le serveur de dev (`npm run dev`) après toute modification `.env`.
+
+### Commandes Prisma après modification du schéma
+- Pousser le schéma vers la base : `npm run prisma:push`
+- Générer le client : `npm run prisma:generate`
 
 ## Mise en route
 1. Installer les dépendances :

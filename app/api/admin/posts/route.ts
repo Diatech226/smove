@@ -1,6 +1,6 @@
 // file: app/api/admin/posts/route.ts
 import { NextResponse } from "next/server";
-import { safePrisma } from "@/lib/prisma";
+import { safePrisma } from "@/lib/safePrisma";
 
 export async function GET() {
   const postsResult = await safePrisma((db) =>
@@ -13,10 +13,7 @@ export async function GET() {
   );
 
   if (!postsResult.ok) {
-    return NextResponse.json(
-      { success: false, error: "Failed to fetch posts" },
-      { status: 503 },
-    );
+    return NextResponse.json({ success: false, error: "Failed to fetch posts", detail: postsResult.message }, { status: 503 });
   }
 
   return NextResponse.json({ success: true, posts: postsResult.data }, { status: 200 });

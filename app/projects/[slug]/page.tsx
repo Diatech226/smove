@@ -1,20 +1,20 @@
 // file: app/projects/[slug]/page.tsx
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
-import { prisma } from "@/lib/prisma";
+
+import { Card } from "@/components/ui/Card";
 import { Container } from "@/components/ui/Container";
 import { SectionHeader } from "@/components/ui/SectionHeader";
-import { Card } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
+import { safePrisma } from "@/lib/safePrisma";
 
 interface Props {
   params: { slug: string };
 }
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
-  const project = await prisma.project.findUnique({
-    where: { slug: params.slug },
-  });
+  const projectResult = await safePrisma((db) => db.project.findUnique({ where: { slug: params.slug } }));
+  const project = projectResult.ok ? projectResult.data : null;
 
   if (!project) {
     return { title: "Projet introuvable – SMOVE Communication" };
@@ -27,9 +27,20 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 }
 
 export default async function ProjectPage({ params }: Props) {
-  const project = await prisma.project.findUnique({
-    where: { slug: params.slug },
-  });
+  const projectResult = await safePrisma((db) => db.project.findUnique({ where: { slug: params.slug } }));
+  const project = projectResult.ok ? projectResult.data : null;
+
+  if (!projectResult.ok) {
+    return (
+      <div className="relative bg-slate-950 pb-20 pt-12">
+        <Container className="relative space-y-10">
+          <Card className="border-amber-200/20 bg-amber-500/10 p-6 text-amber-100">
+            Impossible d'afficher ce projet. Vérifiez la connexion à la base de données ou réessayez plus tard.
+          </Card>
+        </Container>
+      </div>
+    );
+  }
 
   if (!project) {
     notFound();

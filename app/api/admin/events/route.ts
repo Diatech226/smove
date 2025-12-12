@@ -1,15 +1,19 @@
 // file: app/api/admin/events/route.ts
 import { NextResponse } from "next/server";
-import { prisma } from "@/lib/prisma";
+
+import { safePrisma } from "@/lib/safePrisma";
 
 export async function GET() {
-  try {
-    const events = await prisma.event.findMany({ orderBy: { date: "desc" } });
-    return NextResponse.json({ success: true, events }, { status: 200 });
-  } catch (error: any) {
-    console.error("Error fetching events", { code: error?.code, message: error?.message });
-    return NextResponse.json({ success: false, error: "Failed to fetch events" }, { status: 500 });
+  const eventsResult = await safePrisma((db) => db.event.findMany({ orderBy: { date: "desc" } }));
+
+  if (!eventsResult.ok) {
+    return NextResponse.json(
+      { success: false, error: "Failed to fetch events", detail: eventsResult.message },
+      { status: 503 },
+    );
   }
+
+  return NextResponse.json({ success: true, events: eventsResult.data }, { status: 200 });
 }
 
 export async function POST(request: Request) {
@@ -26,19 +30,32 @@ export async function POST(request: Request) {
       return NextResponse.json({ success: false, error: "Date invalide." }, { status: 400 });
     }
 
-    const created = await prisma.event.create({
-      data: {
-        slug,
-        title,
-        date: parsedDate,
-        location: typeof location === "string" ? location : null,
-        description: typeof description === "string" ? description : null,
-        category: typeof category === "string" ? category : null,
-        coverImage: typeof coverImage === "string" ? coverImage : null,
-      },
-    });
+    const createdResult = await safePrisma((db) =>
+      db.event.create({
+        data: {
+          slug,
+          title,
+          date: parsedDate,
+          location: typeof location === "string" ? location : null,
+          description: typeof description === "string" ? description : null,
+          category: typeof category === "string" ? category : null,
+          coverImage: typeof coverImage === "string" ? coverImage : null,
+        },
+      }),
+    );
 
-    return NextResponse.json({ success: true, event: created }, { status: 201 });
+    if (!createdResult.ok) {
+      const error = (createdResult.error as any) ?? {};
+      if (error?.code === "P2002") {
+        return NextResponse.json({ success: false, error: "Un événement utilise déjà ce slug." }, { status: 400 });
+      }
+      return NextResponse.json(
+        { success: false, error: "Failed to create event", detail: createdResult.message },
+        { status: 503 },
+      );
+    }
+
+    return NextResponse.json({ success: true, event: createdResult.data }, { status: 201 });
   } catch (error: any) {
     console.error("Error creating event", { code: error?.code, message: error?.message });
     if (error?.code === "P2002") {

@@ -7,7 +7,7 @@ import { notFound } from "next/navigation";
 import { Container } from "@/components/ui/Container";
 import { SectionHeader } from "@/components/ui/SectionHeader";
 import { createMetadata } from "@/lib/config/seo";
-import { safePrisma } from "@/lib/prisma";
+import { safePrisma } from "@/lib/safePrisma";
 
 export const dynamic = "force-dynamic";
 
@@ -17,7 +17,7 @@ function formatDate(dateValue: string | Date) {
 
 async function getPost(slug: string) {
   const result = await safePrisma((db) => db.post.findFirst({ where: { slug, published: true } }));
-  return result.ok ? result.data : null;
+  return { post: result.ok ? result.data : null, error: result.ok ? null : result.message } as const;
 }
 
 export type BlogPostPageProps = {
@@ -25,7 +25,7 @@ export type BlogPostPageProps = {
 };
 
 export async function generateMetadata({ params }: BlogPostPageProps): Promise<Metadata> {
-  const post = await getPost(params.slug);
+  const { post } = await getPost(params.slug);
 
   if (!post) {
     return createMetadata({
@@ -45,7 +45,22 @@ export async function generateMetadata({ params }: BlogPostPageProps): Promise<M
 }
 
 export default async function BlogPostPage({ params }: BlogPostPageProps) {
-  const post = await getPost(params.slug);
+  const { post, error } = await getPost(params.slug);
+
+  if (error) {
+    return (
+      <div className="bg-slate-950 pb-20 pt-12">
+        <Container className="space-y-6">
+          <div className="rounded-2xl border border-amber-200/20 bg-amber-500/10 p-6 text-amber-100">
+            Le blog est momentanément indisponible. Vérifiez la connexion à la base de données ou réessayez plus tard.
+          </div>
+          <Link href="/blog" className="text-sm font-semibold text-emerald-300 transition hover:text-emerald-200">
+            ← Retour au blog
+          </Link>
+        </Container>
+      </div>
+    );
+  }
 
   if (!post) {
     notFound();

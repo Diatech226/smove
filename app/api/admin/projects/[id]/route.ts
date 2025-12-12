@@ -1,6 +1,6 @@
 // file: app/api/admin/projects/[id]/route.ts
 import { NextResponse } from "next/server";
-import { safePrisma } from "@/lib/prisma";
+import { safePrisma } from "@/lib/safePrisma";
 
 type Params = {
   params: { id: string };
