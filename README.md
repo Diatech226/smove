@@ -23,9 +23,8 @@ SMOVE_ADMIN_PASSWORD="change-me"
 SMOVE_ADMIN_SECRET=change-me-random-long-secret
 
 # MongoDB connection for Prisma
-# IMPORTANT: must start with mongodb:// or mongodb+srv:// (not prisma:// or anything else)
+# IMPORTANT: must start with mongodb:// ou mongodb+srv:// et contenir le nom de base smove
 DATABASE_URL="mongodb+srv://USERNAME:PASSWORD@cluster0.wxdxz04.mongodb.net/smove?retryWrites=true&w=majority&appName=Cluster0"
-DIRECT_DATABASE_URL="mongodb+srv://USERNAME:PASSWORD@cluster0.wxdxz04.mongodb.net/smove?retryWrites=true&w=majority&appName=Cluster0"
 
 # Public site
 NEXT_PUBLIC_SITE_URL=https://smove.example.com
@@ -35,6 +34,24 @@ NEXT_PUBLIC_BRAND_NAME="SMOVE Communication"
 - **Toujours** inclure le nom de base de données `/smove` dans le chemin. Les erreurs `P2010` / "empty database name" viennent généralement d'une URL tronquée.
 - Le client Prisma est initialisé via `env("DATABASE_URL")` (voir `prisma/schema.prisma` et `lib/prisma.ts`).
 - Pour MongoDB, les identifiants utilisent `String @id @default(auto()) @map("_id") @db.ObjectId`.
+
+## Setup Mongo Atlas
+1. Créez un cluster MongoDB Atlas et une base nommée **smove** (ou assurez-vous que l'URL se termine par `/smove`).
+2. Autorisez votre IP (ou `0.0.0.0/0` temporairement) dans Network Access.
+3. Activez un utilisateur avec les droits de lecture/écriture sur la base smove.
+4. Copiez l'URI fournie par Atlas dans `DATABASE_URL` (format `mongodb+srv://.../smove?...`).
+5. Poussez le schéma et générez le client Prisma :
+   ```bash
+   npx prisma db push
+   npm run prisma:generate
+   ```
+6. Lancez le projet avec `npm run dev`.
+
+### Dépannage connexion MongoDB
+- **Server selection timeout** : vérifiez que l'IP est bien autorisée dans Atlas et que le cluster est démarré.
+- **Bad auth / authentification échouée** : confirmez l'utilisateur/mot de passe utilisés et les droits sur la base `smove`.
+- **TLS/SSL errors** : assurez-vous d'utiliser l'URI `mongodb+srv://` fournie par Atlas (incluant les paramètres TLS) ou forcez `ssl=true`.
+- **Base manquante** : ajoutez impérativement `/smove` à la fin du chemin dans `DATABASE_URL`.
 
 ## Mise en route
 1. Installer les dépendances :

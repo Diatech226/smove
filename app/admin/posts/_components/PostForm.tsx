@@ -36,7 +36,7 @@ export function PostForm({ initialValues, postId, mode }: PostFormProps) {
       slug: "",
       excerpt: "",
       body: "",
-      published: true,
+      published: false,
       coverImage: "",
       gallery: [],
       videoUrl: "",

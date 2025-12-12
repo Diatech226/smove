@@ -1,6 +1,6 @@
 // file: app/api/admin/projects/[id]/route.ts
 import { NextResponse } from "next/server";
-import { prisma } from "@/lib/prisma";
+import { safePrisma } from "@/lib/prisma";
 
 type Params = {
   params: { id: string };
@@ -25,24 +25,34 @@ export async function PUT(request: Request, { params }: Params) {
       );
     }
 
-    const updated = await prisma.project.update({
-      where: { id: params.id },
-      data: {
-        slug,
-        title,
-        client,
-        sector,
-        summary,
-        body: content ?? null,
-        results: Array.isArray(results)
-          ? results.map((item) => (typeof item === "string" ? item : String(item))).filter(Boolean)
-          : [],
-        category: typeof category === "string" ? category : null,
-        coverImage: typeof coverImage === "string" ? coverImage : null,
-      },
-    });
+    const updatedResult = await safePrisma((db) =>
+      db.project.update({
+        where: { id: params.id },
+        data: {
+          slug,
+          title,
+          client,
+          sector,
+          summary,
+          body: content ?? null,
+          results: Array.isArray(results)
+            ? results.map((item) => (typeof item === "string" ? item : String(item))).filter(Boolean)
+            : [],
+          category: typeof category === "string" ? category : null,
+          coverImage: typeof coverImage === "string" ? coverImage : null,
+        },
+      }),
+    );
 
-    return NextResponse.json({ success: true, project: updated });
+    if (!updatedResult.ok) {
+      const error = updatedResult.error as any;
+      if (error?.code === "P2002") {
+        return NextResponse.json({ success: false, error: "Un autre projet utilise déjà ce slug." }, { status: 400 });
+      }
+      return NextResponse.json({ success: false, error: "Failed to update project" }, { status: 503 });
+    }
+
+    return NextResponse.json({ success: true, project: updatedResult.data });
   } catch (error: any) {
     console.error("Error updating project", {
       code: error?.code,
@@ -60,7 +70,10 @@ export async function DELETE(_request: Request, { params }: Params) {
     if (!params.id) {
       return NextResponse.json({ success: false, error: "Project id is required" }, { status: 400 });
     }
-    await prisma.project.delete({ where: { id: params.id } });
+    const deleteResult = await safePrisma((db) => db.project.delete({ where: { id: params.id } }));
+    if (!deleteResult.ok) {
+      return NextResponse.json({ success: false, error: "Failed to delete project" }, { status: 503 });
+    }
     return NextResponse.json({ success: true });
   } catch (error: any) {
     console.error("Error deleting project", {
