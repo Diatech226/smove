@@ -5,7 +5,10 @@ import { prisma } from "@/lib/prisma";
 export async function GET() {
   try {
     const posts = await prisma.post.findMany({
-      orderBy: { createdAt: "desc" },
+      orderBy: [
+        { publishedAt: "desc" },
+        { createdAt: "desc" },
+      ],
     });
     return NextResponse.json({ success: true, posts }, { status: 200 });
   } catch (error: any) {
@@ -44,6 +47,8 @@ export async function POST(request: Request) {
       );
     }
 
+    const isPublished = typeof published === "boolean" ? published : true;
+
     const created = await prisma.post.create({
       data: {
         slug,
@@ -56,7 +61,8 @@ export async function POST(request: Request) {
           ? galleryImages.map((item) => (typeof item === "string" ? item : String(item))).filter(Boolean)
           : [],
         videoUrl: typeof videoUrl === "string" ? videoUrl : null,
-        published: Boolean(published ?? true),
+        published: isPublished,
+        publishedAt: isPublished ? new Date() : null,
       },
     });
 
