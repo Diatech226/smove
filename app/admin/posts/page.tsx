@@ -4,7 +4,7 @@ import Link from "next/link";
 import { AdminPageHeader } from "@/components/admin/AdminPageHeader";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
-import { safePrisma } from "@/lib/prisma";
+import { safePrisma } from "@/lib/safePrisma";
 
 import { DeletePostButton } from "./_components/DeletePostButton";
 

@@ -1,7 +1,7 @@
 // file: app/blog/page.tsx
 import type { Metadata } from "next";
 import Link from "next/link";
-import { safePrisma } from "@/lib/prisma";
+import { safePrisma } from "@/lib/safePrisma";
 import { createMetadata } from "@/lib/config/seo";
 import { Card } from "@/components/ui/Card";
 import { Container } from "@/components/ui/Container";

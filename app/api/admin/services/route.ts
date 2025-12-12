@@ -1,6 +1,6 @@
 // file: app/api/admin/services/route.ts
 import { NextResponse } from "next/server";
-import { safePrisma } from "@/lib/prisma";
+import { safePrisma } from "@/lib/safePrisma";
 
 export async function GET() {
   const servicesResult = await safePrisma((db) =>
@@ -10,7 +10,10 @@ export async function GET() {
   );
 
   if (!servicesResult.ok) {
-    return NextResponse.json({ success: false, error: "Failed to fetch services" }, { status: 503 });
+    return NextResponse.json(
+      { success: false, error: "Failed to fetch services", detail: servicesResult.message },
+      { status: 503 },
+    );
   }
 
   return NextResponse.json({ success: true, services: servicesResult.data }, { status: 200 });

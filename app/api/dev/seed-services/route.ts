@@ -1,17 +1,31 @@
 import { NextResponse } from "next/server";
-import { prisma } from "@/lib/prisma";
+
+import { safePrisma } from "@/lib/safePrisma";
 
 export async function POST() {
   try {
-    const demo = await prisma.service.create({
-      data: {
-        name: "Demo Service",
-        slug: "demo-service",
-        description: "Service de démonstration pour tester Prisma + MongoDB.",
-      },
-    });
+    const demoResult = await safePrisma((db) =>
+      db.service.create({
+        data: {
+          name: "Demo Service",
+          slug: "demo-service",
+          description: "Service de démonstration pour tester Prisma + MongoDB.",
+        },
+      }),
+    );
 
-    return NextResponse.json({ success: true, service: demo });
+    if (!demoResult.ok) {
+      return NextResponse.json(
+        {
+          success: false,
+          message: "Error seeding demo service",
+          error: { code: (demoResult.error as any)?.code ?? null, message: demoResult.message },
+        },
+        { status: 503 },
+      );
+    }
+
+    return NextResponse.json({ success: true, service: demoResult.data });
   } catch (error: any) {
     console.error("Error seeding demo service:", error);
     return NextResponse.json(

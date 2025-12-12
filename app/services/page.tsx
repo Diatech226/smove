@@ -1,6 +1,6 @@
 // file: app/services/page.tsx
 import type { Metadata } from "next";
-import { safePrisma } from "@/lib/prisma";
+import { safePrisma } from "@/lib/safePrisma";
 import { Card } from "@/components/ui/Card";
 import { Container } from "@/components/ui/Container";
 import { SectionHeader } from "@/components/ui/SectionHeader";
