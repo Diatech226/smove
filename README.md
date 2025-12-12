@@ -19,12 +19,17 @@ SMOVE – site vitrine avec hero 3D et back-office CMS pour une agence de commun
 Créez un fichier `.env` (ou `.env.local` pour Next.js) à la racine avec :
 
 ```
-DATABASE_URL="mongodb+srv://diaexpressofficial:Smove@cluster0.wxdxz04.mongodb.net/smove?retryWrites=true&w=majority&appName=Cluster0"
-DIRECT_DATABASE_URL="mongodb+srv://diaexpressofficial:Smove@cluster0.wxdxz04.mongodb.net/smove?retryWrites=true&w=majority&appName=Cluster0"
-SMOVE_ADMIN_PASSWORD=change-me
-SMOVE_ADMIN_SECRET=any-strong-random-string
-NEXT_PUBLIC_SITE_URL=https://example.com
-NEXT_PUBLIC_BRAND_NAME=SMOVE
+SMOVE_ADMIN_PASSWORD="change-me"
+SMOVE_ADMIN_SECRET=change-me-random-long-secret
+
+# MongoDB connection for Prisma
+# IMPORTANT: must start with mongodb:// or mongodb+srv:// (not prisma:// or anything else)
+DATABASE_URL="mongodb+srv://USERNAME:PASSWORD@cluster0.wxdxz04.mongodb.net/smove?retryWrites=true&w=majority&appName=Cluster0"
+DIRECT_DATABASE_URL="mongodb+srv://USERNAME:PASSWORD@cluster0.wxdxz04.mongodb.net/smove?retryWrites=true&w=majority&appName=Cluster0"
+
+# Public site
+NEXT_PUBLIC_SITE_URL=https://smove.example.com
+NEXT_PUBLIC_BRAND_NAME="SMOVE Communication"
 ```
 
 - **Toujours** inclure le nom de base de données `/smove` dans le chemin. Les erreurs `P2010` / "empty database name" viennent généralement d'une URL tronquée.
@@ -66,12 +71,12 @@ Les modèles Prisma/MongoDB sont définis dans `prisma/schema.prisma` :
 ## Gestion du contenu
 - `admin/services` : lister, créer, mettre à jour et supprimer les services.
 - `admin/projects` : CRUD projets (slug, client, secteur, résumé, description, résultats).
-- `admin/posts` : CRUD articles (slug, titre, catégorie, extrait, contenu, publication).
+- `admin/posts` : CRUD articles (slug, titre, catégorie, extrait, contenu, publication, média). Les articles supportent l'image de couverture, une galerie, une vidéo et les tags/catégories.
 
 Les données sont persistées via Prisma/MongoDB et utilisées par les pages publiques (`/projects`, `/blog`, etc.).
 
 ## Blog & CMS
-- Pages publiques : `/blog` (listing éditorial) et `/blog/[slug]` (détail de l'article).
+- Pages publiques : `/blog` (listing éditorial) et `/blog/[slug]` (détail de l'article, galerie, vidéo, posts liés, derniers articles).
 - Administration : `/admin/posts` pour gérer les articles (création, édition, suppression).
 
 Flux de gestion :
@@ -82,6 +87,11 @@ Flux de gestion :
 ## Notes supplémentaires
 - Le hero 3D utilise des versions compatibles de `three`, `@react-three/fiber` et `@react-three/drei` pour éviter les warnings `PlaneBufferGeometry` de `troika-three-text`.
 - Les routes `/portfolio` redirigent vers la convention unique `/projects`.
+
+## Commandes Prisma utiles
+- Pousser le schéma vers la base : `npx prisma db push`
+- Générer le client : `npx prisma generate`
+- Visualiser les données : `npx prisma studio`
 
 ## Améliorations futures proposées
 - Design : enrichir les pages publiques (services/projets/blog) avec plus de visuels et d'animations micro-interactions.
