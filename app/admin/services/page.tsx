@@ -14,18 +14,18 @@ type AdminService = {
   slug: string;
   description: string;
   category?: string | null;
-  coverImage?: string | null;
+  image?: string | null;
 };
 
 const emptyForm: Pick<AdminService, "name" | "slug" | "description"> & {
   category?: string;
-  coverImage?: string;
+  image?: string;
 } = {
   name: "",
   slug: "",
   description: "",
   category: "",
-  coverImage: "",
+  image: "",
 };
 
 type ToastState = {
@@ -78,7 +78,7 @@ export default function AdminServicesPage() {
     setStatusMessage(null);
     setError(null);
 
-    const { name, description, category, coverImage } = form;
+    const { name, description, category, image } = form;
     if (!name || !computedSlug || !description) {
       setStatusMessage("Merci de renseigner le nom, le slug et la description.");
       return;
@@ -90,7 +90,7 @@ export default function AdminServicesPage() {
       const response = await fetch(url, {
         method,
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name, slug: computedSlug, description, category, coverImage }),
+        body: JSON.stringify({ name, slug: computedSlug, description, category, image }),
       });
       const data = await response.json();
       if (!response.ok || data?.success === false) {
@@ -178,7 +178,7 @@ export default function AdminServicesPage() {
                         slug: service.slug,
                         description: service.description,
                         category: service.category ?? "",
-                        coverImage: service.coverImage ?? "",
+                        image: service.image ?? "",
                       });
                       setStatusMessage(null);
                     }}
@@ -244,15 +244,16 @@ export default function AdminServicesPage() {
             </div>
 
             <div className="space-y-2">
-              <label className="text-sm font-semibold text-white" htmlFor="coverImage">
-                Image de couverture
+              <label className="text-sm font-semibold text-white" htmlFor="image">
+                Visuel principal
               </label>
               <input
-                id="coverImage"
-                name="coverImage"
-                value={form.coverImage ?? ""}
-                onChange={(event) => setForm((prev) => ({ ...prev, coverImage: event.target.value }))}
+                id="image"
+                name="image"
+                value={form.image ?? ""}
+                onChange={(event) => setForm((prev) => ({ ...prev, image: event.target.value }))}
                 className="w-full rounded-lg border border-white/10 bg-slate-900 px-3 py-2 text-sm text-white focus:border-emerald-400 focus:outline-none"
+                placeholder="https://..."
               />
             </div>
 

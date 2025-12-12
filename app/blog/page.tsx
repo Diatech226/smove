@@ -16,7 +16,7 @@ type BlogListPost = {
   title: string;
   excerpt: string | null;
   body: string | null;
-  category: string | null;
+  tags: string[];
   coverImage?: string | null;
   published: boolean;
   publishedAt: string | Date | null;
@@ -87,7 +87,7 @@ export default async function BlogPage() {
 
               <div className="space-y-2 px-6 pb-6 pt-4">
                 <div className="flex items-center justify-between">
-                  <CategoryBadge label={post.category || "Article"} />
+                  <CategoryBadge label={(post.tags?.[0] ?? "Article").toString()} />
                   <p className="text-xs uppercase tracking-[0.2em] text-emerald-200">
                     {formatDate(post.publishedAt ?? post.createdAt)}
                   </p>
