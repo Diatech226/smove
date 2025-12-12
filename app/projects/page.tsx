@@ -1,7 +1,7 @@
 // file: app/projects/page.tsx
 import Link from "next/link";
 import type { Metadata } from "next";
-import { prisma } from "@/lib/prisma";
+import { safePrisma } from "@/lib/prisma";
 import { Container } from "@/components/ui/Container";
 import { SectionHeader } from "@/components/ui/SectionHeader";
 import { Card } from "@/components/ui/Card";
@@ -13,9 +13,13 @@ export const metadata: Metadata = {
 };
 
 export default async function ProjectsPage() {
-  const projects = await prisma.project.findMany({
-    orderBy: { createdAt: "desc" },
-  });
+  const projectsResult = await safePrisma((db) =>
+    db.project.findMany({
+      orderBy: { createdAt: "desc" },
+    }),
+  );
+  const projects = projectsResult.ok ? projectsResult.data : [];
+  const loadError = !projectsResult.ok;
 
   return (
     <div className="relative bg-slate-950 pb-20 pt-12">
@@ -31,6 +35,11 @@ export default async function ProjectsPage() {
         />
 
         <div className="grid gap-6 md:grid-cols-2">
+          {loadError ? (
+            <Card className="border-amber-200/20 bg-amber-500/10 p-4 text-amber-100">
+              Les projets ne peuvent pas être affichés. Vérifiez la connexion à la base de données ou réessayez plus tard.
+            </Card>
+          ) : null}
           {projects.map((project) => (
             <Card
               key={project.id}

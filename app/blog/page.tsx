@@ -1,7 +1,7 @@
 // file: app/blog/page.tsx
 import type { Metadata } from "next";
 import Link from "next/link";
-import { prisma } from "@/lib/prisma";
+import { safePrisma } from "@/lib/prisma";
 import { createMetadata } from "@/lib/config/seo";
 import { Card } from "@/components/ui/Card";
 import { Container } from "@/components/ui/Container";
@@ -45,13 +45,18 @@ export const metadata: Metadata = createMetadata({
 });
 
 export default async function BlogPage() {
-  const posts = (await prisma.post.findMany({
-    where: { published: true },
-    orderBy: [
-      { publishedAt: "desc" },
-      { createdAt: "desc" },
-    ],
-  })) as BlogListPost[];
+  const postsResult = await safePrisma((db) =>
+    db.post.findMany({
+      where: { published: true },
+      orderBy: [
+        { publishedAt: "desc" },
+        { createdAt: "desc" },
+      ],
+    }),
+  );
+
+  const posts = (postsResult.ok ? postsResult.data : []) as BlogListPost[];
+  const loadError = !postsResult.ok;
 
   return (
     <div className="relative bg-slate-950 pb-24 pt-14">
@@ -68,6 +73,11 @@ export default async function BlogPage() {
         />
 
         <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-3">
+          {loadError ? (
+            <Card className="border-amber-200/20 bg-amber-500/10 p-4 text-amber-100">
+              Le blog est momentanément indisponible. Vérifiez la connexion à la base de données ou réessayez plus tard.
+            </Card>
+          ) : null}
           {posts.map((post) => (
             <Card
               key={post.id}

@@ -1,13 +1,7 @@
 // file: lib/prisma.ts
 import { PrismaClient } from "@prisma/client";
 
-const globalForPrisma = global as unknown as { prisma?: PrismaClient };
-
-if (!process.env.DATABASE_URL) {
-  console.error(">>> ERROR: process.env.DATABASE_URL is not defined!");
-} else {
-  console.log(">>> Prisma DATABASE_URL at runtime:", process.env.DATABASE_URL);
-}
+const globalForPrisma = globalThis as unknown as { prisma?: PrismaClient };
 
 export const prisma =
   globalForPrisma.prisma ??
@@ -15,6 +9,21 @@ export const prisma =
     log: ["error", "warn"],
   });
 
-if (!globalForPrisma.prisma) {
+if (process.env.NODE_ENV !== "production") {
   globalForPrisma.prisma = prisma;
+}
+
+/**
+ * Wrap Prisma calls to avoid hard crashes in case of connection/auth errors.
+ */
+export async function safePrisma<T>(
+  callback: (client: PrismaClient) => Promise<T>,
+): Promise<{ ok: true; data: T } | { ok: false; error: Error }> {
+  try {
+    const data = await callback(prisma);
+    return { ok: true, data } as const;
+  } catch (error) {
+    console.error("Prisma client error", error);
+    return { ok: false, error: error as Error } as const;
+  }
 }

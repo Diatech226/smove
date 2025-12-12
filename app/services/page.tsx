@@ -1,6 +1,6 @@
 // file: app/services/page.tsx
 import type { Metadata } from "next";
-import { prisma } from "@/lib/prisma";
+import { safePrisma } from "@/lib/prisma";
 import { Card } from "@/components/ui/Card";
 import { Container } from "@/components/ui/Container";
 import { SectionHeader } from "@/components/ui/SectionHeader";
@@ -24,9 +24,13 @@ export const metadata: Metadata = createMetadata({
 });
 
 export default async function ServicesPage() {
-  const services = (await prisma.service.findMany({
-    orderBy: { createdAt: "asc" },
-  })) as ServiceListItem[];
+  const servicesResult = await safePrisma((db) =>
+    db.service.findMany({
+      orderBy: { createdAt: "asc" },
+    }),
+  );
+  const services = (servicesResult.ok ? servicesResult.data : []) as ServiceListItem[];
+  const loadError = !servicesResult.ok;
 
   return (
     <div className="relative bg-slate-950 pb-20 pt-12">
@@ -42,6 +46,12 @@ export default async function ServicesPage() {
         />
 
         <div className="grid gap-5 md:grid-cols-2">
+          {loadError ? (
+            <Card className="border-amber-200/20 bg-amber-500/10 p-4 text-amber-100">
+              Les services ne peuvent pas être chargés pour le moment. Vérifiez la connexion à la base de données ou réessayez plus
+              tard.
+            </Card>
+          ) : null}
           {services.map((service) => (
             <Card
               key={service.id}

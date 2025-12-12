@@ -7,7 +7,7 @@ import { notFound } from "next/navigation";
 import { Container } from "@/components/ui/Container";
 import { SectionHeader } from "@/components/ui/SectionHeader";
 import { createMetadata } from "@/lib/config/seo";
-import { prisma } from "@/lib/prisma";
+import { safePrisma } from "@/lib/prisma";
 
 export const dynamic = "force-dynamic";
 
@@ -16,7 +16,8 @@ function formatDate(dateValue: string | Date) {
 }
 
 async function getPost(slug: string) {
-  return prisma.post.findFirst({ where: { slug, published: true } });
+  const result = await safePrisma((db) => db.post.findFirst({ where: { slug, published: true } }));
+  return result.ok ? result.data : null;
 }
 
 export type BlogPostPageProps = {
@@ -53,22 +54,29 @@ export default async function BlogPostPage({ params }: BlogPostPageProps) {
   const displayDate = post.publishedAt ?? post.createdAt;
   const primaryTag = post.tags?.[0] ?? "Article";
 
-  const [relatedPosts, latestPosts] = await Promise.all([
-    prisma.post.findMany({
-      where: {
-        published: true,
-        id: { not: post.id },
-        tags: post.tags?.length ? { hasSome: post.tags } : undefined,
-      },
-      orderBy: [{ publishedAt: "desc" }, { createdAt: "desc" }],
-      take: 3,
-    }),
-    prisma.post.findMany({
-      where: { published: true, id: { not: post.id } },
-      orderBy: [{ publishedAt: "desc" }, { createdAt: "desc" }],
-      take: 3,
-    }),
+  const [relatedResult, latestResult] = await Promise.all([
+    safePrisma((db) =>
+      db.post.findMany({
+        where: {
+          published: true,
+          id: { not: post.id },
+          tags: post.tags?.length ? { hasSome: post.tags } : undefined,
+        },
+        orderBy: [{ publishedAt: "desc" }, { createdAt: "desc" }],
+        take: 3,
+      }),
+    ),
+    safePrisma((db) =>
+      db.post.findMany({
+        where: { published: true, id: { not: post.id } },
+        orderBy: [{ publishedAt: "desc" }, { createdAt: "desc" }],
+        take: 3,
+      }),
+    ),
   ]);
+
+  const relatedPosts = relatedResult.ok ? relatedResult.data : [];
+  const latestPosts = latestResult.ok ? latestResult.data : [];
 
   return (
     <div className="bg-slate-950 pb-20 pt-12">

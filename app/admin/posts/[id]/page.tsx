@@ -1,7 +1,7 @@
 // file: app/admin/posts/[id]/page.tsx
 import { notFound } from "next/navigation";
 
-import { prisma } from "@/lib/prisma";
+import { safePrisma } from "@/lib/prisma";
 
 import { PostForm } from "../_components/PostForm";
 
@@ -12,7 +12,17 @@ type EditPostPageProps = {
 };
 
 export default async function EditPostPage({ params }: EditPostPageProps) {
-  const post = await prisma.post.findUnique({ where: { id: params.id } });
+  const postResult = await safePrisma((db) => db.post.findUnique({ where: { id: params.id } }));
+
+  if (!postResult.ok) {
+    return (
+      <div className="space-y-6 text-sm text-amber-200">
+        <p>Impossible de charger cet article. Vérifiez la connexion à la base de données ou vos droits d'accès.</p>
+      </div>
+    );
+  }
+
+  const post = postResult.data;
 
   if (!post) {
     notFound();

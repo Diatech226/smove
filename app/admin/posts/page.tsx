@@ -4,7 +4,7 @@ import Link from "next/link";
 import { AdminPageHeader } from "@/components/admin/AdminPageHeader";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
-import { prisma } from "@/lib/prisma";
+import { safePrisma } from "@/lib/prisma";
 
 import { DeletePostButton } from "./_components/DeletePostButton";
 
@@ -21,12 +21,16 @@ type PostListItem = {
 export const dynamic = "force-dynamic";
 
 export default async function AdminPostsPage() {
-  const posts = (await prisma.post.findMany({
-    orderBy: [
-      { publishedAt: "desc" },
-      { createdAt: "desc" },
-    ],
-  })) as PostListItem[];
+  const postsResult = await safePrisma((db) =>
+    db.post.findMany({
+      orderBy: [
+        { publishedAt: "desc" },
+        { createdAt: "desc" },
+      ],
+    }),
+  );
+  const posts = (postsResult.ok ? postsResult.data : []) as PostListItem[];
+  const loadError = !postsResult.ok;
 
   return (
     <div className="space-y-8">
@@ -47,6 +51,12 @@ export default async function AdminPostsPage() {
         </div>
 
         <div className="mt-6 overflow-x-auto">
+          {loadError ? (
+            <p className="mb-4 text-sm text-amber-200">
+              Impossible de charger les articles. Vérifiez l'authentification ou la connexion à la base de données, puis
+              réessayez.
+            </p>
+          ) : null}
           <table className="min-w-full divide-y divide-white/10 text-left text-sm text-slate-200">
             <thead>
               <tr>
