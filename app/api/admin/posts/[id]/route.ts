@@ -31,7 +31,7 @@ export async function GET(_request: Request, { params }: Params) {
 export async function PUT(request: Request, { params }: Params) {
   try {
     const body = await request.json().catch(() => null);
-    const { slug, title, excerpt, body: content, category, published, coverImage, galleryImages, videoUrl } =
+    const { slug, title, excerpt, body: content, published, coverImage, gallery, videoUrl, tags } =
       (body as Record<string, unknown>) ?? {};
 
     if (!params.id) {
@@ -62,11 +62,13 @@ export async function PUT(request: Request, { params }: Params) {
         title,
         excerpt: typeof excerpt === "string" ? excerpt : null,
         body: typeof content === "string" ? content : null,
-        category: typeof category === "string" ? category : null,
+        tags: Array.isArray(tags)
+          ? tags.map((item) => (typeof item === "string" ? item : String(item))).filter(Boolean)
+          : existingPost.tags,
         coverImage: typeof coverImage === "string" ? coverImage : null,
-        galleryImages: Array.isArray(galleryImages)
-          ? galleryImages.map((item) => (typeof item === "string" ? item : String(item))).filter(Boolean)
-          : [],
+        gallery: Array.isArray(gallery)
+          ? gallery.map((item) => (typeof item === "string" ? item : String(item))).filter(Boolean)
+          : existingPost.gallery,
         videoUrl: typeof videoUrl === "string" ? videoUrl : null,
         published: desiredPublished,
         publishedAt,

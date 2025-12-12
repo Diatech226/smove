@@ -29,7 +29,7 @@ export async function GET() {
 export async function POST(request: Request) {
   try {
     const body = await request.json().catch(() => null);
-    const { slug, title, excerpt, body: content, category, published, coverImage, galleryImages, videoUrl } =
+    const { slug, title, excerpt, body: content, published, coverImage, gallery, videoUrl, tags } =
       (body as Record<string, unknown>) ?? {};
 
     if (![slug, title, content].every((value) => typeof value === "string" && value.trim().length)) {
@@ -55,10 +55,12 @@ export async function POST(request: Request) {
         title,
         excerpt: typeof excerpt === "string" ? excerpt : null,
         body: typeof content === "string" ? content : null,
-        category: typeof category === "string" ? category : null,
+        tags: Array.isArray(tags)
+          ? tags.map((item) => (typeof item === "string" ? item : String(item))).filter(Boolean)
+          : [],
         coverImage: typeof coverImage === "string" ? coverImage : null,
-        galleryImages: Array.isArray(galleryImages)
-          ? galleryImages.map((item) => (typeof item === "string" ? item : String(item))).filter(Boolean)
+        gallery: Array.isArray(gallery)
+          ? gallery.map((item) => (typeof item === "string" ? item : String(item))).filter(Boolean)
           : [],
         videoUrl: typeof videoUrl === "string" ? videoUrl : null,
         published: isPublished,

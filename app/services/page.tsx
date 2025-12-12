@@ -13,6 +13,7 @@ type ServiceListItem = {
   name: string;
   slug: string;
   description: string;
+  image?: string | null;
 };
 
 export const metadata: Metadata = createMetadata({

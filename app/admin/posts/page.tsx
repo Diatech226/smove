@@ -12,7 +12,7 @@ type PostListItem = {
   id: string;
   title: string;
   slug: string;
-  category: string | null;
+  tags: string[];
   published: boolean;
   publishedAt: Date | null;
   createdAt: Date;
@@ -52,7 +52,7 @@ export default async function AdminPostsPage() {
               <tr>
                 <th className="px-3 py-2 font-semibold">Titre</th>
                 <th className="px-3 py-2 font-semibold">Slug</th>
-                <th className="px-3 py-2 font-semibold">Catégorie</th>
+                <th className="px-3 py-2 font-semibold">Catégories</th>
                 <th className="px-3 py-2 font-semibold">Publié</th>
                 <th className="px-3 py-2 font-semibold">Publié le</th>
                 <th className="px-3 py-2 font-semibold">Créé le</th>
@@ -64,7 +64,7 @@ export default async function AdminPostsPage() {
                 <tr key={post.id} className="hover:bg-white/5">
                   <td className="px-3 py-3 text-white">{post.title}</td>
                   <td className="px-3 py-3 text-emerald-200">{post.slug}</td>
-                  <td className="px-3 py-3">{post.category || "—"}</td>
+                  <td className="px-3 py-3">{post.tags?.length ? post.tags.join(", ") : "—"}</td>
                   <td className="px-3 py-3 font-semibold">
                     {post.published ? (
                       <span className="rounded-full bg-emerald-500/10 px-2 py-1 text-xs text-emerald-200">Oui</span>
@@ -100,7 +100,7 @@ export default async function AdminPostsPage() {
               ))}
               {!posts.length ? (
                 <tr>
-                  <td className="px-3 py-4 text-sm text-slate-300" colSpan={6}>
+                  <td className="px-3 py-4 text-sm text-slate-300" colSpan={7}>
                     Aucun article pour le moment. Créez votre premier contenu avec le bouton "Nouvel article".
                   </td>
                 </tr>

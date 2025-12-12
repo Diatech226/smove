@@ -26,7 +26,7 @@ export async function GET() {
 export async function POST(request: Request) {
   try {
     const body = await request.json().catch(() => null);
-    const { name, slug, description, category, coverImage } = (body as Record<string, unknown>) ?? {};
+    const { name, slug, description, category, image } = (body as Record<string, unknown>) ?? {};
 
     if (![name, slug, description].every((value) => typeof value === "string" && value.trim().length)) {
       return NextResponse.json({ success: false, error: "Name, slug and description are required" }, { status: 400 });
@@ -38,7 +38,7 @@ export async function POST(request: Request) {
         slug,
         description,
         category: typeof category === "string" ? category : null,
-        coverImage: typeof coverImage === "string" ? coverImage : null,
+        image: typeof image === "string" ? image : null,
       },
     });
 

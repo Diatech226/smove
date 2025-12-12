@@ -20,6 +20,7 @@ Créez un fichier `.env` (ou `.env.local` pour Next.js) à la racine avec :
 
 ```
 DATABASE_URL="mongodb+srv://diaexpressofficial:Smove@cluster0.wxdxz04.mongodb.net/smove?retryWrites=true&w=majority&appName=Cluster0"
+DIRECT_DATABASE_URL="mongodb+srv://diaexpressofficial:Smove@cluster0.wxdxz04.mongodb.net/smove?retryWrites=true&w=majority&appName=Cluster0"
 SMOVE_ADMIN_PASSWORD=change-me
 SMOVE_ADMIN_SECRET=any-strong-random-string
 NEXT_PUBLIC_SITE_URL=https://example.com
@@ -57,9 +58,9 @@ NEXT_PUBLIC_BRAND_NAME=SMOVE
 
 ## Modèles de données
 Les modèles Prisma/MongoDB sont définis dans `prisma/schema.prisma` :
-- `Service` : nom, slug unique, description, catégorie/type et `coverImage` pour les cartes.
+- `Service` : slug unique, nom, description, catégorie/type et `image` pour les cartes.
 - `Project` : slug unique, client, titre, secteur, résumé, corps, résultats, catégorie/type et `coverImage`.
-- `Post` : slug unique, titre, catégorie optionnelle, extrait, contenu, `coverImage`, `galleryImages`, `videoUrl`, métriques `views`/`commentsCount`, statut `published`, dates de création/mise à jour.
+- `Post` : slug unique, titre, extrait, contenu, `tags` (catégories), `coverImage`, `gallery`, `videoUrl`, statut `published`, dates de création/mise à jour.
 - `Event` : slug unique, titre, date, lieu, description, catégorie/type et `coverImage`.
 
 ## Gestion du contenu

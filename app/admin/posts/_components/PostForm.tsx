@@ -13,13 +13,13 @@ import { cn, slugify } from "@/lib/utils";
 export type PostFormValues = {
   title: string;
   slug: string;
-  category?: string | null;
   excerpt?: string | null;
   body?: string | null;
   coverImage?: string | null;
-  galleryImages?: string[];
+  gallery?: string[];
   videoUrl?: string | null;
   published?: boolean;
+  tags?: string[];
 };
 
 type PostFormProps = {
@@ -34,13 +34,13 @@ export function PostForm({ initialValues, postId, mode }: PostFormProps) {
     initialValues ?? {
       title: "",
       slug: "",
-      category: "",
       excerpt: "",
       body: "",
       published: true,
       coverImage: "",
-      galleryImages: [],
+      gallery: [],
       videoUrl: "",
+      tags: [],
     },
   );
   const [error, setError] = useState<string | null>(null);
@@ -60,7 +60,8 @@ export function PostForm({ initialValues, postId, mode }: PostFormProps) {
     return slugify(form.title);
   }, [form.slug, form.title]);
 
-  const gallery = useMemo(() => form.galleryImages ?? [], [form.galleryImages]);
+  const gallery = useMemo(() => form.gallery ?? [], [form.gallery]);
+  const tags = useMemo(() => form.tags ?? [], [form.tags]);
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -70,7 +71,8 @@ export function PostForm({ initialValues, postId, mode }: PostFormProps) {
     const payload = {
       ...form,
       slug: computedSlug,
-      galleryImages: gallery.filter((item) => item.trim()),
+      gallery: gallery.filter((item) => item.trim()),
+      tags: tags.map((tag) => tag.trim()).filter(Boolean),
     };
 
     if (!payload.title.trim() || !payload.slug.trim() || !(payload.body ?? "").trim()) {
@@ -157,17 +159,20 @@ export function PostForm({ initialValues, postId, mode }: PostFormProps) {
 
           <div className="grid gap-4 md:grid-cols-2">
             <div className="space-y-2">
-              <label className="text-sm font-semibold text-white" htmlFor="category">
-                Catégorie
+              <label className="text-sm font-semibold text-white" htmlFor="tags">
+                Catégories / Tags
               </label>
               <input
-                id="category"
-                name="category"
-                value={form.category ?? ""}
-                onChange={(event) => setForm((prev) => ({ ...prev, category: event.target.value }))}
+                id="tags"
+                name="tags"
+                value={tags.join(", ")}
+                onChange={(event) =>
+                  setForm((prev) => ({ ...prev, tags: event.target.value.split(",").map((tag) => tag.trim()) }))
+                }
                 className="w-full rounded-lg border border-white/10 bg-slate-900 px-3 py-2 text-sm text-white focus:border-emerald-400 focus:outline-none"
                 placeholder="Stratégie, Design, Marketing digital..."
               />
+              <p className="text-xs text-slate-300">Séparez les tags par une virgule. Le premier sera utilisé comme catégorie principale.</p>
             </div>
             <div className="space-y-2">
               <label className="text-sm font-semibold text-white" htmlFor="published">
@@ -246,7 +251,7 @@ export function PostForm({ initialValues, postId, mode }: PostFormProps) {
               <Button
                 type="button"
                 variant="secondary"
-                onClick={() => setForm((prev) => ({ ...prev, galleryImages: [...gallery, ""] }))}
+                onClick={() => setForm((prev) => ({ ...prev, gallery: [...gallery, ""] }))}
                 className="text-xs"
               >
                 Ajouter une image
@@ -261,7 +266,7 @@ export function PostForm({ initialValues, postId, mode }: PostFormProps) {
                     onChange={(event) => {
                       const next = [...gallery];
                       next[index] = event.target.value;
-                      setForm((prev) => ({ ...prev, galleryImages: next }));
+                      setForm((prev) => ({ ...prev, gallery: next }));
                     }}
                     className="w-full rounded-lg border border-white/10 bg-slate-900 px-3 py-2 text-sm text-white focus:border-emerald-400 focus:outline-none"
                     placeholder="https://..."
@@ -271,7 +276,7 @@ export function PostForm({ initialValues, postId, mode }: PostFormProps) {
                     variant="ghost"
                     onClick={() => {
                       const next = gallery.filter((_, i) => i !== index);
-                      setForm((prev) => ({ ...prev, galleryImages: next }));
+                      setForm((prev) => ({ ...prev, gallery: next }));
                     }}
                     className="border border-white/10 px-3 py-2 text-xs text-rose-200 hover:text-rose-100"
                   >

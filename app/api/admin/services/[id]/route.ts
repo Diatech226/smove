@@ -9,7 +9,7 @@ type Params = {
 export async function PUT(request: Request, { params }: Params) {
   try {
     const body = await request.json().catch(() => null);
-    const { name, slug, description, category, coverImage } = (body as Record<string, unknown>) ?? {};
+    const { name, slug, description, category, image } = (body as Record<string, unknown>) ?? {};
 
     if (!params.id) {
       return NextResponse.json({ success: false, error: "Service id is required" }, { status: 400 });
@@ -29,7 +29,7 @@ export async function PUT(request: Request, { params }: Params) {
         slug,
         description,
         category: typeof category === "string" ? category : null,
-        coverImage: typeof coverImage === "string" ? coverImage : null,
+        image: typeof image === "string" ? image : null,
       },
     });
 
