@@ -9,6 +9,29 @@ SMOVE – site vitrine avec hero 3D et back-office CMS pour une agence de commun
 - React Three Fiber (section hero 3D)
 - Prisma & MongoDB
 
+## Mise en place rapide
+1. Installer les dépendances :
+   ```bash
+   npm install
+   ```
+2. Copier `.env.example` vers `.env.local` et renseigner les valeurs :
+   - `NEXT_PUBLIC_SITE_URL` : URL publique (utilisée pour `metadataBase`, fallback localhost).
+   - `DATABASE_URL` : connexion MongoDB (voir section suivante).
+   - `SMOVE_ADMIN_PASSWORD` / `SMOVE_ADMIN_SECRET` : authentification admin.
+3. Initialiser la base :
+   ```bash
+   npm run prisma:push && npm run prisma:generate
+   ```
+4. Lancer le serveur de développement :
+   ```bash
+   npm run dev
+   ```
+
+### Problèmes courants
+- **Avertissement Next config** : `experimental.serverActions` n'est plus nécessaire sur Next 14. Supprimez la clé de `next.config.mjs` (déjà fait ici).
+- **Dépendance Zod manquante** : exécuter `npm install` (Zod est listé dans `dependencies`).
+- **Lien admin incorrect** : les liens Admin pointent sur `/admin/dashboard`, `/admin/services`, `/admin/projects`, `/admin/posts`, `/admin/events`. Corrigez toute URL contenant un espace (`/admin dashboard`).
+
 ## Structure des dossiers
 - `/app` : pages publiques et admin (App Router, API routes incluses)
 - `/components` : composants UI, layout, sections et 3D
@@ -129,7 +152,8 @@ Flux de gestion :
 - Générer le client : `npx prisma generate`
 - Visualiser les données : `npx prisma studio`
 
-## Améliorations futures proposées
+## Iterations / next improvements
 - Design : enrichir les pages publiques (services/projets/blog) avec plus de visuels et d'animations micro-interactions.
 - Animations 3D : affiner les matériaux/éclairages du hero et proposer des variantes mobiles plus légères.
 - CMS : ajouter la prévisualisation côté public, la gestion des brouillons/publications programmées et une recherche plein texte.
+- Admin : brancher une vraie gestion de rôles et ajouter un check de santé Prisma côté UI pour éviter les appels répétitifs quand la base est hors-ligne.

@@ -4,10 +4,15 @@ import Header from "@/components/layout/Header";
 import Footer from "@/components/layout/Footer";
 import { createMetadata, siteConfig } from "@/lib/config/seo";
 
-export const metadata: Metadata = createMetadata({
+const baseMetadata = createMetadata({
   title: `${siteConfig.name} – Agence de communication digitale`,
   description: siteConfig.description,
 });
+
+export const metadata: Metadata = {
+  ...baseMetadata,
+  metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000"),
+};
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
