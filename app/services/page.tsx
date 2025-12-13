@@ -3,6 +3,7 @@ import type { Metadata } from "next";
 import { safePrisma } from "@/lib/safePrisma";
 import { Card } from "@/components/ui/Card";
 import { Container } from "@/components/ui/Container";
+import { DatabaseWarning } from "@/components/ui/DatabaseWarning";
 import { SectionHeader } from "@/components/ui/SectionHeader";
 import { createMetadata } from "@/lib/config/seo";
 
@@ -47,10 +48,7 @@ export default async function ServicesPage() {
 
         <div className="grid gap-5 md:grid-cols-2">
           {loadError ? (
-            <Card className="border-amber-200/20 bg-amber-500/10 p-4 text-amber-100">
-              Les services ne peuvent pas être chargés pour le moment. Vérifiez la connexion à la base de données ou réessayez plus
-              tard.
-            </Card>
+            <DatabaseWarning message="Les services ne peuvent pas être chargés pour le moment. Vérifiez la connexion à la base de données ou réessayez plus tard." />
           ) : null}
           {services.map((service) => (
             <Card

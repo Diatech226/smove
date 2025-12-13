@@ -6,6 +6,7 @@ import { Container } from "@/components/ui/Container";
 import { SectionHeader } from "@/components/ui/SectionHeader";
 import { Card } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
+import { DatabaseWarning } from "@/components/ui/DatabaseWarning";
 
 export const metadata: Metadata = {
   title: "Nos projets – SMOVE Communication",
@@ -36,9 +37,7 @@ export default async function ProjectsPage() {
 
         <div className="grid gap-6 md:grid-cols-2">
           {loadError ? (
-            <Card className="border-amber-200/20 bg-amber-500/10 p-4 text-amber-100">
-              Les projets ne peuvent pas être affichés. Vérifiez la connexion à la base de données ou réessayez plus tard.
-            </Card>
+            <DatabaseWarning message="Les projets ne peuvent pas être affichés. Vérifiez la connexion à la base de données ou réessayez plus tard." />
           ) : null}
           {projects.map((project) => (
             <Card

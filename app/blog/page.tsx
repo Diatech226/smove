@@ -7,6 +7,7 @@ import { Card } from "@/components/ui/Card";
 import { Container } from "@/components/ui/Container";
 import { SectionHeader } from "@/components/ui/SectionHeader";
 import { CategoryBadge } from "@/components/ui/CategoryBadge";
+import { DatabaseWarning } from "@/components/ui/DatabaseWarning";
 
 export const dynamic = "force-dynamic";
 
@@ -74,9 +75,7 @@ export default async function BlogPage() {
 
         <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-3">
           {loadError ? (
-            <Card className="border-amber-200/20 bg-amber-500/10 p-4 text-amber-100">
-              Le blog est momentanément indisponible. Vérifiez la connexion à la base de données ou réessayez plus tard.
-            </Card>
+            <DatabaseWarning message="Le blog est momentanément indisponible. Vérifiez la connexion à la base de données ou réessayez plus tard." />
           ) : null}
           {posts.map((post) => (
             <Card

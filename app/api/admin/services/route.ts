@@ -11,7 +11,7 @@ export async function GET() {
 
   if (!servicesResult.ok) {
     return NextResponse.json(
-      { success: false, error: "Failed to fetch services", detail: servicesResult.message },
+      { success: false, error: "Database unreachable", detail: servicesResult.message },
       { status: 503 },
     );
   }
@@ -45,7 +45,10 @@ export async function POST(request: Request) {
       if (error?.code === "P2002") {
         return NextResponse.json({ success: false, error: "Un service utilise déjà ce slug." }, { status: 400 });
       }
-      return NextResponse.json({ success: false, error: "Failed to create service" }, { status: 503 });
+      return NextResponse.json(
+        { success: false, error: "Database unreachable", detail: createdResult.message },
+        { status: 503 },
+      );
     }
 
     return NextResponse.json({ success: true, service: createdResult.data }, { status: 201 });

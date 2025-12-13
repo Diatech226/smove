@@ -1,21 +1,25 @@
-// file: app/blog/loading.tsx
 import { Container } from "@/components/ui/Container";
+import { SectionHeader } from "@/components/ui/SectionHeader";
 
-export default function LoadingBlog() {
+export default function BlogLoading() {
   return (
-    <Container>
-      <div className="space-y-8 py-16">
-        <div className="h-8 w-40 rounded bg-slate-800/60" />
-        <div className="grid gap-6 md:grid-cols-2">
-          {Array.from({ length: 4 }).map((_, index) => (
-            <div key={index} className="space-y-3 rounded-xl border border-slate-800/60 bg-slate-900/50 p-5">
-              <div className="h-40 rounded-lg bg-slate-800/60" />
-              <div className="h-5 w-3/4 rounded bg-slate-800/60" />
-              <div className="h-3 w-1/2 rounded bg-slate-800/60" />
-            </div>
+    <div className="bg-slate-950 pb-24 pt-14">
+      <Container className="space-y-8">
+        <SectionHeader
+          eyebrow="Smove Insights"
+          title="Le regard SMOVE sur la communication"
+          subtitle="Chargement des articles..."
+        />
+        <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-3">
+          {Array.from({ length: 6 }).map((_, index) => (
+            <div
+              key={index}
+              className="h-64 animate-pulse rounded-2xl border border-white/5 bg-white/5/30"
+              aria-hidden
+            />
           ))}
         </div>
-      </div>
-    </Container>
+      </Container>
+    </div>
   );
 }

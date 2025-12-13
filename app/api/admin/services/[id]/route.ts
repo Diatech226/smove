@@ -40,7 +40,10 @@ export async function PUT(request: Request, { params }: Params) {
       if (error?.code === "P2002") {
         return NextResponse.json({ success: false, error: "Un autre service utilise déjà ce slug." }, { status: 400 });
       }
-      return NextResponse.json({ success: false, error: "Failed to update service" }, { status: 503 });
+      return NextResponse.json(
+        { success: false, error: "Database unreachable", detail: updatedResult.message },
+        { status: 503 },
+      );
     }
 
     return NextResponse.json({ success: true, service: updatedResult.data });
@@ -63,7 +66,10 @@ export async function DELETE(_request: Request, { params }: Params) {
     }
     const deleteResult = await safePrisma((db) => db.service.delete({ where: { id: params.id } }));
     if (!deleteResult.ok) {
-      return NextResponse.json({ success: false, error: "Failed to delete service" }, { status: 503 });
+      return NextResponse.json(
+        { success: false, error: "Database unreachable", detail: deleteResult.message },
+        { status: 503 },
+      );
     }
     return NextResponse.json({ success: true });
   } catch (error: any) {
