@@ -6,6 +6,7 @@ import { notFound } from "next/navigation";
 
 import { Container } from "@/components/ui/Container";
 import { SectionHeader } from "@/components/ui/SectionHeader";
+import { DatabaseWarning } from "@/components/ui/DatabaseWarning";
 import { createMetadata } from "@/lib/config/seo";
 import { safePrisma } from "@/lib/safePrisma";
 
@@ -17,7 +18,7 @@ function formatDate(dateValue: string | Date) {
 
 async function getPost(slug: string) {
   const result = await safePrisma((db) => db.post.findFirst({ where: { slug, published: true } }));
-  return { post: result.ok ? result.data : null, error: result.ok ? null : result.message } as const;
+  return { post: result.ok ? result.data : null, error: result.ok ? null : result.message, errorType: result.ok ? null : result.errorType } as const;
 }
 
 export type BlogPostPageProps = {
@@ -51,9 +52,7 @@ export default async function BlogPostPage({ params }: BlogPostPageProps) {
     return (
       <div className="bg-slate-950 pb-20 pt-12">
         <Container className="space-y-6">
-          <div className="rounded-2xl border border-amber-200/20 bg-amber-500/10 p-6 text-amber-100">
-            Le blog est momentanément indisponible. Vérifiez la connexion à la base de données ou réessayez plus tard.
-          </div>
+          <DatabaseWarning message="Le blog est momentanément indisponible. Vérifiez la connexion à la base de données ou réessayez plus tard." />
           <Link href="/blog" className="text-sm font-semibold text-emerald-300 transition hover:text-emerald-200">
             ← Retour au blog
           </Link>

@@ -13,7 +13,10 @@ export async function GET() {
   );
 
   if (!postsResult.ok) {
-    return NextResponse.json({ success: false, error: "Failed to fetch posts", detail: postsResult.message }, { status: 503 });
+    return NextResponse.json(
+      { success: false, error: "Database unreachable", detail: postsResult.message },
+      { status: 503 },
+    );
   }
 
   return NextResponse.json({ success: true, posts: postsResult.data }, { status: 200 });
@@ -33,7 +36,10 @@ export async function POST(request: Request) {
 
   const existingResult = await safePrisma((db) => db.post.findUnique({ where: { slug } }));
   if (!existingResult.ok) {
-    return NextResponse.json({ success: false, error: "Failed to create post" }, { status: 503 });
+    return NextResponse.json(
+      { success: false, error: "Database unreachable", detail: existingResult.message },
+      { status: 503 },
+    );
   }
   if (existingResult.data) {
     return NextResponse.json(
@@ -70,7 +76,10 @@ export async function POST(request: Request) {
     if (error?.code === "P2002") {
       return NextResponse.json({ success: false, error: "Un article utilise déjà ce slug." }, { status: 400 });
     }
-    return NextResponse.json({ success: false, error: "Failed to create post" }, { status: 503 });
+    return NextResponse.json(
+      { success: false, error: "Database unreachable", detail: createdResult.message },
+      { status: 503 },
+    );
   }
 
   return NextResponse.json({ success: true, post: createdResult.data }, { status: 201 });

@@ -48,14 +48,18 @@ NEXT_PUBLIC_BRAND_NAME="SMOVE Communication"
 6. Lancez le projet avec `npm run dev`.
 
 ### Dépannage connexion MongoDB
-- **Server selection timeout** : vérifiez que l'IP est bien autorisée dans Atlas et que le cluster est démarré.
+- **Server selection timeout / ReplicaSetNoPrimary / P2010** : vérifiez que l'IP est bien autorisée dans Atlas, que le cluster est démarré et que l'URI pointe sur la base `smove`.
 - **Bad auth / authentification échouée** : confirmez l'utilisateur/mot de passe utilisés et les droits sur la base `smove`.
 - **Base manquante** : ajoutez impérativement `/smove` à la fin du chemin dans `DATABASE_URL`.
 - **Chaîne d'URL** : utilisez l'URI `mongodb+srv://.../smove?retryWrites=true&w=majority&appName=Cluster0` fournie par Atlas (n'oubliez pas le nom de la base).
 - **Whitelisting IP** : autorisez l'adresse IP de votre machine (ou `0.0.0.0/0` temporairement) dans l'onglet Network Access.
-- **TLS/SSL errors** : assurez-vous d'utiliser l'URI `mongodb+srv://` fournie par Atlas (incluant les paramètres TLS) ou forcez `ssl=true`.
-- **Version Node.js** : privilégiez Node.js 18 LTS ou 20 LTS.
+- **TLS/SSL errors / InternalError** : Node.js 20 peut déclencher des erreurs TLS avec certains clusters. Essayez Node.js **18 LTS** et assurez-vous d'utiliser l'URI sécurisée `mongodb+srv://`.
+- **Validation rapide avec Compass** : connectez-vous à l'URI Atlas via MongoDB Compass pour confirmer l'accès réseau et les droits.
 - **Après changement d'env** : redémarrez le serveur de dev (`npm run dev`) après toute modification `.env`.
+
+### Vérifier la santé de la base
+- Endpoint de santé API : `GET /api/health/db` effectue un `post.count` rapide (timeout 2.5s) et retourne `status: ok` ou `status: error`.
+- Les pages publiques affichent un message de secours plutôt que de planter si la base est inaccessible.
 
 ### Commandes Prisma après modification du schéma
 - Pousser le schéma vers la base : `npm run prisma:push`
