@@ -1,6 +1,8 @@
 // file: app/api/admin/projects/[id]/route.ts
 import { NextResponse } from "next/server";
+
 import { safePrisma } from "@/lib/safePrisma";
+import { projectSchema } from "@/lib/validation/admin";
 
 type Params = {
   params: { id: string };
@@ -8,22 +10,19 @@ type Params = {
 
 export async function PUT(request: Request, { params }: Params) {
   try {
-    const body = await request.json().catch(() => null);
-    const { slug, title, client, sector, summary, body: content, results, category, coverImage } =
-      (body as Record<string, unknown>) ?? {};
+    const json = await request.json().catch(() => null);
+    const parsed = projectSchema.safeParse(json ?? {});
 
     if (!params.id) {
       return NextResponse.json({ success: false, error: "Project id is required" }, { status: 400 });
     }
 
-    const requiredFields = [slug, title, client, sector, summary];
-
-    if (!requiredFields.every((value) => typeof value === "string" && value.trim().length)) {
-      return NextResponse.json(
-        { success: false, error: "Slug, title, client, sector and summary are required" },
-        { status: 400 },
-      );
+    if (!parsed.success) {
+      const message = parsed.error.issues.at(0)?.message ?? "Payload invalide";
+      return NextResponse.json({ success: false, error: message }, { status: 400 });
     }
+
+    const { slug, title, client, sector, summary, body: content, results, category, coverImage } = parsed.data;
 
     const updatedResult = await safePrisma((db) =>
       db.project.update({

@@ -2,26 +2,26 @@
 import { NextResponse } from "next/server";
 
 import { safePrisma } from "@/lib/safePrisma";
+import { eventSchema } from "@/lib/validation/admin";
 
 type Params = { params: { id: string } };
 
 export async function PUT(request: Request, { params }: Params) {
   try {
-    const body = await request.json().catch(() => null);
-    const { slug, title, date, location, description, category, coverImage } = (body as Record<string, unknown>) ?? {};
+    const json = await request.json().catch(() => null);
+    const parsed = eventSchema.safeParse(json ?? {});
 
     if (!params.id) {
       return NextResponse.json({ success: false, error: "Event id is required" }, { status: 400 });
     }
 
-    if (![slug, title, date].every((value) => typeof value === "string" && value.trim().length)) {
-      return NextResponse.json({ success: false, error: "Slug, titre et date sont requis." }, { status: 400 });
+    if (!parsed.success) {
+      const message = parsed.error.issues.at(0)?.message ?? "Payload invalide";
+      return NextResponse.json({ success: false, error: message }, { status: 400 });
     }
 
-    const parsedDate = new Date(date);
-    if (Number.isNaN(parsedDate.getTime())) {
-      return NextResponse.json({ success: false, error: "Date invalide." }, { status: 400 });
-    }
+    const { slug, title, date, location, description, category, coverImage } = parsed.data;
+    const parsedDate = date instanceof Date ? date : new Date(date);
 
     const updatedResult = await safePrisma((db) =>
       db.event.update({

@@ -1,6 +1,8 @@
 // file: app/api/admin/posts/[id]/route.ts
 import { NextResponse } from "next/server";
+
 import { safePrisma } from "@/lib/safePrisma";
+import { postSchema } from "@/lib/validation/admin";
 
 type Params = {
   params: { id: string };
@@ -34,17 +36,19 @@ export async function GET(_request: Request, { params }: Params) {
 
 export async function PUT(request: Request, { params }: Params) {
   try {
-    const body = await request.json().catch(() => null);
-    const { slug, title, excerpt, body: content, published, coverImage, gallery, videoUrl, tags } =
-      (body as Record<string, unknown>) ?? {};
-
     if (!params.id) {
       return NextResponse.json({ success: false, error: "Post id is required" }, { status: 400 });
     }
 
-    if (![slug, title, content].every((value) => typeof value === "string" && value.trim().length)) {
-      return NextResponse.json({ success: false, error: "Slug, title and body are required" }, { status: 400 });
+    const json = await request.json().catch(() => null);
+    const parsed = postSchema.safeParse(json ?? {});
+
+    if (!parsed.success) {
+      const message = parsed.error.issues.at(0)?.message ?? "Payload invalide";
+      return NextResponse.json({ success: false, error: message }, { status: 400 });
     }
+
+    const payload = parsed.data;
 
     const existingPostResult = await safePrisma((db) => db.post.findUnique({ where: { id: params.id } }));
     if (!existingPostResult.ok) {
@@ -55,34 +59,30 @@ export async function PUT(request: Request, { params }: Params) {
       return NextResponse.json({ success: false, error: "Post not found" }, { status: 404 });
     }
 
-    const existingWithSlugResult = await safePrisma((db) => db.post.findUnique({ where: { slug } }));
+    const existingWithSlugResult = await safePrisma((db) => db.post.findUnique({ where: { slug: payload.slug } }));
     if (!existingWithSlugResult.ok) {
       return NextResponse.json({ success: false, error: "Failed to update post" }, { status: 503 });
     }
     const existingWithSlug = existingWithSlugResult.data;
     if (existingWithSlug && existingWithSlug.id !== params.id) {
-      return NextResponse.json({ success: false, error: "Another post already uses this slug" }, { status: 400 });
+      return NextResponse.json({ success: false, error: "Un autre article utilise déjà ce slug." }, { status: 400 });
     }
 
-    const desiredPublished = typeof published === "boolean" ? published : existingPost.published;
+    const desiredPublished = payload.published ?? existingPost.published;
     const publishedAt = desiredPublished ? existingPost.publishedAt ?? new Date() : null;
 
     const updatedResult = await safePrisma((db) =>
       db.post.update({
         where: { id: params.id },
         data: {
-          slug,
-          title,
-          excerpt: typeof excerpt === "string" ? excerpt : null,
-          body: typeof content === "string" ? content : null,
-          tags: Array.isArray(tags)
-            ? tags.map((item) => (typeof item === "string" ? item : String(item))).filter(Boolean)
-            : existingPost.tags,
-          coverImage: typeof coverImage === "string" ? coverImage : null,
-          gallery: Array.isArray(gallery)
-            ? gallery.map((item) => (typeof item === "string" ? item : String(item))).filter(Boolean)
-            : existingPost.gallery,
-          videoUrl: typeof videoUrl === "string" ? videoUrl : null,
+          slug: payload.slug,
+          title: payload.title,
+          excerpt: payload.excerpt ?? null,
+          body: payload.body ?? null,
+          tags: payload.tags ?? existingPost.tags,
+          coverImage: payload.coverImage ?? null,
+          gallery: payload.gallery?.filter(Boolean) ?? existingPost.gallery,
+          videoUrl: payload.videoUrl ?? null,
           published: desiredPublished,
           publishedAt,
         },
