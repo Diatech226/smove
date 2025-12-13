@@ -46,19 +46,64 @@ export function PostForm({ initialValues, postId, mode }: PostFormProps) {
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
+  const [slugLocked, setSlugLocked] = useState<boolean>(Boolean(initialValues?.slug));
+  const [slugInput, setSlugInput] = useState<string>(initialValues?.slug ?? "");
+  const [slugStatus, setSlugStatus] = useState<{ state: "idle" | "checking" | "available" | "unavailable" | "error"; message?: string }>(
+    { state: "idle" },
+  );
 
   useEffect(() => {
     if (initialValues) {
       setForm((current) => ({ ...current, ...initialValues }));
+      setSlugLocked(Boolean(initialValues.slug));
+      setSlugInput(initialValues.slug);
     }
   }, [initialValues]);
 
   const isEditing = mode === "edit";
 
   const computedSlug = useMemo(() => {
-    if (form.slug.trim()) return form.slug;
-    return slugify(form.title);
-  }, [form.slug, form.title]);
+    const baseSlug = slugLocked ? slugInput : slugify(form.title);
+    return baseSlug.trim();
+  }, [form.title, slugInput, slugLocked]);
+
+  useEffect(() => {
+    const slugPattern = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
+
+    if (!computedSlug) {
+      setSlugStatus({ state: "idle" });
+      return undefined;
+    }
+
+    if (!slugPattern.test(computedSlug)) {
+      setSlugStatus({ state: "error", message: "Le slug doit utiliser des minuscules et des tirets." });
+      return undefined;
+    }
+
+    setSlugStatus({ state: "checking" });
+    const controller = new AbortController();
+    const timer = setTimeout(async () => {
+      try {
+        const response = await fetch(`/api/admin/slug?type=post&slug=${encodeURIComponent(computedSlug)}`, {
+          signal: controller.signal,
+        });
+        const data = await response.json();
+        if (!response.ok || data?.success === false) {
+          setSlugStatus({ state: "error", message: data?.error || "Impossible de vérifier le slug." });
+          return;
+        }
+        setSlugStatus({ state: data.available ? "available" : "unavailable" });
+      } catch (err: any) {
+        if (err?.name === "AbortError") return;
+        setSlugStatus({ state: "error", message: "Impossible de vérifier le slug." });
+      }
+    }, 350);
+
+    return () => {
+      controller.abort();
+      clearTimeout(timer);
+    };
+  }, [computedSlug]);
 
   const gallery = useMemo(() => form.gallery ?? [], [form.gallery]);
   const tags = useMemo(() => form.tags ?? [], [form.tags]);
@@ -77,6 +122,11 @@ export function PostForm({ initialValues, postId, mode }: PostFormProps) {
 
     if (!payload.title.trim() || !payload.slug.trim() || !(payload.body ?? "").trim()) {
       setError("Le titre, le slug et le contenu sont obligatoires.");
+      return;
+    }
+
+    if (slugStatus.state === "unavailable") {
+      setError("Ce slug est déjà utilisé. Merci d'en choisir un autre.");
       return;
     }
 
@@ -128,13 +178,16 @@ export function PostForm({ initialValues, postId, mode }: PostFormProps) {
                 id="title"
                 name="title"
                 value={form.title}
-                onChange={(event) =>
+                onChange={(event) => {
+                  const nextTitle = event.target.value;
                   setForm((prev) => ({
                     ...prev,
-                    title: event.target.value,
-                    slug: prev.slug || slugify(event.target.value),
-                  }))
-                }
+                    title: nextTitle,
+                  }));
+                  if (!slugLocked) {
+                    setSlugInput(slugify(nextTitle));
+                  }
+                }}
                 className="w-full rounded-lg border border-white/10 bg-slate-900 px-3 py-2 text-sm text-white focus:border-emerald-400 focus:outline-none"
                 placeholder="Campagne social media pour les marques lifestyle"
               />
@@ -142,18 +195,39 @@ export function PostForm({ initialValues, postId, mode }: PostFormProps) {
             </div>
 
             <div className="space-y-2">
-              <label className="text-sm font-semibold text-white" htmlFor="slug">
-                Slug
-              </label>
+              <div className="flex items-center justify-between">
+                <label className="text-sm font-semibold text-white" htmlFor="slug">
+                  Slug
+                </label>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  className="border border-white/10 px-3 py-1 text-[11px]"
+                  onClick={() => setSlugLocked((locked) => !locked)}
+                >
+                  {slugLocked ? "Déverrouiller" : "Verrouiller"}
+                </Button>
+              </div>
               <input
                 id="slug"
                 name="slug"
                 value={computedSlug}
-                onChange={(event) => setForm((prev) => ({ ...prev, slug: event.target.value }))}
+                onChange={(event) => {
+                  setSlugLocked(true);
+                  setSlugInput(event.target.value);
+                }}
                 className="w-full rounded-lg border border-white/10 bg-slate-900 px-3 py-2 text-sm text-white focus:border-emerald-400 focus:outline-none"
                 placeholder="campagne-social-media"
               />
-              <p className="text-xs text-slate-300">Modifiez-le si nécessaire. Il doit être unique et descriptif.</p>
+              <p className="text-xs text-slate-300">
+                Modifiez-le si nécessaire. Il doit être unique et descriptif. Le slug est {slugLocked ? "figé" : "mis à jour automatiquement"}.
+              </p>
+              {slugStatus.state === "checking" ? <p className="text-xs text-amber-200">Vérification du slug...</p> : null}
+              {slugStatus.state === "available" ? <p className="text-xs text-emerald-200">Ce slug est disponible.</p> : null}
+              {slugStatus.state === "unavailable" ? <p className="text-xs text-rose-200">Ce slug est déjà utilisé.</p> : null}
+              {slugStatus.state === "error" && slugStatus.message ? (
+                <p className="text-xs text-rose-200">{slugStatus.message}</p>
+              ) : null}
             </div>
           </div>
 

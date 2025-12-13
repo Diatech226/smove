@@ -1,6 +1,8 @@
 // file: app/api/admin/posts/route.ts
 import { NextResponse } from "next/server";
+
 import { safePrisma } from "@/lib/safePrisma";
+import { postSchema } from "@/lib/validation/admin";
 
 export async function GET() {
   const postsResult = await safePrisma((db) =>
@@ -23,18 +25,17 @@ export async function GET() {
 }
 
 export async function POST(request: Request) {
-  const body = await request.json().catch(() => null);
-  const { slug, title, excerpt, body: content, published, coverImage, gallery, videoUrl, tags } =
-    (body as Record<string, unknown>) ?? {};
+  const json = await request.json().catch(() => null);
+  const parsed = postSchema.safeParse(json ?? {});
 
-  if (![slug, title, content].every((value) => typeof value === "string" && value.trim().length)) {
-    return NextResponse.json(
-      { success: false, error: "Slug, title and body are required" },
-      { status: 400 },
-    );
+  if (!parsed.success) {
+    const message = parsed.error.issues.at(0)?.message ?? "Payload invalide";
+    return NextResponse.json({ success: false, error: message }, { status: 400 });
   }
 
-  const existingResult = await safePrisma((db) => db.post.findUnique({ where: { slug } }));
+  const payload = parsed.data;
+
+  const existingResult = await safePrisma((db) => db.post.findUnique({ where: { slug: payload.slug } }));
   if (!existingResult.ok) {
     return NextResponse.json(
       { success: false, error: "Database unreachable", detail: existingResult.message },
@@ -42,29 +43,22 @@ export async function POST(request: Request) {
     );
   }
   if (existingResult.data) {
-    return NextResponse.json(
-      { success: false, error: "A post with this slug already exists" },
-      { status: 400 },
-    );
+    return NextResponse.json({ success: false, error: "Un article utilise déjà ce slug." }, { status: 400 });
   }
 
-  const isPublished = typeof published === "boolean" ? published : false;
+  const isPublished = payload.published ?? false;
 
   const createdResult = await safePrisma((db) =>
     db.post.create({
       data: {
-        slug,
-        title,
-        excerpt: typeof excerpt === "string" ? excerpt : null,
-        body: typeof content === "string" ? content : null,
-        tags: Array.isArray(tags)
-          ? tags.map((item) => (typeof item === "string" ? item : String(item))).filter(Boolean)
-          : [],
-        coverImage: typeof coverImage === "string" ? coverImage : null,
-        gallery: Array.isArray(gallery)
-          ? gallery.map((item) => (typeof item === "string" ? item : String(item))).filter(Boolean)
-          : [],
-        videoUrl: typeof videoUrl === "string" ? videoUrl : null,
+        slug: payload.slug,
+        title: payload.title,
+        excerpt: payload.excerpt ?? null,
+        body: payload.body ?? null,
+        tags: payload.tags ?? [],
+        coverImage: payload.coverImage ?? null,
+        gallery: payload.gallery?.filter(Boolean) ?? [],
+        videoUrl: payload.videoUrl ?? null,
         published: isPublished,
         publishedAt: isPublished ? new Date() : null,
       },

@@ -89,6 +89,13 @@ NEXT_PUBLIC_BRAND_NAME="SMOVE Communication"
 - Définissez `SMOVE_ADMIN_PASSWORD` pour le mot de passe d'accès.
 - `SMOVE_ADMIN_SECRET` est utilisé pour signer le cookie de session (middleware `/admin/**`).
 - Après connexion, vous êtes redirigé vers `/admin/dashboard` et pouvez gérer services, projets et articles.
+- Les slugs sont vérifiés côté serveur via `GET /api/admin/slug?type=<post|project|service|event>&slug=...` pour garantir l'unicité dès la saisie.
+- Un squelette `app/admin/loading.tsx` évite les flashes blancs pendant les chargements du back-office.
+
+## Validation et stabilité
+- Les routes `POST/PUT` admin passent par des schémas Zod (cf. `lib/validation/admin.ts`) pour renvoyer des erreurs 400 explicites plutôt que des plantages.
+- Les erreurs Prisma renvoient des réponses `503` avec un message `Database unreachable` quand la base est hors-ligne, évitant de casser la navigation admin.
+- Les slugs utilisent le pattern `^[a-z0-9]+(?:-[a-z0-9]+)*$` et sont vérifiés en temps réel dans les formulaires d'articles.
 
 ## Modèles de données
 Les modèles Prisma/MongoDB sont définis dans `prisma/schema.prisma` :

@@ -1,6 +1,8 @@
 // file: app/api/admin/services/route.ts
 import { NextResponse } from "next/server";
+
 import { safePrisma } from "@/lib/safePrisma";
+import { serviceSchema } from "@/lib/validation/admin";
 
 export async function GET() {
   const servicesResult = await safePrisma((db) =>
@@ -21,12 +23,15 @@ export async function GET() {
 
 export async function POST(request: Request) {
   try {
-    const body = await request.json().catch(() => null);
-    const { name, slug, description, category, image } = (body as Record<string, unknown>) ?? {};
+    const json = await request.json().catch(() => null);
+    const parsed = serviceSchema.safeParse(json ?? {});
 
-    if (![name, slug, description].every((value) => typeof value === "string" && value.trim().length)) {
-      return NextResponse.json({ success: false, error: "Name, slug and description are required" }, { status: 400 });
+    if (!parsed.success) {
+      const message = parsed.error.issues.at(0)?.message ?? "Payload invalide";
+      return NextResponse.json({ success: false, error: message }, { status: 400 });
     }
+
+    const { name, slug, description, category, image } = parsed.data;
 
     const createdResult = await safePrisma((db) =>
       db.service.create({
