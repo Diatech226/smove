@@ -99,15 +99,17 @@ NEXT_PUBLIC_BRAND_NAME="SMOVE Communication"
 
 ## Modèles de données
 Les modèles Prisma/MongoDB sont définis dans `prisma/schema.prisma` :
-- `Service` : slug unique, nom, description, catégorie/type et `image` pour les cartes.
-- `Project` : slug unique, client, titre, secteur, résumé, corps, résultats, catégorie/type et `coverImage`.
-- `Post` : slug unique, titre, extrait, contenu, `tags` (catégories), `coverImage`, `gallery`, `videoUrl`, statut `published`, dates de création/mise à jour.
+- `Service` : slug unique, nom, description, catégorie/type, `categorySlug` et `sectorSlug` (dropdown admin), `image` pour les cartes.
+- `Project` : slug unique, client, titre, secteur, `sectorSlug` et `categorySlug` (dropdown admin), résumé, corps, résultats, catégorie/type et `coverImage`.
+- `Post` : slug unique, titre, extrait, contenu, `tags` (catégories), `categorySlug`, `coverImage`, `gallery`, `videoUrl`, statut `published`, dates de création/mise à jour.
 - `Event` : slug unique, titre, date, lieu, description, catégorie/type et `coverImage`.
+- `Taxonomy` : type (`service_sector`, `service_category`, `project_sector`, `project_category`, `post_category`), slug, label, ordre, actif, timestamps.
 
 ## Gestion du contenu
 - `admin/services` : lister, créer, mettre à jour et supprimer les services.
 - `admin/projects` : CRUD projets (slug, client, secteur, résumé, description, résultats).
 - `admin/posts` : CRUD articles (slug, titre, catégorie, extrait, contenu, publication, média). Les articles supportent l'image de couverture, une galerie, une vidéo et les tags/catégories.
+- `admin/taxonomies` (API) : CRUD des taxonomies référentielles (secteurs, catégories) pour alimenter les dropdowns des services/projets/articles.
 
 Les données sont persistées via Prisma/MongoDB et utilisées par les pages publiques (`/projects`, `/blog`, etc.).
 
@@ -119,6 +121,13 @@ Flux de gestion :
 1. **Créer un article** : cliquez sur "Nouvel article" dans `/admin/posts`, renseignez le titre/slug (auto-généré), la catégorie, l'extrait, le contenu et le statut de publication.
 2. **Modifier un article** : depuis la liste `/admin/posts`, utilisez l'action "Modifier" pour ajuster le contenu ou le statut, puis sauvegardez.
 3. **Supprimer un article** : cliquez sur "Supprimer" dans la ligne concernée et confirmez la suppression.
+
+## Endpoints CMS clés
+- Taxonomies :
+  - `GET /api/admin/taxonomies?type=service_sector|service_category|project_sector|project_category|post_category`
+  - `POST /api/admin/taxonomies` (body Zod `taxonomySchema`)
+  - `PUT /api/admin/taxonomies/:id` / `DELETE /api/admin/taxonomies/:id`
+- Slugs : `GET /api/admin/slug?type=<post|project|service|event>&slug=...`
 
 ## Notes supplémentaires
 - Le hero 3D utilise des versions compatibles de `three`, `@react-three/fiber` et `@react-three/drei` pour éviter les warnings `PlaneBufferGeometry` de `troika-three-text`.
