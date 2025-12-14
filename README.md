@@ -25,6 +25,7 @@ SMOVE_ADMIN_SECRET=change-me-random-long-secret
 # MongoDB connection for Prisma
 # IMPORTANT: must start with mongodb:// ou mongodb+srv:// et contenir le nom de base smove
 DATABASE_URL="mongodb+srv://USERNAME:PASSWORD@cluster0.wxdxz04.mongodb.net/smove?retryWrites=true&w=majority&appName=Cluster0"
+DIRECT_DATABASE_URL="mongodb+srv://USERNAME:PASSWORD@cluster0.wxdxz04.mongodb.net/smove?retryWrites=true&w=majority&appName=Cluster0"
 
 # Public site
 NEXT_PUBLIC_SITE_URL=https://smove.example.com
@@ -33,6 +34,7 @@ NEXT_PUBLIC_BRAND_NAME="SMOVE Communication"
 
 - **Toujours** inclure le nom de base de données `/smove` dans le chemin. Les erreurs `P2010` / "empty database name" viennent généralement d'une URL tronquée.
 - Le client Prisma est initialisé via `env("DATABASE_URL")` (voir `prisma/schema.prisma` et `lib/prisma.ts`).
+- `DIRECT_DATABASE_URL` est également supporté par Prisma pour les migrations : dupliquez l'URL principale avec le suffixe `/smove` pour éviter les erreurs d'auth ou de base introuvable.
 - Pour MongoDB, les identifiants utilisent `String @id @default(auto()) @map("_id") @db.ObjectId`.
 
 ## Setup Mongo Atlas
