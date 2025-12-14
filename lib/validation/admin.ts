@@ -68,3 +68,19 @@ export const eventSchema = z.object({
   category: z.string().trim().optional().nullable(),
   coverImage: mediaUrlSchema.nullish(),
 });
+
+export const taxonomySchema = z.object({
+  type: z
+    .enum([
+      "service_sector",
+      "service_category",
+      "project_sector",
+      "project_category",
+      "post_category",
+    ])
+    .describe("Type de taxonomie"),
+  slug: slugSchema,
+  label: z.string().min(1, "Libellé obligatoire"),
+  order: z.number().int().min(0).default(0),
+  active: z.boolean().default(true),
+});
