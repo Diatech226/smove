@@ -20,6 +20,7 @@ export const mediaUrlSchema = z
 export const postSchema = z.object({
   title: z.string().min(1, "Titre obligatoire"),
   slug: slugSchema,
+  categorySlug: slugSchema.optional().nullable(),
   excerpt: z
     .string()
     .trim()
@@ -38,6 +39,8 @@ export const postSchema = z.object({
   published: z.boolean().optional(),
   tags: z.array(z.string().trim().min(1)).max(12).optional(),
 });
+
+export const postUpdateSchema = postSchema.partial();
 
 export const serviceSchema = z.object({
   name: z.string().min(1, "Nom obligatoire"),
