@@ -13,6 +13,7 @@ import { cn, slugify } from "@/lib/utils";
 export type PostFormValues = {
   title: string;
   slug: string;
+  categorySlug?: string | null;
   excerpt?: string | null;
   body?: string | null;
   coverImage?: string | null;
@@ -26,14 +27,16 @@ type PostFormProps = {
   initialValues?: PostFormValues;
   postId?: string;
   mode: "create" | "edit";
+  categories?: { slug: string; label: string }[];
 };
 
-export function PostForm({ initialValues, postId, mode }: PostFormProps) {
+export function PostForm({ initialValues, postId, mode, categories = [] }: PostFormProps) {
   const router = useRouter();
   const [form, setForm] = useState<PostFormValues>(
     initialValues ?? {
       title: "",
       slug: "",
+      categorySlug: "",
       excerpt: "",
       body: "",
       published: false,
@@ -236,17 +239,35 @@ export function PostForm({ initialValues, postId, mode }: PostFormProps) {
               <label className="text-sm font-semibold text-white" htmlFor="tags">
                 Catégories / Tags
               </label>
-              <input
-                id="tags"
-                name="tags"
-                value={tags.join(", ")}
-                onChange={(event) =>
-                  setForm((prev) => ({ ...prev, tags: event.target.value.split(",").map((tag) => tag.trim()) }))
-                }
-                className="w-full rounded-lg border border-white/10 bg-slate-900 px-3 py-2 text-sm text-white focus:border-emerald-400 focus:outline-none"
-                placeholder="Stratégie, Design, Marketing digital..."
-              />
-              <p className="text-xs text-slate-300">Séparez les tags par une virgule. Le premier sera utilisé comme catégorie principale.</p>
+              <div className="space-y-3">
+                <select
+                  id="categorySlug"
+                  name="categorySlug"
+                  value={form.categorySlug ?? ""}
+                  onChange={(event) => setForm((prev) => ({ ...prev, categorySlug: event.target.value }))}
+                  className="w-full rounded-lg border border-white/10 bg-slate-900 px-3 py-2 text-sm text-white focus:border-emerald-400 focus:outline-none"
+                >
+                  <option value="">Sélectionnez une catégorie</option>
+                  {categories.map((category) => (
+                    <option key={category.slug} value={category.slug}>
+                      {category.label}
+                    </option>
+                  ))}
+                </select>
+                <input
+                  id="tags"
+                  name="tags"
+                  value={tags.join(", ")}
+                  onChange={(event) =>
+                    setForm((prev) => ({ ...prev, tags: event.target.value.split(",").map((tag) => tag.trim()) }))
+                  }
+                  className="w-full rounded-lg border border-white/10 bg-slate-900 px-3 py-2 text-sm text-white focus:border-emerald-400 focus:outline-none"
+                  placeholder="Stratégie, Design, Marketing digital..."
+                />
+              </div>
+              <p className="text-xs text-slate-300">
+                Choisissez une rubrique principale et ajoutez des tags séparés par des virgules.
+              </p>
             </div>
             <div className="space-y-2">
               <label className="text-sm font-semibold text-white" htmlFor="published">

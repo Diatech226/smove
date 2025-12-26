@@ -12,7 +12,15 @@ type EditPostPageProps = {
 };
 
 export default async function EditPostPage({ params }: EditPostPageProps) {
-  const postResult = await safePrisma((db) => db.post.findUnique({ where: { id: params.id } }));
+  const [postResult, categoriesResult] = await Promise.all([
+    safePrisma((db) => db.post.findUnique({ where: { id: params.id } })),
+    safePrisma((db) =>
+      db.taxonomy.findMany({
+        where: { type: "post_category", active: true },
+        orderBy: { order: "asc" },
+      }),
+    ),
+  ]);
 
   if (!postResult.ok) {
     return (
@@ -28,5 +36,12 @@ export default async function EditPostPage({ params }: EditPostPageProps) {
     notFound();
   }
 
-  return <PostForm mode="edit" postId={post.id} initialValues={post} />;
+  return (
+    <PostForm
+      mode="edit"
+      postId={post.id}
+      initialValues={post}
+      categories={categoriesResult.ok ? categoriesResult.data : []}
+    />
+  );
 }
