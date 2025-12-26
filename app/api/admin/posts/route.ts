@@ -1,7 +1,9 @@
 // file: app/api/admin/posts/route.ts
+import crypto from "crypto";
 import { NextResponse } from "next/server";
 
 import { requireAdmin } from "@/lib/admin/auth";
+import { findAvailablePostSlug } from "@/lib/admin/slug";
 import { buildPostOrderBy, buildPostWhere, parsePostQueryParams } from "@/lib/admin/postQueries";
 import { safePrisma } from "@/lib/safePrisma";
 import { postSchema } from "@/lib/validation/admin";
@@ -29,8 +31,19 @@ export async function GET(request: Request) {
   ]);
 
   if (!postsResult.ok || !countResult.ok) {
+    const traceId = crypto.randomUUID();
+    console.error("Failed to load posts", {
+      traceId,
+      postError: postsResult.ok ? undefined : postsResult.message,
+      countError: countResult.ok ? undefined : countResult.message,
+    });
     return NextResponse.json(
-      { success: false, error: "Database unreachable", detail: postsResult.ok ? countResult.message : postsResult.message },
+      {
+        success: false,
+        error: "Database unreachable",
+        detail: postsResult.ok ? countResult.message : postsResult.message,
+        traceId,
+      },
       { status: 503 },
     );
   }
@@ -66,31 +79,42 @@ export async function POST(request: Request) {
 
   const existingResult = await safePrisma((db) => db.post.findUnique({ where: { slug: payload.slug } }));
   if (!existingResult.ok) {
+    const traceId = crypto.randomUUID();
+    console.error("Failed to validate post slug", { traceId, detail: existingResult.message });
     return NextResponse.json(
-      { success: false, error: "Database unreachable", detail: existingResult.message },
+      { success: false, error: "Database unreachable", detail: existingResult.message, traceId },
       { status: 503 },
     );
   }
   if (existingResult.data) {
-    return NextResponse.json({ success: false, error: "Un article utilise déjà ce slug." }, { status: 400 });
+    const suggestion = await findAvailablePostSlug(payload.slug);
+    return NextResponse.json(
+      {
+        success: false,
+        error: "Un article utilise déjà ce slug.",
+        suggestedSlug: suggestion,
+      },
+      { status: 400 },
+    );
   }
 
-  const isPublished = payload.published ?? false;
+  const status = payload.status ?? "draft";
+  const publishedAt = status === "published" ? new Date() : null;
 
   const createdResult = await safePrisma((db) =>
     db.post.create({
       data: {
         slug: payload.slug,
         title: payload.title,
-        categorySlug: payload.categorySlug ?? null,
+        categoryId: payload.categoryId ?? null,
         excerpt: payload.excerpt ?? null,
         body: payload.body ?? null,
         tags: payload.tags ?? [],
         coverImage: payload.coverImage ?? null,
         gallery: payload.gallery?.filter(Boolean) ?? [],
         videoUrl: payload.videoUrl ?? null,
-        published: isPublished,
-        publishedAt: isPublished ? new Date() : null,
+        status,
+        publishedAt,
       },
     }),
   );
@@ -98,10 +122,20 @@ export async function POST(request: Request) {
   if (!createdResult.ok) {
     const error = createdResult.error as any;
     if (error?.code === "P2002") {
-      return NextResponse.json({ success: false, error: "Un article utilise déjà ce slug." }, { status: 400 });
+      const suggestion = await findAvailablePostSlug(payload.slug);
+      return NextResponse.json(
+        {
+          success: false,
+          error: "Un article utilise déjà ce slug.",
+          suggestedSlug: suggestion,
+        },
+        { status: 400 },
+      );
     }
+    const traceId = crypto.randomUUID();
+    console.error("Failed to create post", { traceId, detail: createdResult.message });
     return NextResponse.json(
-      { success: false, error: "Database unreachable", detail: createdResult.message },
+      { success: false, error: "Database unreachable", detail: createdResult.message, traceId },
       { status: 503 },
     );
   }

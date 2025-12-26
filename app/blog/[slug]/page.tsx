@@ -17,7 +17,7 @@ function formatDate(dateValue: string | Date) {
 }
 
 async function getPost(slug: string) {
-  const result = await safePrisma((db) => db.post.findFirst({ where: { slug, published: true } }));
+  const result = await safePrisma((db) => db.post.findFirst({ where: { slug, status: "published" } }));
   return { post: result.ok ? result.data : null, error: result.ok ? null : result.message, errorType: result.ok ? null : result.errorType } as const;
 }
 
@@ -72,7 +72,7 @@ export default async function BlogPostPage({ params }: BlogPostPageProps) {
     safePrisma((db) =>
       db.post.findMany({
         where: {
-          published: true,
+          status: "published",
           id: { not: post.id },
           tags: post.tags?.length ? { hasSome: post.tags } : undefined,
         },
@@ -82,7 +82,7 @@ export default async function BlogPostPage({ params }: BlogPostPageProps) {
     ),
     safePrisma((db) =>
       db.post.findMany({
-        where: { published: true, id: { not: post.id } },
+        where: { status: "published", id: { not: post.id } },
         orderBy: [{ publishedAt: "desc" }, { createdAt: "desc" }],
         take: 3,
       }),

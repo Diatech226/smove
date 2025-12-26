@@ -20,7 +20,7 @@ export const mediaUrlSchema = z
 export const postSchema = z.object({
   title: z.string().min(1, "Titre obligatoire"),
   slug: slugSchema,
-  categorySlug: slugSchema.optional().nullable(),
+  categoryId: z.string().trim().optional().nullable(),
   excerpt: z
     .string()
     .trim()
@@ -36,7 +36,7 @@ export const postSchema = z.object({
   coverImage: mediaUrlSchema.nullish(),
   gallery: z.array(mediaUrlSchema.or(z.literal(""))).max(20).optional(),
   videoUrl: mediaUrlSchema.nullish(),
-  published: z.boolean().optional(),
+  status: z.enum(["draft", "published", "archived", "removed"]).optional(),
   tags: z.array(z.string().trim().min(1)).max(12).optional(),
 });
 
@@ -86,4 +86,11 @@ export const taxonomySchema = z.object({
   label: z.string().min(1, "Libellé obligatoire"),
   order: z.number().int().min(0).default(0),
   active: z.boolean().default(true),
+});
+
+export const categorySchema = z.object({
+  type: z.enum(["post", "service", "project", "event"]),
+  name: z.string().min(1, "Nom obligatoire"),
+  slug: slugSchema,
+  order: z.number().int().min(0).default(0),
 });

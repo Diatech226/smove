@@ -15,8 +15,8 @@ export default async function EditPostPage({ params }: EditPostPageProps) {
   const [postResult, categoriesResult] = await Promise.all([
     safePrisma((db) => db.post.findUnique({ where: { id: params.id } })),
     safePrisma((db) =>
-      db.taxonomy.findMany({
-        where: { type: "post_category", active: true },
+      db.category.findMany({
+        where: { type: "post" },
         orderBy: { order: "asc" },
       }),
     ),

@@ -10,6 +10,13 @@ generator client {
   provider = "prisma-client-js"
 }
 
+enum PostStatus {
+  draft
+  published
+  archived
+  removed
+}
+
 model Service {
   id          String   @id @default(auto()) @map("_id") @db.ObjectId
   slug        String   @unique
@@ -50,8 +57,9 @@ model Post {
   coverImage  String?
   gallery     String[] @default([])
   videoUrl    String?
-  categorySlug String?
-  published   Boolean  @default(false)
+  categoryId  String?  @db.ObjectId
+  category    Category? @relation(fields: [categoryId], references: [id])
+  status      PostStatus @default(draft)
   publishedAt DateTime?
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
@@ -82,5 +90,20 @@ model Taxonomy {
 
   @@unique([type, slug])
   @@index([type, active])
+  @@index([type, order])
+}
+
+model Category {
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  type      String
+  name      String
+  slug      String
+  order     Int      @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  posts     Post[]
+
+  @@unique([type, slug])
   @@index([type, order])
 }

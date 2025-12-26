@@ -7,8 +7,8 @@ export const dynamic = "force-dynamic";
 
 export default async function NewPostPage() {
   const categoriesResult = await safePrisma((db) =>
-    db.taxonomy.findMany({
-      where: { type: "post_category", active: true },
+    db.category.findMany({
+      where: { type: "post" },
       orderBy: { order: "asc" },
     }),
   );
