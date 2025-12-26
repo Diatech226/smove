@@ -7,16 +7,15 @@ import { Card } from "@/components/ui/Card";
 import { buildPostOrderBy, buildPostWhere, parsePostQueryParams } from "@/lib/admin/postQueries";
 import { safePrisma } from "@/lib/safePrisma";
 
-import { DeletePostButton } from "./_components/DeletePostButton";
-import { PublishToggleButton } from "./_components/PublishToggleButton";
+import { PostRow } from "./_components/PostRow";
 
 type PostListItem = {
   id: string;
   title: string;
   slug: string;
   tags: string[];
-  categorySlug?: string | null;
-  published: boolean;
+  categoryId?: string | null;
+  status: "draft" | "published" | "archived" | "removed";
   publishedAt: Date | null;
   createdAt: Date;
   updatedAt: Date;
@@ -45,8 +44,8 @@ export default async function AdminPostsPage({ searchParams = {} }: AdminPostsPa
     ),
     safePrisma((db) => db.post.count({ where })),
     safePrisma((db) =>
-      db.taxonomy.findMany({
-        where: { type: "post_category", active: true },
+      db.category.findMany({
+        where: { type: "post" },
         orderBy: { order: "asc" },
       }),
     ),
@@ -56,7 +55,7 @@ export default async function AdminPostsPage({ searchParams = {} }: AdminPostsPa
   const total = countResult.ok ? countResult.data : posts.length;
   const totalPages = Math.max(1, Math.ceil(total / params.limit));
   const categories = categoriesResult.ok ? categoriesResult.data : [];
-  const categoryMap = new Map(categories.map((category) => [category.slug, category.label]));
+  const categoryMap = new Map(categories.map((category) => [category.id, category.name]));
 
   const buildQuery = (next: Partial<typeof params>) => {
     const merged = { ...params, ...next };
@@ -93,8 +92,8 @@ export default async function AdminPostsPage({ searchParams = {} }: AdminPostsPa
       <Card className="border-white/10 bg-white/5 p-6 shadow-lg shadow-emerald-500/10">
         <div className="flex flex-wrap items-center justify-between gap-4">
           <div>
-            <h2 className="text-lg font-semibold text-white">Articles publiés et brouillons</h2>
-            <p className="text-sm text-slate-300">Affinez la recherche, filtrez et pilotez la publication rapidement.</p>
+            <h2 className="text-lg font-semibold text-white">Articles & statuts</h2>
+            <p className="text-sm text-slate-300">Affinez la recherche, filtrez et pilotez les statuts rapidement.</p>
           </div>
           <div className="text-sm text-slate-300">
             {total} article(s) • page {params.page} / {totalPages}
@@ -127,6 +126,8 @@ export default async function AdminPostsPage({ searchParams = {} }: AdminPostsPa
               <option value="all">Tous</option>
               <option value="published">Publié</option>
               <option value="draft">Brouillon</option>
+              <option value="archived">Archivé</option>
+              <option value="removed">Retiré</option>
             </select>
           </div>
           <div className="space-y-2">
@@ -141,8 +142,8 @@ export default async function AdminPostsPage({ searchParams = {} }: AdminPostsPa
             >
               <option value="">Toutes</option>
               {categories.map((category) => (
-                <option key={category.slug} value={category.slug}>
-                  {category.label}
+                <option key={category.id} value={category.id}>
+                  {category.name}
                 </option>
               ))}
             </select>
@@ -239,7 +240,7 @@ export default async function AdminPostsPage({ searchParams = {} }: AdminPostsPa
                 <th className="px-3 py-2 font-semibold">Slug</th>
                 <th className="px-3 py-2 font-semibold">Rubrique</th>
                 <th className="px-3 py-2 font-semibold">Tags</th>
-                <th className="px-3 py-2 font-semibold">Publié</th>
+                <th className="px-3 py-2 font-semibold">Statut</th>
                 <th className="px-3 py-2 font-semibold">Publié le</th>
                 <th className="px-3 py-2 font-semibold">Créé le</th>
                 <th className="px-3 py-2 font-semibold">Mis à jour</th>
@@ -248,51 +249,11 @@ export default async function AdminPostsPage({ searchParams = {} }: AdminPostsPa
             </thead>
             <tbody className="divide-y divide-white/5">
               {posts.map((post) => (
-                <tr key={post.id} className="hover:bg-white/5">
-                  <td className="px-3 py-3 text-white">{post.title}</td>
-                  <td className="px-3 py-3 text-emerald-200">{post.slug}</td>
-                  <td className="px-3 py-3">{post.categorySlug ? categoryMap.get(post.categorySlug) ?? post.categorySlug : "—"}</td>
-                  <td className="px-3 py-3">{post.tags?.length ? post.tags.join(", ") : "—"}</td>
-                  <td className="px-3 py-3 font-semibold">
-                    {post.published ? (
-                      <span className="rounded-full bg-emerald-500/10 px-2 py-1 text-xs text-emerald-200">Oui</span>
-                    ) : (
-                      <span className="rounded-full bg-amber-500/10 px-2 py-1 text-xs text-amber-200">Brouillon</span>
-                    )}
-                  </td>
-                  <td className="px-3 py-3 text-slate-300">
-                    {post.publishedAt
-                      ? new Date(post.publishedAt).toLocaleDateString("fr-FR", {
-                          day: "2-digit",
-                          month: "short",
-                          year: "numeric",
-                        })
-                      : "—"}
-                  </td>
-                  <td className="px-3 py-3 text-slate-300">
-                    {new Date(post.createdAt).toLocaleDateString("fr-FR", {
-                      day: "2-digit",
-                      month: "short",
-                      year: "numeric",
-                    })}
-                  </td>
-                  <td className="px-3 py-3 text-slate-300">
-                    {new Date(post.updatedAt).toLocaleDateString("fr-FR", {
-                      day: "2-digit",
-                      month: "short",
-                      year: "numeric",
-                    })}
-                  </td>
-                  <td className="px-3 py-3">
-                    <div className="flex items-center gap-2">
-                      <Button asChild variant="secondary" className="px-3 py-1 text-xs">
-                        <Link href={`/admin/posts/${post.id}`}>Modifier</Link>
-                      </Button>
-                      <PublishToggleButton postId={post.id} published={post.published} />
-                      <DeletePostButton postId={post.id} />
-                    </div>
-                  </td>
-                </tr>
+                <PostRow
+                  key={post.id}
+                  post={post}
+                  categoryLabel={post.categoryId ? categoryMap.get(post.categoryId) ?? post.categoryId : undefined}
+                />
               ))}
               {!posts.length ? (
                 <tr>

@@ -19,7 +19,7 @@ type BlogListPost = {
   body: string | null;
   tags: string[];
   coverImage?: string | null;
-  published: boolean;
+  status: "draft" | "published" | "archived" | "removed";
   publishedAt: string | Date | null;
   createdAt: string | Date;
 };
@@ -48,7 +48,7 @@ export const metadata: Metadata = createMetadata({
 export default async function BlogPage() {
   const postsResult = await safePrisma((db) =>
     db.post.findMany({
-      where: { published: true },
+      where: { status: "published" },
       orderBy: [
         { publishedAt: "desc" },
         { createdAt: "desc" },

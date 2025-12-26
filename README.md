@@ -91,7 +91,7 @@ NEXT_PUBLIC_BRAND_NAME="SMOVE Communication"
 - Définissez `SMOVE_ADMIN_PASSWORD` pour le mot de passe d'accès.
 - `SMOVE_ADMIN_SECRET` est utilisé pour signer le cookie de session (middleware `/admin/**`).
 - Après connexion, vous êtes redirigé vers `/admin/dashboard` et pouvez gérer services, projets et articles.
-- Les slugs sont vérifiés côté serveur via `GET /api/admin/slug?type=<post|project|service|event>&slug=...` pour garantir l'unicité dès la saisie.
+- Les slugs sont vérifiés côté serveur via `GET /api/admin/slug?model=<post|project|service|event>&slug=...&excludeId=...` pour garantir l'unicité dès la saisie.
 - Un squelette `app/admin/loading.tsx` évite les flashes blancs pendant les chargements du back-office.
 
 ## Validation et stabilité
@@ -103,14 +103,16 @@ NEXT_PUBLIC_BRAND_NAME="SMOVE Communication"
 Les modèles Prisma/MongoDB sont définis dans `prisma/schema.prisma` :
 - `Service` : slug unique, nom, description, catégorie/type, `categorySlug` et `sectorSlug` (dropdown admin), `image` pour les cartes.
 - `Project` : slug unique, client, titre, secteur, `sectorSlug` et `categorySlug` (dropdown admin), résumé, corps, résultats, catégorie/type et `coverImage`.
-- `Post` : slug unique, titre, extrait, contenu, `tags` (catégories), `categorySlug`, `coverImage`, `gallery`, `videoUrl`, statut `published`, dates de création/mise à jour.
+- `Post` : slug unique, titre, extrait, contenu, `tags`, `categoryId`, `coverImage`, `gallery`, `videoUrl`, statut `status` (draft/published/archived/removed), dates de création/mise à jour + `publishedAt`.
 - `Event` : slug unique, titre, date, lieu, description, catégorie/type et `coverImage`.
+- `Category` : typée (`post`, `service`, `project`, `event`), `name`, `slug`, ordre, timestamps.
 - `Taxonomy` : type (`service_sector`, `service_category`, `project_sector`, `project_category`, `post_category`), slug, label, ordre, actif, timestamps.
 
 ## Gestion du contenu
 - `admin/services` : lister, créer, mettre à jour et supprimer les services.
 - `admin/projects` : CRUD projets (slug, client, secteur, résumé, description, résultats).
 - `admin/posts` : CRUD articles (slug, titre, catégorie, extrait, contenu, publication, média). Les articles supportent l'image de couverture, une galerie, une vidéo et les tags/catégories.
+- `admin/categories` : gérer les catégories utilisées dans les formulaires CMS (par type).
 - `admin/taxonomies` (API) : CRUD des taxonomies référentielles (secteurs, catégories) pour alimenter les dropdowns des services/projets/articles.
 
 Les données sont persistées via Prisma/MongoDB et utilisées par les pages publiques (`/projects`, `/blog`, etc.).
@@ -124,12 +126,21 @@ Flux de gestion :
 2. **Modifier un article** : depuis la liste `/admin/posts`, utilisez l'action "Modifier" pour ajuster le contenu ou le statut, puis sauvegardez.
 3. **Supprimer un article** : cliquez sur "Supprimer" dans la ligne concernée et confirmez la suppression.
 
+## CMS Articles - statuts, slugs, catégories
+- **Statuts** : utilisez `status` (`draft`, `published`, `archived`, `removed`) dans le formulaire ou les actions rapides depuis `/admin/posts`. La date `publishedAt` est gérée automatiquement lorsque le statut passe sur `published`.
+- **Slugs** : la validation supporte `excludeId` pour l'édition et propose un slug alternatif en cas de collision. Le backend renvoie un `suggestedSlug` si un doublon est détecté à l'enregistrement.
+- **Catégories** : les listes sont alimentées via `GET /api/admin/categories?type=post`. S'il n'y a pas de catégorie, un bouton permet de générer un seed ou de créer une catégorie depuis `/admin/categories`.
+
 ## Endpoints CMS clés
 - Taxonomies :
   - `GET /api/admin/taxonomies?type=service_sector|service_category|project_sector|project_category|post_category`
   - `POST /api/admin/taxonomies` (body Zod `taxonomySchema`)
   - `PUT /api/admin/taxonomies/:id` / `DELETE /api/admin/taxonomies/:id`
-- Slugs : `GET /api/admin/slug?type=<post|project|service|event>&slug=...`
+- Catégories :
+  - `GET /api/admin/categories?type=post|service|project|event`
+  - `POST /api/admin/categories` (CRUD + seed via `{ seed: true, type: "post" }`)
+  - `PATCH /api/admin/categories/:id` / `DELETE /api/admin/categories/:id`
+- Slugs : `GET /api/admin/slug?model=<post|project|service|event>&slug=...&excludeId=...`
 
 ## Notes supplémentaires
 - Le hero 3D utilise des versions compatibles de `three`, `@react-three/fiber` et `@react-three/drei` pour éviter les warnings `PlaneBufferGeometry` de `troika-three-text`.

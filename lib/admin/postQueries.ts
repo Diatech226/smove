@@ -4,7 +4,7 @@ type RawParams = Record<string, string | string[] | undefined>;
 
 export type PostQueryParams = {
   search: string;
-  status: "all" | "published" | "draft";
+  status: "all" | "published" | "draft" | "archived" | "removed";
   category: string;
   tag: string;
   sort: "publishedAt" | "createdAt" | "updatedAt";
@@ -27,7 +27,10 @@ export function parsePostQueryParams(params: RawParams): PostQueryParams {
   const fromParam = readParam(params.from);
   const toParam = readParam(params.to);
 
-  const status = statusParam === "published" || statusParam === "draft" ? statusParam : "all";
+  const status =
+    statusParam === "published" || statusParam === "draft" || statusParam === "archived" || statusParam === "removed"
+      ? statusParam
+      : "all";
   const sort: PostQueryParams["sort"] =
     sortParam === "createdAt" || sortParam === "updatedAt" ? sortParam : "publishedAt";
 
@@ -58,15 +61,12 @@ export function buildPostWhere(params: PostQueryParams): Prisma.PostWhereInput {
     ];
   }
 
-  if (params.status === "published") {
-    where.published = true;
-  }
-  if (params.status === "draft") {
-    where.published = false;
+  if (params.status !== "all") {
+    where.status = params.status;
   }
 
   if (params.category) {
-    where.categorySlug = params.category;
+    where.categoryId = params.category;
   }
 
   if (params.tag) {

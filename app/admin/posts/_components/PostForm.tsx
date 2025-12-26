@@ -3,6 +3,7 @@
 import type { FormEvent } from "react";
 import { useEffect, useMemo, useState, useTransition } from "react";
 
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 
 import { AdminPageHeader } from "@/components/admin/AdminPageHeader";
@@ -13,13 +14,13 @@ import { cn, slugify } from "@/lib/utils";
 export type PostFormValues = {
   title: string;
   slug: string;
-  categorySlug?: string | null;
+  categoryId?: string | null;
   excerpt?: string | null;
   body?: string | null;
   coverImage?: string | null;
   gallery?: string[];
   videoUrl?: string | null;
-  published?: boolean;
+  status?: "draft" | "published" | "archived" | "removed";
   tags?: string[];
 };
 
@@ -27,7 +28,7 @@ type PostFormProps = {
   initialValues?: PostFormValues;
   postId?: string;
   mode: "create" | "edit";
-  categories?: { slug: string; label: string }[];
+  categories?: { id: string; name: string }[];
 };
 
 export function PostForm({ initialValues, postId, mode, categories = [] }: PostFormProps) {
@@ -36,10 +37,10 @@ export function PostForm({ initialValues, postId, mode, categories = [] }: PostF
     initialValues ?? {
       title: "",
       slug: "",
-      categorySlug: "",
+      categoryId: "",
       excerpt: "",
       body: "",
-      published: false,
+      status: "draft",
       coverImage: "",
       gallery: [],
       videoUrl: "",
@@ -51,9 +52,12 @@ export function PostForm({ initialValues, postId, mode, categories = [] }: PostF
   const [isPending, startTransition] = useTransition();
   const [slugLocked, setSlugLocked] = useState<boolean>(Boolean(initialValues?.slug));
   const [slugInput, setSlugInput] = useState<string>(initialValues?.slug ?? "");
-  const [slugStatus, setSlugStatus] = useState<{ state: "idle" | "checking" | "available" | "unavailable" | "error"; message?: string }>(
-    { state: "idle" },
-  );
+  const [slugStatus, setSlugStatus] = useState<{
+    state: "idle" | "checking" | "available" | "unavailable" | "error";
+    message?: string;
+    conflictLabel?: string;
+  }>({ state: "idle" });
+  const [isSlugGenerating, setIsSlugGenerating] = useState(false);
 
   useEffect(() => {
     if (initialValues) {
@@ -87,7 +91,14 @@ export function PostForm({ initialValues, postId, mode, categories = [] }: PostF
     const controller = new AbortController();
     const timer = setTimeout(async () => {
       try {
-        const response = await fetch(`/api/admin/slug?type=post&slug=${encodeURIComponent(computedSlug)}`, {
+        const params = new URLSearchParams({
+          model: "post",
+          slug: computedSlug,
+        });
+        if (isEditing && postId) {
+          params.set("excludeId", postId);
+        }
+        const response = await fetch(`/api/admin/slug?${params.toString()}`, {
           signal: controller.signal,
         });
         const data = await response.json();
@@ -95,7 +106,10 @@ export function PostForm({ initialValues, postId, mode, categories = [] }: PostF
           setSlugStatus({ state: "error", message: data?.error || "Impossible de vérifier le slug." });
           return;
         }
-        setSlugStatus({ state: data.available ? "available" : "unavailable" });
+        setSlugStatus({
+          state: data.available ? "available" : "unavailable",
+          conflictLabel: data.available ? undefined : data?.conflict?.label,
+        });
       } catch (err: any) {
         if (err?.name === "AbortError") return;
         setSlugStatus({ state: "error", message: "Impossible de vérifier le slug." });
@@ -106,10 +120,36 @@ export function PostForm({ initialValues, postId, mode, categories = [] }: PostF
       controller.abort();
       clearTimeout(timer);
     };
-  }, [computedSlug]);
+  }, [computedSlug, isEditing, postId]);
 
   const gallery = useMemo(() => form.gallery ?? [], [form.gallery]);
   const tags = useMemo(() => form.tags ?? [], [form.tags]);
+  const currentStatus = form.status ?? "draft";
+
+  const generateUniqueSlug = async (value: string) => {
+    const baseSlug = slugify(value);
+    if (!baseSlug) return "";
+    setIsSlugGenerating(true);
+    try {
+      for (let attempt = 0; attempt < 25; attempt += 1) {
+        const candidate = attempt === 0 ? baseSlug : `${baseSlug}-${attempt + 1}`;
+        const params = new URLSearchParams({ model: "post", slug: candidate });
+        if (isEditing && postId) {
+          params.set("excludeId", postId);
+        }
+        const response = await fetch(`/api/admin/slug?${params.toString()}`);
+        const data = await response.json();
+        if (response.ok && data?.success && data?.available) {
+          return candidate;
+        }
+      }
+    } catch (slugError) {
+      console.error(slugError);
+    } finally {
+      setIsSlugGenerating(false);
+    }
+    return baseSlug;
+  };
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -119,17 +159,13 @@ export function PostForm({ initialValues, postId, mode, categories = [] }: PostF
     const payload = {
       ...form,
       slug: computedSlug,
+      categoryId: form.categoryId?.trim() ? form.categoryId : null,
       gallery: gallery.filter((item) => item.trim()),
       tags: tags.map((tag) => tag.trim()).filter(Boolean),
     };
 
     if (!payload.title.trim() || !payload.slug.trim() || !(payload.body ?? "").trim()) {
       setError("Le titre, le slug et le contenu sont obligatoires.");
-      return;
-    }
-
-    if (slugStatus.state === "unavailable") {
-      setError("Ce slug est déjà utilisé. Merci d'en choisir un autre.");
       return;
     }
 
@@ -145,6 +181,11 @@ export function PostForm({ initialValues, postId, mode, categories = [] }: PostF
       if (!response.ok || data?.success === false) {
         const message = data?.error || data?.message || "Impossible d'enregistrer cet article.";
         setError(message);
+        if (data?.suggestedSlug) {
+          setSlugLocked(true);
+          setSlugInput(data.suggestedSlug);
+          setSlugStatus({ state: "unavailable", message: "Slug déjà pris. Une proposition a été appliquée." });
+        }
         return;
       }
 
@@ -227,9 +268,30 @@ export function PostForm({ initialValues, postId, mode, categories = [] }: PostF
               </p>
               {slugStatus.state === "checking" ? <p className="text-xs text-amber-200">Vérification du slug...</p> : null}
               {slugStatus.state === "available" ? <p className="text-xs text-emerald-200">Ce slug est disponible.</p> : null}
-              {slugStatus.state === "unavailable" ? <p className="text-xs text-rose-200">Ce slug est déjà utilisé.</p> : null}
+              {slugStatus.state === "unavailable" ? (
+                <p className="text-xs text-rose-200">
+                  Ce slug est déjà utilisé{slugStatus.conflictLabel ? ` par "${slugStatus.conflictLabel}".` : "."}
+                </p>
+              ) : null}
               {slugStatus.state === "error" && slugStatus.message ? (
                 <p className="text-xs text-rose-200">{slugStatus.message}</p>
+              ) : null}
+              {slugStatus.state === "unavailable" ? (
+                <Button
+                  type="button"
+                  variant="secondary"
+                  className="mt-2 px-3 py-1 text-xs"
+                  onClick={async () => {
+                    const suggestion = await generateUniqueSlug(computedSlug || form.title);
+                    if (suggestion) {
+                      setSlugLocked(true);
+                      setSlugInput(suggestion);
+                    }
+                  }}
+                  disabled={isSlugGenerating}
+                >
+                  {isSlugGenerating ? "Recherche..." : "Trouver un slug disponible"}
+                </Button>
               ) : null}
             </div>
           </div>
@@ -241,19 +303,28 @@ export function PostForm({ initialValues, postId, mode, categories = [] }: PostF
               </label>
               <div className="space-y-3">
                 <select
-                  id="categorySlug"
-                  name="categorySlug"
-                  value={form.categorySlug ?? ""}
-                  onChange={(event) => setForm((prev) => ({ ...prev, categorySlug: event.target.value }))}
+                  id="categoryId"
+                  name="categoryId"
+                  value={form.categoryId ?? ""}
+                  onChange={(event) => setForm((prev) => ({ ...prev, categoryId: event.target.value }))}
                   className="w-full rounded-lg border border-white/10 bg-slate-900 px-3 py-2 text-sm text-white focus:border-emerald-400 focus:outline-none"
                 >
                   <option value="">Sélectionnez une catégorie</option>
                   {categories.map((category) => (
-                    <option key={category.slug} value={category.slug}>
-                      {category.label}
+                    <option key={category.id} value={category.id}>
+                      {category.name}
                     </option>
                   ))}
                 </select>
+                {!categories.length ? (
+                  <Button
+                    asChild
+                    variant="ghost"
+                    className="w-fit border border-white/10 px-3 py-1 text-xs text-emerald-200 hover:text-emerald-100"
+                  >
+                    <Link href="/admin/categories">Créer une catégorie</Link>
+                  </Button>
+                ) : null}
                 <input
                   id="tags"
                   name="tags"
@@ -274,17 +345,20 @@ export function PostForm({ initialValues, postId, mode, categories = [] }: PostF
                 Statut de publication
               </label>
               <div className="flex items-center gap-3 rounded-lg border border-white/10 bg-slate-900 px-4 py-3">
-                <input
+                <select
                   id="published"
-                  name="published"
-                  type="checkbox"
-                  checked={form.published ?? false}
-                  onChange={(event) => setForm((prev) => ({ ...prev, published: event.target.checked }))}
-                  className="h-4 w-4 rounded border-white/20 text-emerald-400 focus:ring-emerald-400"
-                />
-                <label className="text-sm text-slate-200" htmlFor="published">
-                  Rendre l'article visible sur le blog public
-                </label>
+                  name="status"
+                  value={currentStatus}
+                  onChange={(event) =>
+                    setForm((prev) => ({ ...prev, status: event.target.value as PostFormValues["status"] }))
+                  }
+                  className="w-full rounded-lg border border-white/10 bg-slate-900 px-3 py-2 text-sm text-white focus:border-emerald-400 focus:outline-none"
+                >
+                  <option value="draft">Brouillon</option>
+                  <option value="published">Publié</option>
+                  <option value="archived">Archivé</option>
+                  <option value="removed">Retiré</option>
+                </select>
               </div>
             </div>
           </div>
