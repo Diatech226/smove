@@ -1,4 +1,5 @@
-import { createRequestId, jsonWithRequestId } from "@/lib/api/requestId";
+import { jsonError, jsonOk } from "@/lib/api/response";
+import { createRequestId } from "@/lib/api/requestId";
 import { requireAdmin } from "@/lib/admin/auth";
 import { safePrisma } from "@/lib/safePrisma";
 import { slugSchema } from "@/lib/validation/admin";
@@ -23,13 +24,13 @@ export async function GET(request: Request) {
   const excludeId = (url.searchParams.get("excludeId") ?? "").trim();
 
   if (!rawType || !(rawType in MODEL_MAP)) {
-    return jsonWithRequestId({ success: false, error: "Type de contenu invalide" }, { status: 400, requestId });
+    return jsonError("Type de contenu invalide", { status: 400, requestId });
   }
 
   const parsedSlug = slugSchema.safeParse(slug);
   if (!parsedSlug.success) {
     const message = parsedSlug.error.issues.at(0)?.message ?? "Slug invalide";
-    return jsonWithRequestId({ success: false, error: message }, { status: 400, requestId });
+    return jsonError(message, { status: 400, requestId });
   }
 
   const modelConfig = MODEL_MAP[rawType as SupportedType];
@@ -42,24 +43,24 @@ export async function GET(request: Request) {
   );
   if (!lookupResult.ok) {
     console.error("Slug lookup failed", { requestId, detail: lookupResult.message });
-    return jsonWithRequestId(
-      { success: false, error: "Database unreachable", detail: lookupResult.message },
-      { status: 503, requestId },
-    );
+    return jsonError("Database unreachable", {
+      status: 503,
+      requestId,
+      data: { detail: lookupResult.message },
+    });
   }
 
   const match = lookupResult.data;
   if (!match) {
-    return jsonWithRequestId({ success: true, available: true }, { status: 200, requestId });
+    return jsonOk({ available: true }, { status: 200, requestId });
   }
 
   if (excludeId && match.id === excludeId) {
-    return jsonWithRequestId({ success: true, available: true }, { status: 200, requestId });
+    return jsonOk({ available: true }, { status: 200, requestId });
   }
 
-  return jsonWithRequestId(
+  return jsonOk(
     {
-      success: true,
       available: false,
       conflict: {
         id: match.id,

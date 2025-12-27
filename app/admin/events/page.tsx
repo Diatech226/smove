@@ -46,11 +46,11 @@ export default function AdminEventsPage() {
         setLoading(true);
         const response = await fetch("/api/admin/events");
         const data = await response.json();
-        if (!response.ok || data?.success === false) {
+        if (!response.ok || data?.ok === false) {
           setError(data?.error || "Impossible de charger les événements.");
           return;
         }
-        setItems(Array.isArray(data.events) ? data.events : []);
+        setItems(Array.isArray(data?.data?.events) ? data.data.events : []);
       } catch (fetchError) {
         console.error(fetchError);
         setError("Impossible de charger les événements.");
@@ -95,16 +95,16 @@ export default function AdminEventsPage() {
         body: JSON.stringify(payload),
       });
       const data = await response.json();
-      if (!response.ok || data?.success === false) {
+      if (!response.ok || data?.ok === false) {
         setError(data?.error || "Impossible d'enregistrer cet événement.");
         return;
       }
 
       setStatusMessage(isCreating ? "Événement créé." : "Événement mis à jour.");
-      if (isCreating && data.event) {
-        setItems((prev) => [data.event, ...prev]);
-      } else if (data.event) {
-        setItems((prev) => prev.map((item) => (item.id === data.event.id ? data.event : item)));
+      if (isCreating && data?.data?.event) {
+        setItems((prev) => [data.data.event, ...prev]);
+      } else if (data?.data?.event) {
+        setItems((prev) => prev.map((item) => (item.id === data.data.event.id ? data.data.event : item)));
       }
       resetForm();
     } catch (submitError) {
@@ -119,7 +119,7 @@ export default function AdminEventsPage() {
     try {
       const response = await fetch(`/api/admin/events/${id}`, { method: "DELETE" });
       const data = await response.json();
-      if (!response.ok || data?.success === false) {
+      if (!response.ok || data?.ok === false) {
         setError(data?.error || "Suppression impossible.");
         return;
       }

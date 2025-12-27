@@ -102,13 +102,13 @@ export function PostForm({ initialValues, postId, mode, categories = [] }: PostF
           signal: controller.signal,
         });
         const data = await response.json();
-        if (!response.ok || data?.success === false) {
+        if (!response.ok || data?.ok === false) {
           setSlugStatus({ state: "error", message: data?.error || "Impossible de vérifier le slug." });
           return;
         }
         setSlugStatus({
-          state: data.available ? "available" : "unavailable",
-          conflictLabel: data.available ? undefined : data?.conflict?.label,
+          state: data?.data?.available ? "available" : "unavailable",
+          conflictLabel: data?.data?.available ? undefined : data?.data?.conflict?.label,
         });
       } catch (err: any) {
         if (err?.name === "AbortError") return;
@@ -139,7 +139,7 @@ export function PostForm({ initialValues, postId, mode, categories = [] }: PostF
         }
         const response = await fetch(`/api/admin/slug?${params.toString()}`);
         const data = await response.json();
-        if (response.ok && data?.success && data?.available) {
+        if (response.ok && data?.ok && data?.data?.available) {
           return candidate;
         }
       }
@@ -178,12 +178,12 @@ export function PostForm({ initialValues, postId, mode, categories = [] }: PostF
 
       const data = await response.json();
 
-      if (!response.ok || data?.success === false) {
+      if (!response.ok || data?.ok === false) {
         const message = data?.error || data?.message || "Impossible d'enregistrer cet article.";
         setError(message);
-        if (data?.suggestedSlug) {
+        if (data?.data?.suggestedSlug) {
           setSlugLocked(true);
-          setSlugInput(data.suggestedSlug);
+          setSlugInput(data.data.suggestedSlug);
           setSlugStatus({ state: "unavailable", message: "Slug déjà pris. Une proposition a été appliquée." });
         }
         return;

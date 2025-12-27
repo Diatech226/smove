@@ -22,7 +22,7 @@ export function DeletePostButton({ postId }: DeletePostButtonProps) {
       const response = await fetch(`/api/admin/posts/${postId}`, { method: "DELETE" });
       const data = await response.json();
 
-      if (!response.ok || data?.success === false) {
+      if (!response.ok || data?.ok === false) {
         const errorMessage = data?.error || data?.message || "Impossible de supprimer cet article.";
         alert(errorMessage);
         return;

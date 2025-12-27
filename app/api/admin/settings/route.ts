@@ -1,4 +1,5 @@
-import { createRequestId, jsonWithRequestId } from "@/lib/api/requestId";
+import { jsonError, jsonOk } from "@/lib/api/response";
+import { createRequestId } from "@/lib/api/requestId";
 import { requireAdmin } from "@/lib/admin/auth";
 import { buildSiteSettingsPayload, DEFAULT_SITE_SETTINGS, hydrateSiteSettings, SETTINGS_KEY } from "@/lib/siteSettings";
 import { safePrisma } from "@/lib/safePrisma";
@@ -13,10 +14,11 @@ export async function GET() {
 
   if (!settingsResult.ok) {
     console.error("Failed to load site settings", { requestId, detail: settingsResult.message });
-    return jsonWithRequestId(
-      { success: false, error: "Database unreachable", detail: settingsResult.message },
-      { status: 503, requestId },
-    );
+    return jsonError("Database unreachable", {
+      status: 503,
+      requestId,
+      data: { detail: settingsResult.message },
+    });
   }
 
   if (!settingsResult.data) {
@@ -31,22 +33,17 @@ export async function GET() {
 
     if (!createResult.ok) {
       console.error("Failed to create default site settings", { requestId, detail: createResult.message });
-      return jsonWithRequestId(
-        { success: false, error: "Database unreachable", detail: createResult.message },
-        { status: 503, requestId },
-      );
+      return jsonError("Database unreachable", {
+        status: 503,
+        requestId,
+        data: { detail: createResult.message },
+      });
     }
 
-    return jsonWithRequestId(
-      { success: true, settings: hydrateSiteSettings(createResult.data as any) },
-      { status: 200, requestId },
-    );
+    return jsonOk({ settings: hydrateSiteSettings(createResult.data as any) }, { status: 200, requestId });
   }
 
-  return jsonWithRequestId(
-    { success: true, settings: hydrateSiteSettings(settingsResult.data as any) },
-    { status: 200, requestId },
-  );
+  return jsonOk({ settings: hydrateSiteSettings(settingsResult.data as any) }, { status: 200, requestId });
 }
 
 export async function PUT(request: Request) {
@@ -59,7 +56,7 @@ export async function PUT(request: Request) {
 
   if (!parsed.success) {
     const message = parsed.error.issues.at(0)?.message ?? "Payload invalide";
-    return jsonWithRequestId({ success: false, error: message }, { status: 400, requestId });
+    return jsonError(message, { status: 400, requestId });
   }
 
   const payload = buildSiteSettingsPayload(parsed.data);
@@ -74,14 +71,12 @@ export async function PUT(request: Request) {
 
   if (!updateResult.ok) {
     console.error("Failed to update site settings", { requestId, detail: updateResult.message });
-    return jsonWithRequestId(
-      { success: false, error: "Database unreachable", detail: updateResult.message },
-      { status: 503, requestId },
-    );
+    return jsonError("Database unreachable", {
+      status: 503,
+      requestId,
+      data: { detail: updateResult.message },
+    });
   }
 
-  return jsonWithRequestId(
-    { success: true, settings: hydrateSiteSettings(updateResult.data as any) },
-    { status: 200, requestId },
-  );
+  return jsonOk({ settings: hydrateSiteSettings(updateResult.data as any) }, { status: 200, requestId });
 }

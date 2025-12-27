@@ -1,9 +1,13 @@
 // file: app/api/admin/services/route.ts
-import { createRequestId, jsonWithRequestId } from "@/lib/api/requestId";
+import { jsonError, jsonOk } from "@/lib/api/response";
+import { createRequestId } from "@/lib/api/requestId";
+import { requireAdmin } from "@/lib/admin/auth";
 import { safePrisma } from "@/lib/safePrisma";
 import { serviceSchema } from "@/lib/validation/admin";
 
 export async function GET(request: Request) {
+  const authError = requireAdmin();
+  if (authError) return authError;
   const requestId = createRequestId();
   const url = new URL(request.url);
   const rawPage = Number(url.searchParams.get("page") ?? "1");
@@ -36,29 +40,30 @@ export async function GET(request: Request) {
       requestId,
       detail: servicesResult.ok ? countResult.message : servicesResult.message,
     });
-    return jsonWithRequestId(
-      { success: false, error: "Database unreachable", detail: servicesResult.ok ? countResult.message : servicesResult.message },
-      { status: 503, requestId },
-    );
+    return jsonError("Database unreachable", {
+      status: 503,
+      requestId,
+      data: { detail: servicesResult.ok ? countResult.message : servicesResult.message },
+    });
   }
 
   const total = countResult.data;
   const totalPages = Math.max(1, Math.ceil(total / limit));
 
-  return jsonWithRequestId(
-    { success: true, services: servicesResult.data, page, total, totalPages, limit },
-    { status: 200, requestId },
-  );
+  return jsonOk({ services: servicesResult.data, page, total, totalPages, limit }, { status: 200, requestId });
 }
 
 export async function POST(request: Request) {
+  const authError = requireAdmin();
+  if (authError) return authError;
+  const requestId = createRequestId();
   try {
     const json = await request.json().catch(() => null);
     const parsed = serviceSchema.safeParse(json ?? {});
 
     if (!parsed.success) {
       const message = parsed.error.issues.at(0)?.message ?? "Payload invalide";
-      return jsonWithRequestId({ success: false, error: message }, { status: 400 });
+      return jsonError(message, { status: 400, requestId });
     }
 
     const { name, slug, description, category, image } = parsed.data;
@@ -78,26 +83,21 @@ export async function POST(request: Request) {
     if (!createdResult.ok) {
       const error = (createdResult.error as any) ?? {};
       if (error?.code === "P2002") {
-        return jsonWithRequestId({ success: false, error: "Un service utilise déjà ce slug." }, { status: 400 });
+        return jsonError("Un service utilise déjà ce slug.", { status: 400, requestId });
       }
-      return jsonWithRequestId(
-        { success: false, error: "Database unreachable", detail: createdResult.message },
-        { status: 503 },
-      );
+      return jsonError("Database unreachable", {
+        status: 503,
+        requestId,
+        data: { detail: createdResult.message },
+      });
     }
 
-    return jsonWithRequestId({ success: true, service: createdResult.data }, { status: 201 });
+    return jsonOk({ service: createdResult.data }, { status: 201, requestId });
   } catch (error: any) {
     console.error("Error creating service", {
       code: error?.code,
       message: error?.message,
     });
-    return jsonWithRequestId(
-      {
-        success: false,
-        error: "Failed to create service",
-      },
-      { status: 500 },
-    );
+    return jsonError("Failed to create service", { status: 500, requestId });
   }
 }

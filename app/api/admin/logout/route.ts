@@ -1,6 +1,7 @@
 import { cookies } from "next/headers";
 
-import { createRequestId, jsonWithRequestId } from "@/lib/api/requestId";
+import { jsonOk } from "@/lib/api/response";
+import { createRequestId } from "@/lib/api/requestId";
 
 const AUTH_COOKIE_NAME = "smove_admin_auth";
 
@@ -16,7 +17,7 @@ export async function POST() {
     sameSite: "lax",
   });
 
-  return jsonWithRequestId({ success: true }, { status: 200, requestId });
+  return jsonOk({}, { status: 200, requestId });
 }
 
 export const dynamic = "force-dynamic";

@@ -1,4 +1,5 @@
-import { createRequestId, jsonWithRequestId } from "@/lib/api/requestId";
+import { jsonError, jsonOk } from "@/lib/api/response";
+import { createRequestId } from "@/lib/api/requestId";
 import { requireAdmin } from "@/lib/admin/auth";
 import { DEFAULT_CATEGORIES } from "@/lib/config/categories";
 import { safePrisma } from "@/lib/safePrisma";
@@ -21,13 +22,14 @@ export async function GET(request: Request) {
 
   if (!categoriesResult.ok) {
     console.error("Failed to load categories", { requestId, detail: categoriesResult.message });
-    return jsonWithRequestId(
-      { success: false, error: "Database unreachable", detail: categoriesResult.message },
-      { status: 503, requestId },
-    );
+    return jsonError("Database unreachable", {
+      status: 503,
+      requestId,
+      data: { detail: categoriesResult.message },
+    });
   }
 
-  return jsonWithRequestId({ success: true, categories: categoriesResult.data }, { status: 200, requestId });
+  return jsonOk({ categories: categoriesResult.data }, { status: 200, requestId });
 }
 
 export async function POST(request: Request) {
@@ -44,24 +46,19 @@ export async function POST(request: Request) {
 
     if (!existingResult.ok) {
       console.error("Failed to check category seed", { requestId, detail: existingResult.message });
-      return jsonWithRequestId(
-        { success: false, error: "Database unreachable", detail: existingResult.message },
-        { status: 503, requestId },
-      );
+      return jsonError("Database unreachable", {
+        status: 503,
+        requestId,
+        data: { detail: existingResult.message },
+      });
     }
 
     if (existingResult.data > 0) {
-      return jsonWithRequestId(
-        { success: true, categories: [], message: "Des catégories existent déjà pour ce type." },
-        { status: 200, requestId },
-      );
+      return jsonOk({ categories: [], message: "Des catégories existent déjà pour ce type." }, { status: 200, requestId });
     }
 
     if (!defaults.length) {
-      return jsonWithRequestId(
-        { success: false, error: "Aucune catégorie par défaut disponible pour ce type." },
-        { status: 400, requestId },
-      );
+      return jsonError("Aucune catégorie par défaut disponible pour ce type.", { status: 400, requestId });
     }
 
     const createResult = await safePrisma((db) =>
@@ -77,10 +74,11 @@ export async function POST(request: Request) {
 
     if (!createResult.ok) {
       console.error("Failed to seed categories", { requestId, detail: createResult.message });
-      return jsonWithRequestId(
-        { success: false, error: "Database unreachable", detail: createResult.message },
-        { status: 503, requestId },
-      );
+      return jsonError("Database unreachable", {
+        status: 503,
+        requestId,
+        data: { detail: createResult.message },
+      });
     }
 
     const seededResult = await safePrisma((db) =>
@@ -89,19 +87,20 @@ export async function POST(request: Request) {
 
     if (!seededResult.ok) {
       console.error("Failed to reload seeded categories", { requestId, detail: seededResult.message });
-      return jsonWithRequestId(
-        { success: false, error: "Database unreachable", detail: seededResult.message },
-        { status: 503, requestId },
-      );
+      return jsonError("Database unreachable", {
+        status: 503,
+        requestId,
+        data: { detail: seededResult.message },
+      });
     }
 
-    return jsonWithRequestId({ success: true, categories: seededResult.data }, { status: 201, requestId });
+    return jsonOk({ categories: seededResult.data }, { status: 201, requestId });
   }
 
   const parsed = categorySchema.safeParse(json ?? {});
   if (!parsed.success) {
     const message = parsed.error.issues.at(0)?.message ?? "Payload invalide";
-    return jsonWithRequestId({ success: false, error: message }, { status: 400, requestId });
+    return jsonError(message, { status: 400, requestId });
   }
 
   const createdResult = await safePrisma((db) =>
@@ -119,11 +118,12 @@ export async function POST(request: Request) {
     const error = createdResult.error as any;
     const message = error?.code === "P2002" ? "Une catégorie avec ce slug existe déjà pour ce type." : "Database unreachable";
     console.error("Failed to create category", { requestId, detail: createdResult.message });
-    return jsonWithRequestId(
-      { success: false, error: message, detail: createdResult.message },
-      { status: error?.code === "P2002" ? 400 : 503, requestId },
-    );
+    return jsonError(message, {
+      status: error?.code === "P2002" ? 400 : 503,
+      requestId,
+      data: { detail: createdResult.message },
+    });
   }
 
-  return jsonWithRequestId({ success: true, category: createdResult.data }, { status: 201, requestId });
+  return jsonOk({ category: createdResult.data }, { status: 201, requestId });
 }

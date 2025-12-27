@@ -42,12 +42,12 @@ export default function AdminCategoriesPage() {
       setLoading(true);
       const response = await fetch(`/api/admin/categories?type=${type}`);
       const data = await response.json();
-      if (!response.ok || data?.success === false) {
+      if (!response.ok || data?.ok === false) {
         setError(data?.error || "Impossible de charger les catégories.");
         setItems([]);
         return;
       }
-      setItems(Array.isArray(data.categories) ? data.categories : []);
+      setItems(Array.isArray(data?.data?.categories) ? data.data.categories : []);
     } catch (fetchError) {
       console.error(fetchError);
       setError("Impossible de charger les catégories.");
@@ -97,7 +97,7 @@ export default function AdminCategoriesPage() {
         body: JSON.stringify(payload),
       });
       const data = await response.json();
-      if (!response.ok || data?.success === false) {
+      if (!response.ok || data?.ok === false) {
         setError(data?.error || "Erreur lors de l'enregistrement.");
         return;
       }
@@ -125,7 +125,7 @@ export default function AdminCategoriesPage() {
     try {
       const response = await fetch(`/api/admin/categories/${id}`, { method: "DELETE" });
       const data = await response.json();
-      if (!response.ok || data?.success === false) {
+      if (!response.ok || data?.ok === false) {
         setError(data?.error || "Impossible de supprimer cette catégorie.");
         return;
       }
@@ -147,12 +147,12 @@ export default function AdminCategoriesPage() {
         body: JSON.stringify({ seed: true, type: filterType }),
       });
       const data = await response.json();
-      if (!response.ok || data?.success === false) {
+      if (!response.ok || data?.ok === false) {
         setError(data?.error || "Impossible de générer les catégories par défaut.");
         return;
       }
       setStatusMessage("Catégories par défaut créées.");
-      setItems(Array.isArray(data.categories) ? data.categories : []);
+      setItems(Array.isArray(data?.data?.categories) ? data.data.categories : []);
     } catch (seedError) {
       console.error(seedError);
       setError("Impossible de générer les catégories par défaut.");

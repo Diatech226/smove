@@ -1,8 +1,12 @@
-import { createRequestId, jsonWithRequestId } from "@/lib/api/requestId";
+import { jsonError, jsonOk } from "@/lib/api/response";
+import { createRequestId } from "@/lib/api/requestId";
+import { requireAdmin } from "@/lib/admin/auth";
 import { safePrisma } from "@/lib/safePrisma";
 import { taxonomySchema } from "@/lib/validation/admin";
 
 export async function GET(request: Request) {
+  const authError = requireAdmin();
+  if (authError) return authError;
   const requestId = createRequestId();
   const { searchParams } = new URL(request.url);
   const type = searchParams.get("type") ?? undefined;
@@ -16,7 +20,7 @@ export async function GET(request: Request) {
   ] as const;
 
   if (type && !allowedTypes.includes(type as (typeof allowedTypes)[number])) {
-    return jsonWithRequestId({ success: false, error: "Type de taxonomie invalide" }, { status: 400, requestId });
+    return jsonError("Type de taxonomie invalide", { status: 400, requestId });
   }
 
   const filter = type ? { where: { type } } : undefined;
@@ -29,23 +33,26 @@ export async function GET(request: Request) {
   );
 
   if (!taxonomiesResult.ok) {
-    return jsonWithRequestId(
-      { success: false, error: "Database unreachable", detail: taxonomiesResult.message },
-      { status: 503, requestId },
-    );
+    return jsonError("Database unreachable", {
+      status: 503,
+      requestId,
+      data: { detail: taxonomiesResult.message },
+    });
   }
 
-  return jsonWithRequestId({ success: true, taxonomies: taxonomiesResult.data }, { status: 200, requestId });
+  return jsonOk({ taxonomies: taxonomiesResult.data }, { status: 200, requestId });
 }
 
 export async function POST(request: Request) {
+  const authError = requireAdmin();
+  if (authError) return authError;
   const requestId = createRequestId();
   const json = await request.json().catch(() => null);
   const parsed = taxonomySchema.safeParse(json ?? {});
 
   if (!parsed.success) {
     const message = parsed.error.issues.at(0)?.message ?? "Payload invalide";
-    return jsonWithRequestId({ success: false, error: message }, { status: 400, requestId });
+    return jsonError(message, { status: 400, requestId });
   }
 
   const { type, slug, label, order, active } = parsed.data;
@@ -59,16 +66,14 @@ export async function POST(request: Request) {
   if (!createdResult.ok) {
     const error = (createdResult.error as any) ?? {};
     if (error?.code === "P2002") {
-      return jsonWithRequestId(
-        { success: false, error: "Une taxonomie avec ce slug existe déjà pour ce type." },
-        { status: 400, requestId },
-      );
+      return jsonError("Une taxonomie avec ce slug existe déjà pour ce type.", { status: 400, requestId });
     }
-    return jsonWithRequestId(
-      { success: false, error: "Database unreachable", detail: createdResult.message },
-      { status: 503, requestId },
-    );
+    return jsonError("Database unreachable", {
+      status: 503,
+      requestId,
+      data: { detail: createdResult.message },
+    });
   }
 
-  return jsonWithRequestId({ success: true, taxonomy: createdResult.data }, { status: 201, requestId });
+  return jsonOk({ taxonomy: createdResult.data }, { status: 201, requestId });
 }
