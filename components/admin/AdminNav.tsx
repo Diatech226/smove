@@ -12,6 +12,7 @@ const links = [
   { href: "/admin/services", label: "Services" },
   { href: "/admin/projects", label: "Projets" },
   { href: "/admin/posts", label: "Articles" },
+  { href: "/admin/users", label: "Users" },
   { href: "/admin/settings", label: "Paramètres" },
 ];
 
