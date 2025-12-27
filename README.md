@@ -21,6 +21,10 @@ Créez un fichier `.env` (ou `.env.local` pour Next.js) à la racine avec :
 ```
 SMOVE_ADMIN_PASSWORD="change-me"
 SMOVE_ADMIN_SECRET=change-me-random-long-secret
+SMOVE_ADMIN_SEED_EMAIL="admin@smove.local"
+SMOVE_ADMIN_SEED_NAME="Admin"
+# Optionnel : hash du mot de passe si vous stockez un mot de passe local pour les users
+SMOVE_ADMIN_SEED_PASSWORD_HASH=""
 
 # MongoDB connection for Prisma
 # IMPORTANT: must start with mongodb:// ou mongodb+srv:// et contenir le nom de base smove
@@ -92,6 +96,7 @@ NEXT_PUBLIC_BRAND_NAME="SMOVE Communication"
 - Définissez `SMOVE_ADMIN_PASSWORD` pour le mot de passe d'accès.
 - `SMOVE_ADMIN_SECRET` est utilisé pour signer le cookie de session (middleware `/admin/**`).
 - Après connexion, vous êtes redirigé vers `/admin/dashboard` et pouvez gérer services, projets et articles.
+- La section **Users** permet de gérer les comptes (rôles admin/client, statuts active/disabled/pending).
 - Les slugs sont vérifiés côté serveur via `GET /api/admin/slug?model=<post|project|service|event>&slug=...&excludeId=...` pour garantir l'unicité dès la saisie.
 - Un squelette `app/admin/loading.tsx` évite les flashes blancs pendant les chargements du back-office.
 
@@ -112,6 +117,7 @@ Les modèles Prisma/MongoDB sont définis dans `prisma/schema.prisma` :
 - `Project` : slug unique, client, titre, secteur, `sectorSlug` et `categorySlug` (dropdown admin), résumé, corps, résultats, catégorie/type et `coverImage`.
 - `Post` : slug unique, titre, extrait, contenu, `tags`, `categoryId`, `coverImage`, `gallery`, `videoUrl`, statut `status` (draft/published/archived/removed), dates de création/mise à jour + `publishedAt`.
 - `Event` : slug unique, titre, date, lieu, description, catégorie/type et `coverImage`.
+- `User` : email unique, nom, `role` (admin/client), `status` (active/disabled/pending), `passwordHash` optionnel, `lastLoginAt`, timestamps.
 - `Category` : typée (`post`, `service`, `project`, `event`), `name`, `slug`, ordre, timestamps.
 - `Taxonomy` : type (`service_sector`, `service_category`, `project_sector`, `project_category`, `post_category`), slug, label, ordre, actif, timestamps.
 - `SiteSettings` : singleton pour le branding, SEO, réseaux sociaux, contact, homepage et réglages blog.
@@ -121,6 +127,7 @@ Les modèles Prisma/MongoDB sont définis dans `prisma/schema.prisma` :
 - `admin/projects` : CRUD projets (slug, client, secteur, résumé, description, résultats).
 - `admin/posts` : CRUD articles (slug, titre, catégorie, extrait, contenu, publication, média). Les articles supportent l'image de couverture, une galerie, une vidéo et les tags/catégories.
 - `admin/categories` : gérer les catégories utilisées dans les formulaires CMS (par type).
+- `admin/users` : gérer les comptes, rôles et statuts depuis le CMS.
 - `admin/settings` : paramètres globaux (nom du site, SEO, réseaux, homepage, pagination blog).
 - `admin/taxonomies` (API) : CRUD des taxonomies référentielles (secteurs, catégories) pour alimenter les dropdowns des services/projets/articles.
 
@@ -150,6 +157,21 @@ Flux de gestion :
   - `POST /api/admin/categories` (CRUD + seed via `{ seed: true, type: "post" }`)
   - `PATCH /api/admin/categories/:id` / `DELETE /api/admin/categories/:id`
 - Slugs : `GET /api/admin/slug?model=<post|project|service|event>&slug=...&excludeId=...`
+- Users :
+  - `GET /api/admin/users?q=&role=&status=&sort=&page=&limit=`
+  - `POST /api/admin/users`
+  - `GET /api/admin/users/:id`
+  - `PATCH /api/admin/users/:id`
+  - `DELETE /api/admin/users/:id`
+
+## Seed admin (Users CMS)
+Si vous avez besoin d'un compte admin dans la collection `User`, lancez :
+
+```bash
+SMOVE_ADMIN_SEED_EMAIL="admin@smove.local" SMOVE_ADMIN_SEED_NAME="Admin" npm run seed:admin
+```
+
+- `SMOVE_ADMIN_SEED_PASSWORD_HASH` est optionnel si vous stockez déjà des mots de passe hashés.
 
 ## Notes supplémentaires
 - Le hero 3D utilise des versions compatibles de `three`, `@react-three/fiber` et `@react-three/drei` pour éviter les warnings `PlaneBufferGeometry` de `troika-three-text`.
