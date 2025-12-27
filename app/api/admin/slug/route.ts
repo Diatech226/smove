@@ -1,7 +1,4 @@
-// file: app/api/admin/slug/route.ts
-import crypto from "crypto";
-import { NextResponse } from "next/server";
-
+import { createRequestId, jsonWithRequestId } from "@/lib/api/requestId";
 import { requireAdmin } from "@/lib/admin/auth";
 import { safePrisma } from "@/lib/safePrisma";
 import { slugSchema } from "@/lib/validation/admin";
@@ -18,6 +15,7 @@ type SupportedType = keyof typeof MODEL_MAP;
 export async function GET(request: Request) {
   const authError = requireAdmin();
   if (authError) return authError;
+  const requestId = createRequestId();
 
   const url = new URL(request.url);
   const rawType = (url.searchParams.get("model") ?? url.searchParams.get("type") ?? "").trim().toLowerCase();
@@ -25,13 +23,13 @@ export async function GET(request: Request) {
   const excludeId = (url.searchParams.get("excludeId") ?? "").trim();
 
   if (!rawType || !(rawType in MODEL_MAP)) {
-    return NextResponse.json({ success: false, error: "Type de contenu invalide" }, { status: 400 });
+    return jsonWithRequestId({ success: false, error: "Type de contenu invalide" }, { status: 400, requestId });
   }
 
   const parsedSlug = slugSchema.safeParse(slug);
   if (!parsedSlug.success) {
     const message = parsedSlug.error.issues.at(0)?.message ?? "Slug invalide";
-    return NextResponse.json({ success: false, error: message }, { status: 400 });
+    return jsonWithRequestId({ success: false, error: message }, { status: 400, requestId });
   }
 
   const modelConfig = MODEL_MAP[rawType as SupportedType];
@@ -43,30 +41,32 @@ export async function GET(request: Request) {
     }),
   );
   if (!lookupResult.ok) {
-    const traceId = crypto.randomUUID();
-    console.error("Slug lookup failed", { traceId, detail: lookupResult.message });
-    return NextResponse.json(
-      { success: false, error: "Database unreachable", detail: lookupResult.message, traceId },
-      { status: 503 },
+    console.error("Slug lookup failed", { requestId, detail: lookupResult.message });
+    return jsonWithRequestId(
+      { success: false, error: "Database unreachable", detail: lookupResult.message },
+      { status: 503, requestId },
     );
   }
 
   const match = lookupResult.data;
   if (!match) {
-    return NextResponse.json({ success: true, available: true });
+    return jsonWithRequestId({ success: true, available: true }, { status: 200, requestId });
   }
 
   if (excludeId && match.id === excludeId) {
-    return NextResponse.json({ success: true, available: true });
+    return jsonWithRequestId({ success: true, available: true }, { status: 200, requestId });
   }
 
-  return NextResponse.json({
-    success: true,
-    available: false,
-    conflict: {
-      id: match.id,
-      slug: match.slug,
-      label: (match as any)[modelConfig.labelField] ?? match.slug,
+  return jsonWithRequestId(
+    {
+      success: true,
+      available: false,
+      conflict: {
+        id: match.id,
+        slug: match.slug,
+        label: (match as any)[modelConfig.labelField] ?? match.slug,
+      },
     },
-  });
+    { status: 200, requestId },
+  );
 }

@@ -18,6 +18,7 @@ type StatCard = {
 type RemoteData<T> = {
   loading: boolean;
   data: T[];
+  total: number;
   error?: string | null;
 };
 
@@ -28,9 +29,9 @@ const statConfig: Omit<StatCard, "value">[] = [
 ];
 
 export default function AdminDashboardPage() {
-  const [services, setServices] = useState<RemoteData<any>>({ loading: true, data: [] });
-  const [projects, setProjects] = useState<RemoteData<any>>({ loading: true, data: [] });
-  const [posts, setPosts] = useState<RemoteData<any>>({ loading: true, data: [] });
+  const [services, setServices] = useState<RemoteData<any>>({ loading: true, data: [], total: 0 });
+  const [projects, setProjects] = useState<RemoteData<any>>({ loading: true, data: [], total: 0 });
+  const [posts, setPosts] = useState<RemoteData<any>>({ loading: true, data: [], total: 0 });
 
   useEffect(() => {
     const fetchAll = async () => {
@@ -53,10 +54,15 @@ export default function AdminDashboardPage() {
             const response = await fetch(url);
             const json = await response.json();
             if (!response.ok) throw new Error(json.error || "Erreur de chargement");
-            stateSetters[key]({ loading: false, data: json[payloadKey] ?? [], error: null });
+            stateSetters[key]({
+              loading: false,
+              data: json[payloadKey] ?? [],
+              total: Number(json.total) || (json[payloadKey]?.length ?? 0),
+              error: null,
+            });
           } catch (error) {
             console.error(error);
-            stateSetters[key]({ loading: false, data: [], error: "Impossible de charger les données." });
+            stateSetters[key]({ loading: false, data: [], total: 0, error: "Impossible de charger les données." });
           }
         }),
       );
@@ -67,11 +73,11 @@ export default function AdminDashboardPage() {
 
   const stats: StatCard[] = useMemo(
     () => [
-      { ...statConfig[0], value: services.data.length },
-      { ...statConfig[1], value: projects.data.length },
-      { ...statConfig[2], value: posts.data.length },
+      { ...statConfig[0], value: services.total || services.data.length },
+      { ...statConfig[1], value: projects.total || projects.data.length },
+      { ...statConfig[2], value: posts.total || posts.data.length },
     ],
-    [services.data.length, projects.data.length, posts.data.length],
+    [services.data.length, services.total, projects.data.length, projects.total, posts.data.length, posts.total],
   );
 
   const latestPosts = useMemo(() => posts.data.slice(0, 4), [posts.data]);

@@ -16,6 +16,9 @@ type CreateMetadataOptions = {
   description?: string;
   path?: string;
   type?: "website" | "article";
+  metadataBase?: string;
+  siteName?: string;
+  ogImage?: string | null;
 };
 
 export function createMetadata({
@@ -23,29 +26,45 @@ export function createMetadata({
   description,
   path,
   type = "website",
+  metadataBase,
+  siteName,
+  ogImage,
 }: CreateMetadataOptions = {}): Metadata {
   const resolvedTitle = title ?? siteConfig.name;
   const resolvedDescription = description ?? siteConfig.description;
-  const url = new URL(path ?? "", siteConfig.url).toString();
+  const baseUrl = resolveUrl(metadataBase ?? siteConfig.url);
+  const url = baseUrl ? new URL(path ?? "", baseUrl).toString() : siteConfig.url;
+  const resolvedSiteName = siteName ?? siteConfig.name;
+  const images = [ogImage ?? "/og-default.png"];
 
   return {
     title: resolvedTitle,
     description: resolvedDescription,
+    metadataBase: baseUrl ?? undefined,
     openGraph: {
       title: resolvedTitle,
       description: resolvedDescription,
       url,
-      siteName: siteConfig.name,
+      siteName: resolvedSiteName,
       locale: siteConfig.locale,
       type,
-      images: ["/og-default.png"],
+      images,
     },
     twitter: {
       card: "summary_large_image",
       title: resolvedTitle,
       description: resolvedDescription,
       site: siteConfig.twitterHandle,
-      images: ["/og-default.png"],
+      images,
     },
   };
+}
+
+function resolveUrl(value: string): URL | null {
+  try {
+    return new URL(value);
+  } catch (error) {
+    console.warn("Invalid metadata base URL", { value, error });
+    return null;
+  }
 }

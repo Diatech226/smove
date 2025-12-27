@@ -1,7 +1,7 @@
 // file: app/admin/projects/page.tsx
 "use client";
 
-import { FormEvent, useEffect, useMemo, useState } from "react";
+import { FormEvent, useCallback, useEffect, useMemo, useState } from "react";
 
 import { AdminPageHeader } from "@/components/admin/AdminPageHeader";
 import { Button } from "@/components/ui/Button";
@@ -14,7 +14,7 @@ type AdminProject = {
   title: string;
   client: string;
   sector: string;
-  summary: string;
+  summary: string | null;
   body?: string;
   results?: string[];
   category?: string | null;
@@ -49,38 +49,53 @@ export default function AdminProjectsPage() {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [statusMessage, setStatusMessage] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+  const [detailLoading, setDetailLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [page, setPage] = useState(1);
+  const [limit, setLimit] = useState(12);
+  const [total, setTotal] = useState(0);
+  const [totalPages, setTotalPages] = useState(1);
 
   const isCreating = useMemo(() => !editingId, [editingId]);
   const computedSlug = useMemo(() => (form.slug.trim() ? form.slug : slugify(form.title)), [form.slug, form.title]);
 
-  useEffect(() => {
-    const fetchProjects = async () => {
-      try {
-        setLoading(true);
-        const response = await fetch("/api/admin/projects");
-        const data = await response.json();
-        if (!response.ok || data?.success === false) {
-          const errorMessage = data?.error || data?.message || "Impossible de charger les projets";
-          setError(errorMessage);
-          setItems([]);
-          return;
-        }
-        setItems(Array.isArray(data.projects) ? data.projects : []);
-      } catch (fetchError) {
-        console.error(fetchError);
-        setError("Impossible de charger les projets. Réessayez plus tard.");
-      } finally {
-        setLoading(false);
+  const fetchProjects = useCallback(async () => {
+    try {
+      setLoading(true);
+      const response = await fetch(`/api/admin/projects?page=${page}&limit=${limit}`);
+      const data = await response.json();
+      if (!response.ok || data?.success === false) {
+        const errorMessage = data?.error || data?.message || "Impossible de charger les projets";
+        setError(errorMessage);
+        setItems([]);
+        setTotal(0);
+        setTotalPages(1);
+        return;
       }
-    };
+      setError(null);
+      setItems(Array.isArray(data.projects) ? data.projects : []);
+      const nextTotalPages = Number(data.totalPages) || 1;
+      setTotalPages(nextTotalPages);
+      setTotal(Number(data.total) || 0);
+      if (page > nextTotalPages) {
+        setPage(nextTotalPages);
+      }
+    } catch (fetchError) {
+      console.error(fetchError);
+      setError("Impossible de charger les projets. Réessayez plus tard.");
+    } finally {
+      setLoading(false);
+    }
+  }, [page, limit]);
 
+  useEffect(() => {
     fetchProjects();
-  }, []);
+  }, [fetchProjects]);
 
   const resetForm = () => {
     setForm(emptyForm);
     setEditingId(null);
+    setDetailLoading(false);
   };
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
@@ -121,12 +136,8 @@ export default function AdminProjectsPage() {
       }
 
       setStatusMessage(isCreating ? "Projet ajouté." : "Projet mis à jour.");
-      if (isCreating && data.project) {
-        setItems((prev) => [data.project, ...prev]);
-      } else if (data.project) {
-        setItems((prev) => prev.map((item) => (item.id === data.project.id ? data.project : item)));
-      }
       resetForm();
+      await fetchProjects();
     } catch (submitError) {
       console.error(submitError);
       setError("Impossible d'enregistrer ce projet.");
@@ -144,9 +155,9 @@ export default function AdminProjectsPage() {
         setError(errorMessage);
         return;
       }
-      setItems((prev) => prev.filter((item) => item.id !== id));
       setStatusMessage("Projet supprimé.");
       resetForm();
+      await fetchProjects();
     } catch (deleteError) {
       console.error(deleteError);
       setError("Impossible de supprimer ce projet.");
@@ -154,6 +165,41 @@ export default function AdminProjectsPage() {
   };
 
   const resultsValue = (form.results ?? []).join("\n");
+
+  const handleEdit = async (id: string) => {
+    setStatusMessage(null);
+    setError(null);
+    setEditingId(id);
+    setDetailLoading(true);
+    try {
+      const response = await fetch(`/api/admin/projects/${id}`);
+      const data = await response.json();
+      if (!response.ok || data?.success === false) {
+        setError(data?.error || "Impossible de charger ce projet.");
+        setEditingId(null);
+        return;
+      }
+      const project = data.project as AdminProject;
+      setEditingId(project.id);
+      setForm({
+        slug: project.slug,
+        title: project.title,
+        client: project.client,
+        sector: project.sector,
+        summary: project.summary ?? "",
+        body: project.body ?? "",
+        results: project.results ?? [],
+        category: project.category ?? "",
+        coverImage: project.coverImage ?? "",
+      });
+    } catch (fetchError) {
+      console.error(fetchError);
+      setError("Impossible de charger ce projet.");
+      setEditingId(null);
+    } finally {
+      setDetailLoading(false);
+    }
+  };
 
   return (
     <div className="space-y-8">
@@ -190,29 +236,16 @@ export default function AdminProjectsPage() {
                   <p className="text-xs uppercase tracking-wide text-emerald-200/80">
                     {project.client} · {project.sector}
                   </p>
-                  <p className="mt-2 text-sm text-slate-300">{project.summary}</p>
+                  <p className="mt-2 text-sm text-slate-300">{project.summary ?? "—"}</p>
                 </div>
                 <div className="flex flex-col gap-2 text-sm">
                   <Button
                     variant="ghost"
                     className="border border-white/10 px-3 py-1 text-xs"
-                    onClick={() => {
-                      setEditingId(project.id);
-                      setForm({
-                        slug: project.slug,
-                        title: project.title,
-                        client: project.client,
-                        sector: project.sector,
-                        summary: project.summary,
-                        body: project.body ?? "",
-                        results: project.results ?? [],
-                        category: project.category ?? "",
-                        coverImage: project.coverImage ?? "",
-                      });
-                      setStatusMessage(null);
-                    }}
+                    onClick={() => handleEdit(project.id)}
+                    disabled={detailLoading && editingId === project.id}
                   >
-                    Modifier
+                    {detailLoading && editingId === project.id ? "Chargement..." : "Modifier"}
                   </Button>
                   <Button
                     variant="ghost"
@@ -224,9 +257,48 @@ export default function AdminProjectsPage() {
                 </div>
               </div>
             ))}
-            {!items.length && !loading ? (
-              <p className="text-sm text-slate-300">Aucun projet pour le moment.</p>
-            ) : null}
+            {!items.length && !loading ? <p className="text-sm text-slate-300">Aucun projet pour le moment.</p> : null}
+          </div>
+          <div className="mt-6 flex flex-wrap items-center justify-between gap-3 text-sm text-slate-300">
+            <p>
+              {total} projet(s) • page {page} / {totalPages}
+            </p>
+            <div className="flex flex-wrap items-center gap-2">
+              <label className="text-xs text-slate-400" htmlFor="projects-per-page">
+                Par page
+              </label>
+              <select
+                id="projects-per-page"
+                value={limit}
+                onChange={(event) => {
+                  setPage(1);
+                  setLimit(Number(event.target.value));
+                }}
+                className="rounded-lg border border-white/10 bg-slate-900 px-2 py-1 text-xs text-white focus:border-emerald-400 focus:outline-none"
+              >
+                {[6, 12, 24, 36].map((size) => (
+                  <option key={size} value={size}>
+                    {size}
+                  </option>
+                ))}
+              </select>
+              <Button
+                variant="secondary"
+                className="px-3 py-1 text-xs"
+                disabled={page <= 1}
+                onClick={() => setPage((prev) => Math.max(1, prev - 1))}
+              >
+                Précédent
+              </Button>
+              <Button
+                variant="secondary"
+                className="px-3 py-1 text-xs"
+                disabled={page >= totalPages}
+                onClick={() => setPage((prev) => Math.min(totalPages, prev + 1))}
+              >
+                Suivant
+              </Button>
+            </div>
           </div>
         </Card>
 

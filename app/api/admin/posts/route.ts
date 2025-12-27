@@ -1,7 +1,5 @@
 // file: app/api/admin/posts/route.ts
-import crypto from "crypto";
-import { NextResponse } from "next/server";
-
+import { createRequestId, jsonWithRequestId } from "@/lib/api/requestId";
 import { requireAdmin } from "@/lib/admin/auth";
 import { findAvailablePostSlug } from "@/lib/admin/slug";
 import { buildPostOrderBy, buildPostWhere, parsePostQueryParams } from "@/lib/admin/postQueries";
@@ -11,6 +9,7 @@ import { postSchema } from "@/lib/validation/admin";
 export async function GET(request: Request) {
   const authError = requireAdmin();
   if (authError) return authError;
+  const requestId = createRequestId();
 
   const url = new URL(request.url);
   const params = parsePostQueryParams(Object.fromEntries(url.searchParams.entries()));
@@ -25,33 +24,42 @@ export async function GET(request: Request) {
         orderBy,
         skip,
         take: params.limit,
+        select: {
+          id: true,
+          title: true,
+          slug: true,
+          tags: true,
+          categoryId: true,
+          status: true,
+          publishedAt: true,
+          createdAt: true,
+          updatedAt: true,
+        },
       }),
     ),
     safePrisma((db) => db.post.count({ where })),
   ]);
 
   if (!postsResult.ok || !countResult.ok) {
-    const traceId = crypto.randomUUID();
     console.error("Failed to load posts", {
-      traceId,
+      requestId,
       postError: postsResult.ok ? undefined : postsResult.message,
       countError: countResult.ok ? undefined : countResult.message,
     });
-    return NextResponse.json(
+    return jsonWithRequestId(
       {
         success: false,
         error: "Database unreachable",
         detail: postsResult.ok ? countResult.message : postsResult.message,
-        traceId,
       },
-      { status: 503 },
+      { status: 503, requestId },
     );
   }
 
   const total = countResult.data;
   const totalPages = Math.max(1, Math.ceil(total / params.limit));
 
-  return NextResponse.json(
+  return jsonWithRequestId(
     {
       success: true,
       posts: postsResult.data,
@@ -59,42 +67,42 @@ export async function GET(request: Request) {
       total,
       totalPages,
     },
-    { status: 200 },
+    { status: 200, requestId },
   );
 }
 
 export async function POST(request: Request) {
   const authError = requireAdmin();
   if (authError) return authError;
+  const requestId = createRequestId();
 
   const json = await request.json().catch(() => null);
   const parsed = postSchema.safeParse(json ?? {});
 
   if (!parsed.success) {
     const message = parsed.error.issues.at(0)?.message ?? "Payload invalide";
-    return NextResponse.json({ success: false, error: message }, { status: 400 });
+    return jsonWithRequestId({ success: false, error: message }, { status: 400, requestId });
   }
 
   const payload = parsed.data;
 
   const existingResult = await safePrisma((db) => db.post.findUnique({ where: { slug: payload.slug } }));
   if (!existingResult.ok) {
-    const traceId = crypto.randomUUID();
-    console.error("Failed to validate post slug", { traceId, detail: existingResult.message });
-    return NextResponse.json(
-      { success: false, error: "Database unreachable", detail: existingResult.message, traceId },
-      { status: 503 },
+    console.error("Failed to validate post slug", { requestId, detail: existingResult.message });
+    return jsonWithRequestId(
+      { success: false, error: "Database unreachable", detail: existingResult.message },
+      { status: 503, requestId },
     );
   }
   if (existingResult.data) {
     const suggestion = await findAvailablePostSlug(payload.slug);
-    return NextResponse.json(
+    return jsonWithRequestId(
       {
         success: false,
         error: "Un article utilise déjà ce slug.",
         suggestedSlug: suggestion,
       },
-      { status: 400 },
+      { status: 400, requestId },
     );
   }
 
@@ -123,22 +131,21 @@ export async function POST(request: Request) {
     const error = createdResult.error as any;
     if (error?.code === "P2002") {
       const suggestion = await findAvailablePostSlug(payload.slug);
-      return NextResponse.json(
+      return jsonWithRequestId(
         {
           success: false,
           error: "Un article utilise déjà ce slug.",
           suggestedSlug: suggestion,
         },
-        { status: 400 },
+        { status: 400, requestId },
       );
     }
-    const traceId = crypto.randomUUID();
-    console.error("Failed to create post", { traceId, detail: createdResult.message });
-    return NextResponse.json(
-      { success: false, error: "Database unreachable", detail: createdResult.message, traceId },
-      { status: 503 },
+    console.error("Failed to create post", { requestId, detail: createdResult.message });
+    return jsonWithRequestId(
+      { success: false, error: "Database unreachable", detail: createdResult.message },
+      { status: 503, requestId },
     );
   }
 
-  return NextResponse.json({ success: true, post: createdResult.data }, { status: 201 });
+  return jsonWithRequestId({ success: true, post: createdResult.data }, { status: 201, requestId });
 }

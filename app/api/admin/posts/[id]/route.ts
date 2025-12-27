@@ -1,7 +1,4 @@
-// file: app/api/admin/posts/[id]/route.ts
-import crypto from "crypto";
-import { NextResponse } from "next/server";
-
+import { createRequestId, jsonWithRequestId } from "@/lib/api/requestId";
 import { requireAdmin } from "@/lib/admin/auth";
 import { findAvailablePostSlug } from "@/lib/admin/slug";
 import { safePrisma } from "@/lib/safePrisma";
@@ -14,41 +11,43 @@ type Params = {
 export async function GET(_request: Request, { params }: Params) {
   const authError = requireAdmin();
   if (authError) return authError;
+  const requestId = createRequestId();
 
   try {
     if (!params.id) {
-      return NextResponse.json({ success: false, error: "Post id is required" }, { status: 400 });
+      return jsonWithRequestId({ success: false, error: "Post id is required" }, { status: 400, requestId });
     }
 
     const postResult = await safePrisma((db) => db.post.findUnique({ where: { id: params.id } }));
     if (!postResult.ok) {
-      return NextResponse.json({ success: false, error: "Failed to fetch post" }, { status: 503 });
+      console.error("Failed to fetch post", { requestId, detail: postResult.message });
+      return jsonWithRequestId({ success: false, error: "Failed to fetch post" }, { status: 503, requestId });
     }
     const post = postResult.data;
 
     if (!post) {
-      return NextResponse.json({ success: false, error: "Post not found" }, { status: 404 });
+      return jsonWithRequestId({ success: false, error: "Post not found" }, { status: 404, requestId });
     }
 
-    return NextResponse.json({ success: true, post });
+    return jsonWithRequestId({ success: true, post }, { status: 200, requestId });
   } catch (error: any) {
-    const traceId = crypto.randomUUID();
     console.error("Error fetching post", {
-      traceId,
+      requestId,
       code: error?.code,
       message: error?.message,
     });
-    return NextResponse.json({ success: false, error: "Failed to fetch post", traceId }, { status: 500 });
+    return jsonWithRequestId({ success: false, error: "Failed to fetch post" }, { status: 500, requestId });
   }
 }
 
 export async function PUT(request: Request, { params }: Params) {
   const authError = requireAdmin();
   if (authError) return authError;
+  const requestId = createRequestId();
 
   try {
     if (!params.id) {
-      return NextResponse.json({ success: false, error: "Post id is required" }, { status: 400 });
+      return jsonWithRequestId({ success: false, error: "Post id is required" }, { status: 400, requestId });
     }
 
     const json = await request.json().catch(() => null);
@@ -56,36 +55,36 @@ export async function PUT(request: Request, { params }: Params) {
 
     if (!parsed.success) {
       const message = parsed.error.issues.at(0)?.message ?? "Payload invalide";
-      return NextResponse.json({ success: false, error: message }, { status: 400 });
+      return jsonWithRequestId({ success: false, error: message }, { status: 400, requestId });
     }
 
     const payload = parsed.data;
 
     const existingPostResult = await safePrisma((db) => db.post.findUnique({ where: { id: params.id } }));
     if (!existingPostResult.ok) {
-      return NextResponse.json({ success: false, error: "Failed to update post" }, { status: 503 });
+      console.error("Failed to fetch post for update", { requestId, detail: existingPostResult.message });
+      return jsonWithRequestId({ success: false, error: "Failed to update post" }, { status: 503, requestId });
     }
     const existingPost = existingPostResult.data;
     if (!existingPost) {
-      return NextResponse.json({ success: false, error: "Post not found" }, { status: 404 });
+      return jsonWithRequestId({ success: false, error: "Post not found" }, { status: 404, requestId });
     }
 
     const existingWithSlugResult = await safePrisma((db) => db.post.findUnique({ where: { slug: payload.slug } }));
     if (!existingWithSlugResult.ok) {
-      const traceId = crypto.randomUUID();
-      console.error("Failed to validate post slug", { traceId, detail: existingWithSlugResult.message });
-      return NextResponse.json({ success: false, error: "Failed to update post", traceId }, { status: 503 });
+      console.error("Failed to validate post slug", { requestId, detail: existingWithSlugResult.message });
+      return jsonWithRequestId({ success: false, error: "Failed to update post" }, { status: 503, requestId });
     }
     const existingWithSlug = existingWithSlugResult.data;
     if (existingWithSlug && existingWithSlug.id !== params.id) {
       const suggestion = await findAvailablePostSlug(payload.slug, params.id);
-      return NextResponse.json(
+      return jsonWithRequestId(
         {
           success: false,
           error: "Un autre article utilise déjà ce slug.",
           suggestedSlug: suggestion,
         },
-        { status: 400 },
+        { status: 400, requestId },
       );
     }
 
@@ -115,51 +114,49 @@ export async function PUT(request: Request, { params }: Params) {
       const error = updatedResult.error as any;
       if (error?.code === "P2002") {
         const suggestion = await findAvailablePostSlug(payload.slug, params.id);
-        return NextResponse.json(
+        return jsonWithRequestId(
           {
             success: false,
             error: "Un autre article utilise déjà ce slug.",
             suggestedSlug: suggestion,
           },
-          { status: 400 },
+          { status: 400, requestId },
         );
       }
-      const traceId = crypto.randomUUID();
-      console.error("Failed to update post", { traceId, detail: updatedResult.message });
-      return NextResponse.json({ success: false, error: "Failed to update post", traceId }, { status: 503 });
+      console.error("Failed to update post", { requestId, detail: updatedResult.message });
+      return jsonWithRequestId({ success: false, error: "Failed to update post" }, { status: 503, requestId });
     }
 
-    return NextResponse.json({ success: true, post: updatedResult.data });
+    return jsonWithRequestId({ success: true, post: updatedResult.data }, { status: 200, requestId });
   } catch (error: any) {
-    const traceId = crypto.randomUUID();
     console.error("Error updating post", {
-      traceId,
+      requestId,
       code: error?.code,
       message: error?.message,
     });
     if (error?.code === "P2002") {
       const suggestion = await findAvailablePostSlug("article", params.id);
-      return NextResponse.json(
+      return jsonWithRequestId(
         {
           success: false,
           error: "Un autre article utilise déjà ce slug.",
           suggestedSlug: suggestion,
-          traceId,
         },
-        { status: 400 },
+        { status: 400, requestId },
       );
     }
-    return NextResponse.json({ success: false, error: "Failed to update post", traceId }, { status: 500 });
+    return jsonWithRequestId({ success: false, error: "Failed to update post" }, { status: 500, requestId });
   }
 }
 
 export async function PATCH(request: Request, { params }: Params) {
   const authError = requireAdmin();
   if (authError) return authError;
+  const requestId = createRequestId();
 
   try {
     if (!params.id) {
-      return NextResponse.json({ success: false, error: "Post id is required" }, { status: 400 });
+      return jsonWithRequestId({ success: false, error: "Post id is required" }, { status: 400, requestId });
     }
 
     const json = await request.json().catch(() => null);
@@ -167,42 +164,40 @@ export async function PATCH(request: Request, { params }: Params) {
 
     if (!parsed.success) {
       const message = parsed.error.issues.at(0)?.message ?? "Payload invalide";
-      return NextResponse.json({ success: false, error: message }, { status: 400 });
+      return jsonWithRequestId({ success: false, error: message }, { status: 400, requestId });
     }
 
     const payload = parsed.data;
     if (!Object.keys(payload).length) {
-      return NextResponse.json({ success: false, error: "Aucune donnée à mettre à jour." }, { status: 400 });
+      return jsonWithRequestId({ success: false, error: "Aucune donnée à mettre à jour." }, { status: 400, requestId });
     }
 
     const existingPostResult = await safePrisma((db) => db.post.findUnique({ where: { id: params.id } }));
     if (!existingPostResult.ok) {
-      const traceId = crypto.randomUUID();
-      console.error("Failed to validate post update", { traceId, detail: existingPostResult.message });
-      return NextResponse.json({ success: false, error: "Failed to update post", traceId }, { status: 503 });
+      console.error("Failed to validate post update", { requestId, detail: existingPostResult.message });
+      return jsonWithRequestId({ success: false, error: "Failed to update post" }, { status: 503, requestId });
     }
     const existingPost = existingPostResult.data;
     if (!existingPost) {
-      return NextResponse.json({ success: false, error: "Post not found" }, { status: 404 });
+      return jsonWithRequestId({ success: false, error: "Post not found" }, { status: 404, requestId });
     }
 
     if (payload.slug) {
       const existingWithSlugResult = await safePrisma((db) => db.post.findUnique({ where: { slug: payload.slug! } }));
       if (!existingWithSlugResult.ok) {
-        const traceId = crypto.randomUUID();
-        console.error("Failed to validate post slug", { traceId, detail: existingWithSlugResult.message });
-        return NextResponse.json({ success: false, error: "Failed to update post", traceId }, { status: 503 });
+        console.error("Failed to validate post slug", { requestId, detail: existingWithSlugResult.message });
+        return jsonWithRequestId({ success: false, error: "Failed to update post" }, { status: 503, requestId });
       }
       const existingWithSlug = existingWithSlugResult.data;
       if (existingWithSlug && existingWithSlug.id !== params.id) {
         const suggestion = await findAvailablePostSlug(payload.slug, params.id);
-        return NextResponse.json(
+        return jsonWithRequestId(
           {
             success: false,
             error: "Un autre article utilise déjà ce slug.",
             suggestedSlug: suggestion,
           },
-          { status: 400 },
+          { status: 400, requestId },
         );
       }
     }
@@ -221,7 +216,7 @@ export async function PATCH(request: Request, { params }: Params) {
           body: payload.body ?? existingPost.body,
           tags: payload.tags ?? existingPost.tags,
           coverImage: payload.coverImage ?? existingPost.coverImage,
-          gallery: payload.gallery?.filter(Boolean) ?? existingPost.gallery,
+          gallery: payload.gallery ?? existingPost.gallery,
           videoUrl: payload.videoUrl ?? existingPost.videoUrl,
           status: nextStatus,
           publishedAt,
@@ -233,64 +228,53 @@ export async function PATCH(request: Request, { params }: Params) {
       const error = updatedResult.error as any;
       if (error?.code === "P2002") {
         const suggestion = await findAvailablePostSlug(payload.slug ?? existingPost.slug, params.id);
-        return NextResponse.json(
+        return jsonWithRequestId(
           {
             success: false,
             error: "Un autre article utilise déjà ce slug.",
             suggestedSlug: suggestion,
           },
-          { status: 400 },
+          { status: 400, requestId },
         );
       }
-      const traceId = crypto.randomUUID();
-      console.error("Failed to update post", { traceId, detail: updatedResult.message });
-      return NextResponse.json({ success: false, error: "Failed to update post", traceId }, { status: 503 });
+      console.error("Failed to update post", { requestId, detail: updatedResult.message });
+      return jsonWithRequestId({ success: false, error: "Failed to update post" }, { status: 503, requestId });
     }
 
-    return NextResponse.json({ success: true, post: updatedResult.data });
+    return jsonWithRequestId({ success: true, post: updatedResult.data }, { status: 200, requestId });
   } catch (error: any) {
-    const traceId = crypto.randomUUID();
     console.error("Error updating post", {
-      traceId,
+      requestId,
       code: error?.code,
       message: error?.message,
     });
-    if (error?.code === "P2002") {
-      const suggestion = await findAvailablePostSlug("article", params.id);
-      return NextResponse.json(
-        {
-          success: false,
-          error: "Un autre article utilise déjà ce slug.",
-          suggestedSlug: suggestion,
-          traceId,
-        },
-        { status: 400 },
-      );
-    }
-    return NextResponse.json({ success: false, error: "Failed to update post", traceId }, { status: 500 });
+    return jsonWithRequestId({ success: false, error: "Failed to update post" }, { status: 500, requestId });
   }
 }
 
 export async function DELETE(_request: Request, { params }: Params) {
   const authError = requireAdmin();
   if (authError) return authError;
+  const requestId = createRequestId();
 
   try {
     if (!params.id) {
-      return NextResponse.json({ success: false, error: "Post id is required" }, { status: 400 });
+      return jsonWithRequestId({ success: false, error: "Post id is required" }, { status: 400, requestId });
     }
+
     const deleteResult = await safePrisma((db) => db.post.delete({ where: { id: params.id } }));
     if (!deleteResult.ok) {
-      return NextResponse.json({ success: false, error: "Failed to delete post" }, { status: 503 });
+      console.error("Failed to delete post", { requestId, detail: deleteResult.message });
+      return jsonWithRequestId({ success: false, error: "Failed to delete post" }, { status: 503, requestId });
     }
-    return NextResponse.json({ success: true });
+
+    return jsonWithRequestId({ success: true }, { status: 200, requestId });
   } catch (error: any) {
-    const traceId = crypto.randomUUID();
     console.error("Error deleting post", {
-      traceId,
+      requestId,
       code: error?.code,
       message: error?.message,
     });
-    return NextResponse.json({ success: false, error: "Failed to delete post", traceId }, { status: 500 });
+    return jsonWithRequestId({ success: false, error: "Failed to delete post" }, { status: 500, requestId });
   }
 }

@@ -1,7 +1,4 @@
-// file: app/api/admin/categories/route.ts
-import crypto from "crypto";
-import { NextResponse } from "next/server";
-
+import { createRequestId, jsonWithRequestId } from "@/lib/api/requestId";
 import { requireAdmin } from "@/lib/admin/auth";
 import { DEFAULT_CATEGORIES } from "@/lib/config/categories";
 import { safePrisma } from "@/lib/safePrisma";
@@ -10,6 +7,7 @@ import { categorySchema } from "@/lib/validation/admin";
 export async function GET(request: Request) {
   const authError = requireAdmin();
   if (authError) return authError;
+  const requestId = createRequestId();
 
   const url = new URL(request.url);
   const type = (url.searchParams.get("type") ?? "").trim();
@@ -22,20 +20,20 @@ export async function GET(request: Request) {
   );
 
   if (!categoriesResult.ok) {
-    const traceId = crypto.randomUUID();
-    console.error("Failed to load categories", { traceId, detail: categoriesResult.message });
-    return NextResponse.json(
-      { success: false, error: "Database unreachable", detail: categoriesResult.message, traceId },
-      { status: 503 },
+    console.error("Failed to load categories", { requestId, detail: categoriesResult.message });
+    return jsonWithRequestId(
+      { success: false, error: "Database unreachable", detail: categoriesResult.message },
+      { status: 503, requestId },
     );
   }
 
-  return NextResponse.json({ success: true, categories: categoriesResult.data }, { status: 200 });
+  return jsonWithRequestId({ success: true, categories: categoriesResult.data }, { status: 200, requestId });
 }
 
 export async function POST(request: Request) {
   const authError = requireAdmin();
   if (authError) return authError;
+  const requestId = createRequestId();
 
   const json = await request.json().catch(() => null);
 
@@ -45,25 +43,24 @@ export async function POST(request: Request) {
     const existingResult = await safePrisma((db) => db.category.count({ where: { type: seedType } }));
 
     if (!existingResult.ok) {
-      const traceId = crypto.randomUUID();
-      console.error("Failed to check category seed", { traceId, detail: existingResult.message });
-      return NextResponse.json(
-        { success: false, error: "Database unreachable", detail: existingResult.message, traceId },
-        { status: 503 },
+      console.error("Failed to check category seed", { requestId, detail: existingResult.message });
+      return jsonWithRequestId(
+        { success: false, error: "Database unreachable", detail: existingResult.message },
+        { status: 503, requestId },
       );
     }
 
     if (existingResult.data > 0) {
-      return NextResponse.json(
+      return jsonWithRequestId(
         { success: true, categories: [], message: "Des catégories existent déjà pour ce type." },
-        { status: 200 },
+        { status: 200, requestId },
       );
     }
 
     if (!defaults.length) {
-      return NextResponse.json(
+      return jsonWithRequestId(
         { success: false, error: "Aucune catégorie par défaut disponible pour ce type." },
-        { status: 400 },
+        { status: 400, requestId },
       );
     }
 
@@ -79,11 +76,10 @@ export async function POST(request: Request) {
     );
 
     if (!createResult.ok) {
-      const traceId = crypto.randomUUID();
-      console.error("Failed to seed categories", { traceId, detail: createResult.message });
-      return NextResponse.json(
-        { success: false, error: "Database unreachable", detail: createResult.message, traceId },
-        { status: 503 },
+      console.error("Failed to seed categories", { requestId, detail: createResult.message });
+      return jsonWithRequestId(
+        { success: false, error: "Database unreachable", detail: createResult.message },
+        { status: 503, requestId },
       );
     }
 
@@ -92,21 +88,20 @@ export async function POST(request: Request) {
     );
 
     if (!seededResult.ok) {
-      const traceId = crypto.randomUUID();
-      console.error("Failed to reload seeded categories", { traceId, detail: seededResult.message });
-      return NextResponse.json(
-        { success: false, error: "Database unreachable", detail: seededResult.message, traceId },
-        { status: 503 },
+      console.error("Failed to reload seeded categories", { requestId, detail: seededResult.message });
+      return jsonWithRequestId(
+        { success: false, error: "Database unreachable", detail: seededResult.message },
+        { status: 503, requestId },
       );
     }
 
-    return NextResponse.json({ success: true, categories: seededResult.data }, { status: 201 });
+    return jsonWithRequestId({ success: true, categories: seededResult.data }, { status: 201, requestId });
   }
 
   const parsed = categorySchema.safeParse(json ?? {});
   if (!parsed.success) {
     const message = parsed.error.issues.at(0)?.message ?? "Payload invalide";
-    return NextResponse.json({ success: false, error: message }, { status: 400 });
+    return jsonWithRequestId({ success: false, error: message }, { status: 400, requestId });
   }
 
   const createdResult = await safePrisma((db) =>
@@ -121,15 +116,14 @@ export async function POST(request: Request) {
   );
 
   if (!createdResult.ok) {
-    const traceId = crypto.randomUUID();
     const error = createdResult.error as any;
     const message = error?.code === "P2002" ? "Une catégorie avec ce slug existe déjà pour ce type." : "Database unreachable";
-    console.error("Failed to create category", { traceId, detail: createdResult.message });
-    return NextResponse.json(
-      { success: false, error: message, detail: createdResult.message, traceId },
-      { status: error?.code === "P2002" ? 400 : 503 },
+    console.error("Failed to create category", { requestId, detail: createdResult.message });
+    return jsonWithRequestId(
+      { success: false, error: message, detail: createdResult.message },
+      { status: error?.code === "P2002" ? 400 : 503, requestId },
     );
   }
 
-  return NextResponse.json({ success: true, category: createdResult.data }, { status: 201 });
+  return jsonWithRequestId({ success: true, category: createdResult.data }, { status: 201, requestId });
 }

@@ -1,10 +1,9 @@
-// file: app/api/admin/taxonomies/route.ts
-import { NextResponse } from "next/server";
-
+import { createRequestId, jsonWithRequestId } from "@/lib/api/requestId";
 import { safePrisma } from "@/lib/safePrisma";
 import { taxonomySchema } from "@/lib/validation/admin";
 
 export async function GET(request: Request) {
+  const requestId = createRequestId();
   const { searchParams } = new URL(request.url);
   const type = searchParams.get("type") ?? undefined;
 
@@ -17,7 +16,7 @@ export async function GET(request: Request) {
   ] as const;
 
   if (type && !allowedTypes.includes(type as (typeof allowedTypes)[number])) {
-    return NextResponse.json({ success: false, error: "Type de taxonomie invalide" }, { status: 400 });
+    return jsonWithRequestId({ success: false, error: "Type de taxonomie invalide" }, { status: 400, requestId });
   }
 
   const filter = type ? { where: { type } } : undefined;
@@ -30,22 +29,23 @@ export async function GET(request: Request) {
   );
 
   if (!taxonomiesResult.ok) {
-    return NextResponse.json(
+    return jsonWithRequestId(
       { success: false, error: "Database unreachable", detail: taxonomiesResult.message },
-      { status: 503 },
+      { status: 503, requestId },
     );
   }
 
-  return NextResponse.json({ success: true, taxonomies: taxonomiesResult.data }, { status: 200 });
+  return jsonWithRequestId({ success: true, taxonomies: taxonomiesResult.data }, { status: 200, requestId });
 }
 
 export async function POST(request: Request) {
+  const requestId = createRequestId();
   const json = await request.json().catch(() => null);
   const parsed = taxonomySchema.safeParse(json ?? {});
 
   if (!parsed.success) {
     const message = parsed.error.issues.at(0)?.message ?? "Payload invalide";
-    return NextResponse.json({ success: false, error: message }, { status: 400 });
+    return jsonWithRequestId({ success: false, error: message }, { status: 400, requestId });
   }
 
   const { type, slug, label, order, active } = parsed.data;
@@ -59,16 +59,16 @@ export async function POST(request: Request) {
   if (!createdResult.ok) {
     const error = (createdResult.error as any) ?? {};
     if (error?.code === "P2002") {
-      return NextResponse.json(
+      return jsonWithRequestId(
         { success: false, error: "Une taxonomie avec ce slug existe déjà pour ce type." },
-        { status: 400 },
+        { status: 400, requestId },
       );
     }
-    return NextResponse.json(
+    return jsonWithRequestId(
       { success: false, error: "Database unreachable", detail: createdResult.message },
-      { status: 503 },
+      { status: 503, requestId },
     );
   }
 
-  return NextResponse.json({ success: true, taxonomy: createdResult.data }, { status: 201 });
+  return jsonWithRequestId({ success: true, taxonomy: createdResult.data }, { status: 201, requestId });
 }

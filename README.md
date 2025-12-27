@@ -36,6 +36,7 @@ NEXT_PUBLIC_BRAND_NAME="SMOVE Communication"
 - Le client Prisma est initialisé via `env("DATABASE_URL")` (voir `prisma/schema.prisma` et `lib/prisma.ts`).
 - `DIRECT_DATABASE_URL` est également supporté par Prisma pour les migrations : dupliquez l'URL principale avec le suffixe `/smove` pour éviter les erreurs d'auth ou de base introuvable.
 - Pour MongoDB, les identifiants utilisent `String @id @default(auto()) @map("_id") @db.ObjectId`.
+- `NEXT_PUBLIC_SITE_URL` sert de fallback pour `metadataBase` (SEO/OG) si aucun paramètre n'est défini dans le CMS.
 
 ## Setup Mongo Atlas
 1. Créez un cluster MongoDB Atlas et une base nommée **smove** (ou assurez-vous que l'URL se termine par `/smove`).
@@ -94,6 +95,12 @@ NEXT_PUBLIC_BRAND_NAME="SMOVE Communication"
 - Les slugs sont vérifiés côté serveur via `GET /api/admin/slug?model=<post|project|service|event>&slug=...&excludeId=...` pour garantir l'unicité dès la saisie.
 - Un squelette `app/admin/loading.tsx` évite les flashes blancs pendant les chargements du back-office.
 
+## Paramètres du site (Settings)
+- Page CMS dédiée : `/admin/settings` pour configurer le branding, les réseaux, le SEO et les réglages blog/homepage.
+- Les paramètres sont stockés dans la collection `SiteSettings` (singleton) et un enregistrement par défaut est créé au premier accès.
+- Logo, favicon et Open Graph peuvent être renseignés via URL (ou chemins relatifs).
+- `seo.metadataBase` alimente directement la base SEO/OG pour éviter le warning Next.js.
+
 ## Validation et stabilité
 - Les routes `POST/PUT` admin passent par des schémas Zod (cf. `lib/validation/admin.ts`) pour renvoyer des erreurs 400 explicites plutôt que des plantages.
 - Les erreurs Prisma renvoient des réponses `503` avec un message `Database unreachable` quand la base est hors-ligne, évitant de casser la navigation admin.
@@ -107,12 +114,14 @@ Les modèles Prisma/MongoDB sont définis dans `prisma/schema.prisma` :
 - `Event` : slug unique, titre, date, lieu, description, catégorie/type et `coverImage`.
 - `Category` : typée (`post`, `service`, `project`, `event`), `name`, `slug`, ordre, timestamps.
 - `Taxonomy` : type (`service_sector`, `service_category`, `project_sector`, `project_category`, `post_category`), slug, label, ordre, actif, timestamps.
+- `SiteSettings` : singleton pour le branding, SEO, réseaux sociaux, contact, homepage et réglages blog.
 
 ## Gestion du contenu
 - `admin/services` : lister, créer, mettre à jour et supprimer les services.
 - `admin/projects` : CRUD projets (slug, client, secteur, résumé, description, résultats).
 - `admin/posts` : CRUD articles (slug, titre, catégorie, extrait, contenu, publication, média). Les articles supportent l'image de couverture, une galerie, une vidéo et les tags/catégories.
 - `admin/categories` : gérer les catégories utilisées dans les formulaires CMS (par type).
+- `admin/settings` : paramètres globaux (nom du site, SEO, réseaux, homepage, pagination blog).
 - `admin/taxonomies` (API) : CRUD des taxonomies référentielles (secteurs, catégories) pour alimenter les dropdowns des services/projets/articles.
 
 Les données sont persistées via Prisma/MongoDB et utilisées par les pages publiques (`/projects`, `/blog`, etc.).
