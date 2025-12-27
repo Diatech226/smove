@@ -5,7 +5,7 @@ import { safePrisma } from "@/lib/safePrisma";
 import { taxonomySchema } from "@/lib/validation/admin";
 
 export async function PUT(request: Request, { params }: { params: { id: string } }) {
-  const authError = requireAdmin();
+  const authError = await requireAdmin();
   if (authError) return authError;
   const requestId = createRequestId();
   const json = await request.json().catch(() => null);
@@ -42,7 +42,7 @@ export async function PUT(request: Request, { params }: { params: { id: string }
 }
 
 export async function DELETE(_request: Request, { params }: { params: { id: string } }) {
-  const authError = requireAdmin();
+  const authError = await requireAdmin();
   if (authError) return authError;
   const requestId = createRequestId();
   const deleteResult = await safePrisma((db) => db.taxonomy.delete({ where: { id: params.id } }));

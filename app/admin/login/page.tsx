@@ -3,14 +3,16 @@
 
 import { FormEvent, useState } from "react";
 import { motion } from "framer-motion";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 
 export default function AdminLoginPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
 
+  const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -21,10 +23,10 @@ export default function AdminLoginPage() {
     setError(null);
 
     try {
-      const response = await fetch("/api/admin/login", {
+      const response = await fetch("/api/auth/login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ password }),
+        body: JSON.stringify({ email, password }),
       });
 
       const result = await response.json();
@@ -36,7 +38,8 @@ export default function AdminLoginPage() {
         return;
       }
 
-      router.push("/admin/dashboard");
+      const redirectTo = searchParams?.get("redirectTo") || "/admin/dashboard";
+      router.push(redirectTo);
     } catch (submitError) {
       console.error(submitError);
       setError("Impossible de se connecter pour le moment. Réessayez.");
@@ -68,6 +71,20 @@ export default function AdminLoginPage() {
             <div className="h-12 w-12 rounded-xl bg-gradient-to-br from-emerald-400/80 to-cyan-500/70 shadow-lg shadow-emerald-500/30" />
           </div>
           <form className="mt-8 space-y-5" onSubmit={handleSubmit}>
+            <div className="space-y-2">
+              <label className="text-sm font-medium text-white" htmlFor="email">
+                Email
+              </label>
+              <input
+                id="email"
+                type="email"
+                value={email}
+                onChange={(event) => setEmail(event.target.value)}
+                className="w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-white outline-none transition focus:border-emerald-400 focus:ring-2 focus:ring-emerald-400/50"
+                placeholder="admin@smove.fr"
+                required
+              />
+            </div>
             <div className="space-y-2">
               <label className="text-sm font-medium text-white" htmlFor="password">
                 Mot de passe

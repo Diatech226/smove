@@ -6,7 +6,7 @@ import { safePrisma } from "@/lib/safePrisma";
 import { siteSettingsSchema } from "@/lib/validation/settings";
 
 export async function GET() {
-  const authError = requireAdmin();
+  const authError = await requireAdmin();
   if (authError) return authError;
   const requestId = createRequestId();
 
@@ -47,7 +47,7 @@ export async function GET() {
 }
 
 export async function PUT(request: Request) {
-  const authError = requireAdmin();
+  const authError = await requireAdmin();
   if (authError) return authError;
   const requestId = createRequestId();
 

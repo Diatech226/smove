@@ -14,7 +14,7 @@ function useLogout() {
   const [isPending, startTransition] = useTransition();
 
   const logout = async () => {
-    await fetch("/api/admin/logout", {
+    await fetch("/api/auth/logout", {
       method: "POST",
       credentials: "include",
     });

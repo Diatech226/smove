@@ -14,7 +14,7 @@ const MODEL_MAP = {
 type SupportedType = keyof typeof MODEL_MAP;
 
 export async function GET(request: Request) {
-  const authError = requireAdmin();
+  const authError = await requireAdmin();
   if (authError) return authError;
   const requestId = createRequestId();
 

@@ -1,10 +1,13 @@
+import bcrypt from "bcryptjs";
 import { PrismaClient } from "@prisma/client";
 
 const prisma = new PrismaClient();
 
 const email = process.env.SMOVE_ADMIN_SEED_EMAIL;
-const name = process.env.SMOVE_ADMIN_SEED_NAME ?? "Admin";
-const passwordHash = process.env.SMOVE_ADMIN_SEED_PASSWORD_HASH || undefined;
+const password = process.env.SMOVE_ADMIN_SEED_PASSWORD;
+const passwordHash =
+  process.env.SMOVE_ADMIN_SEED_PASSWORD_HASH ||
+  (password ? await bcrypt.hash(password, 10) : undefined);
 
 if (!email) {
   console.error("SMOVE_ADMIN_SEED_EMAIL manquant. Fournissez un email pour créer le compte admin.");
@@ -15,14 +18,12 @@ try {
   const user = await prisma.user.upsert({
     where: { email },
     update: {
-      name,
       role: "admin",
       status: "active",
       ...(passwordHash ? { passwordHash } : {}),
     },
     create: {
       email,
-      name,
       role: "admin",
       status: "active",
       ...(passwordHash ? { passwordHash } : {}),
@@ -30,7 +31,6 @@ try {
     select: {
       id: true,
       email: true,
-      name: true,
       role: true,
       status: true,
     },

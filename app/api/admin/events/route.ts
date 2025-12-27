@@ -6,7 +6,7 @@ import { safePrisma } from "@/lib/safePrisma";
 import { eventSchema } from "@/lib/validation/admin";
 
 export async function GET() {
-  const authError = requireAdmin();
+  const authError = await requireAdmin();
   if (authError) return authError;
   const requestId = createRequestId();
   const eventsResult = await safePrisma((db) => db.event.findMany({ orderBy: { date: "desc" } }));
@@ -24,7 +24,7 @@ export async function GET() {
 }
 
 export async function POST(request: Request) {
-  const authError = requireAdmin();
+  const authError = await requireAdmin();
   if (authError) return authError;
   const requestId = createRequestId();
   try {

@@ -9,7 +9,7 @@ type Params = {
 };
 
 export async function GET(_request: Request, { params }: Params) {
-  const authError = requireAdmin();
+  const authError = await requireAdmin();
   if (authError) return authError;
   const requestId = createRequestId();
 
@@ -24,12 +24,11 @@ export async function GET(_request: Request, { params }: Params) {
         select: {
           id: true,
           email: true,
-          name: true,
           role: true,
           status: true,
+          inviteExpiresAt: true,
           createdAt: true,
           updatedAt: true,
-          lastLoginAt: true,
         },
       }),
     );
@@ -55,7 +54,7 @@ export async function GET(_request: Request, { params }: Params) {
 }
 
 export async function PATCH(request: Request, { params }: Params) {
-  const authError = requireAdmin();
+  const authError = await requireAdmin();
   if (authError) return authError;
   const requestId = createRequestId();
 
@@ -87,8 +86,6 @@ export async function PATCH(request: Request, { params }: Params) {
     }
 
     const data = {
-      email: payload.email ? payload.email.trim().toLowerCase() : undefined,
-      name: payload.name === null ? null : payload.name?.trim(),
       role: payload.role,
       status: payload.status,
     };
@@ -100,12 +97,11 @@ export async function PATCH(request: Request, { params }: Params) {
         select: {
           id: true,
           email: true,
-          name: true,
           role: true,
           status: true,
+          inviteExpiresAt: true,
           createdAt: true,
           updatedAt: true,
-          lastLoginAt: true,
         },
       }),
     );
@@ -131,7 +127,7 @@ export async function PATCH(request: Request, { params }: Params) {
 }
 
 export async function DELETE(_request: Request, { params }: Params) {
-  const authError = requireAdmin();
+  const authError = await requireAdmin();
   if (authError) return authError;
   const requestId = createRequestId();
 

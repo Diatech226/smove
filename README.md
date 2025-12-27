@@ -19,11 +19,10 @@ SMOVE – site vitrine avec hero 3D et back-office CMS pour une agence de commun
 Créez un fichier `.env` (ou `.env.local` pour Next.js) à la racine avec :
 
 ```
-SMOVE_ADMIN_PASSWORD="change-me"
-SMOVE_ADMIN_SECRET=change-me-random-long-secret
+JWT_SECRET="une_longue_cle_aleatoire"
+APP_URL="http://localhost:3000"
 SMOVE_ADMIN_SEED_EMAIL="admin@smove.local"
-SMOVE_ADMIN_SEED_NAME="Admin"
-# Optionnel : hash du mot de passe si vous stockez un mot de passe local pour les users
+SMOVE_ADMIN_SEED_PASSWORD="ChangeMe123!"
 SMOVE_ADMIN_SEED_PASSWORD_HASH=""
 
 # MongoDB connection for Prisma
@@ -41,6 +40,8 @@ NEXT_PUBLIC_BRAND_NAME="SMOVE Communication"
 - `DIRECT_DATABASE_URL` est également supporté par Prisma pour les migrations : dupliquez l'URL principale avec le suffixe `/smove` pour éviter les erreurs d'auth ou de base introuvable.
 - Pour MongoDB, les identifiants utilisent `String @id @default(auto()) @map("_id") @db.ObjectId`.
 - `NEXT_PUBLIC_SITE_URL` sert de fallback pour `metadataBase` (SEO/OG) si aucun paramètre n'est défini dans le CMS.
+- `JWT_SECRET` signe les JWT stockés en cookie httpOnly pour l'accès admin.
+- `APP_URL` sert à générer les liens d'activation d'invitation.
 
 ## Setup Mongo Atlas
 1. Créez un cluster MongoDB Atlas et une base nommée **smove** (ou assurez-vous que l'URL se termine par `/smove`).
@@ -93,12 +94,16 @@ NEXT_PUBLIC_BRAND_NAME="SMOVE Communication"
 
 ## Accès à l'admin
 - URL : `/admin/login`
-- Définissez `SMOVE_ADMIN_PASSWORD` pour le mot de passe d'accès.
-- `SMOVE_ADMIN_SECRET` est utilisé pour signer le cookie de session (middleware `/admin/**`).
+- Connectez-vous avec un compte `User` actif (email + mot de passe).
 - Après connexion, vous êtes redirigé vers `/admin/dashboard` et pouvez gérer services, projets et articles.
-- La section **Users** permet de gérer les comptes (rôles admin/client, statuts active/disabled/pending).
+- La section **Users** permet de gérer les comptes (rôles admin/client, statuts active/disabled/pending) et d'envoyer des invitations.
 - Les slugs sont vérifiés côté serveur via `GET /api/admin/slug?model=<post|project|service|event>&slug=...&excludeId=...` pour garantir l'unicité dès la saisie.
 - Un squelette `app/admin/loading.tsx` évite les flashes blancs pendant les chargements du back-office.
+
+### Flux d'invitation
+1. **Invitation** : depuis `/admin/users`, cliquez sur "Inviter un user" et récupérez le lien généré.
+2. **Activation** : l'utilisateur ouvre `/activate?token=...`, choisit un mot de passe et active son compte.
+3. **Connexion** : l'utilisateur se connecte via `/admin/login` avec son email et son mot de passe.
 
 ## Paramètres du site (Settings)
 - Page CMS dédiée : `/admin/settings` pour configurer le branding, les réseaux, le SEO et les réglages blog/homepage.
@@ -117,7 +122,7 @@ Les modèles Prisma/MongoDB sont définis dans `prisma/schema.prisma` :
 - `Project` : slug unique, client, titre, secteur, `sectorSlug` et `categorySlug` (dropdown admin), résumé, corps, résultats, catégorie/type et `coverImage`.
 - `Post` : slug unique, titre, extrait, contenu, `tags`, `categoryId`, `coverImage`, `gallery`, `videoUrl`, statut `status` (draft/published/archived/removed), dates de création/mise à jour + `publishedAt`.
 - `Event` : slug unique, titre, date, lieu, description, catégorie/type et `coverImage`.
-- `User` : email unique, nom, `role` (admin/client), `status` (active/disabled/pending), `passwordHash` optionnel, `lastLoginAt`, timestamps.
+- `User` : email unique, `role` (admin/client), `status` (pending/active/disabled), `passwordHash` optionnel, token d'invitation (hash + expiry), timestamps.
 - `Category` : typée (`post`, `service`, `project`, `event`), `name`, `slug`, ordre, timestamps.
 - `Taxonomy` : type (`service_sector`, `service_category`, `project_sector`, `project_category`, `post_category`), slug, label, ordre, actif, timestamps.
 - `SiteSettings` : singleton pour le branding, SEO, réseaux sociaux, contact, homepage et réglages blog.
@@ -148,6 +153,10 @@ Flux de gestion :
 - **Catégories** : les listes sont alimentées via `GET /api/admin/categories?type=post`. S'il n'y a pas de catégorie, un bouton permet de générer un seed ou de créer une catégorie depuis `/admin/categories`.
 
 ## Endpoints CMS clés
+- Auth :
+  - `POST /api/auth/login`
+  - `POST /api/auth/logout`
+  - `POST /api/auth/activate`
 - Taxonomies :
   - `GET /api/admin/taxonomies?type=service_sector|service_category|project_sector|project_category|post_category`
   - `POST /api/admin/taxonomies` (body Zod `taxonomySchema`)
@@ -159,7 +168,7 @@ Flux de gestion :
 - Slugs : `GET /api/admin/slug?model=<post|project|service|event>&slug=...&excludeId=...`
 - Users :
   - `GET /api/admin/users?q=&role=&status=&sort=&page=&limit=`
-  - `POST /api/admin/users`
+  - `POST /api/admin/users` (invite + lien d'activation)
   - `GET /api/admin/users/:id`
   - `PATCH /api/admin/users/:id`
   - `DELETE /api/admin/users/:id`
@@ -168,7 +177,7 @@ Flux de gestion :
 Si vous avez besoin d'un compte admin dans la collection `User`, lancez :
 
 ```bash
-SMOVE_ADMIN_SEED_EMAIL="admin@smove.local" SMOVE_ADMIN_SEED_NAME="Admin" npm run seed:admin
+SMOVE_ADMIN_SEED_EMAIL="admin@smove.local" SMOVE_ADMIN_SEED_PASSWORD="ChangeMe123!" npm run seed:admin
 ```
 
 - `SMOVE_ADMIN_SEED_PASSWORD_HASH` est optionnel si vous stockez déjà des mots de passe hashés.
