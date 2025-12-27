@@ -1,20 +1,24 @@
 // file: middleware.ts
 import { NextRequest, NextResponse } from "next/server";
 
-const AUTH_COOKIE_NAME = "smove_admin_auth";
+import { AUTH_COOKIE_NAME, verifyAuthToken } from "@/lib/auth";
+
 const LOGIN_PATH = "/admin/login";
 
-export function middleware(request: NextRequest) {
+export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
-  if (!pathname.startsWith("/admin") || pathname.startsWith(LOGIN_PATH)) {
+  if (
+    (!pathname.startsWith("/admin") && !pathname.startsWith("/api/admin")) ||
+    pathname.startsWith(LOGIN_PATH)
+  ) {
     return NextResponse.next();
   }
 
   const authCookie = request.cookies.get(AUTH_COOKIE_NAME);
-  const adminSecret = process.env.SMOVE_ADMIN_SECRET;
+  const payload = authCookie?.value ? await verifyAuthToken(authCookie.value) : null;
 
-  if (authCookie?.value && adminSecret && authCookie.value === adminSecret) {
+  if (payload?.role === "admin") {
     return NextResponse.next();
   }
 
@@ -25,5 +29,5 @@ export function middleware(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/admin/:path*"],
+  matcher: ["/admin/:path*", "/api/admin/:path*"],
 };

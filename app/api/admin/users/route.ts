@@ -4,9 +4,10 @@ import { requireAdmin } from "@/lib/admin/auth";
 import { buildUserOrderBy, buildUserWhere, parseUserQueryParams } from "@/lib/admin/userQueries";
 import { safePrisma } from "@/lib/safePrisma";
 import { userCreateSchema } from "@/lib/validation/admin";
+import { createHash, randomBytes } from "crypto";
 
 export async function GET(request: Request) {
-  const authError = requireAdmin();
+  const authError = await requireAdmin();
   if (authError) return authError;
   const requestId = createRequestId();
   const url = new URL(request.url);
@@ -23,12 +24,11 @@ export async function GET(request: Request) {
         select: {
           id: true,
           email: true,
-          name: true,
           role: true,
           status: true,
+          inviteExpiresAt: true,
           createdAt: true,
           updatedAt: true,
-          lastLoginAt: true,
         },
       }),
     ),
@@ -63,7 +63,7 @@ export async function GET(request: Request) {
 }
 
 export async function POST(request: Request) {
-  const authError = requireAdmin();
+  const authError = await requireAdmin();
   if (authError) return authError;
   const requestId = createRequestId();
 
@@ -78,27 +78,29 @@ export async function POST(request: Request) {
 
     const payload = parsed.data;
     const email = payload.email.trim().toLowerCase();
-    const name = payload.name?.trim() || null;
     const role = payload.role ?? "client";
-    const status = payload.status ?? "active";
+    const status = "pending";
+    const inviteToken = randomBytes(32).toString("hex");
+    const inviteTokenHash = createHash("sha256").update(inviteToken).digest("hex");
+    const inviteExpiresAt = new Date(Date.now() + 48 * 60 * 60 * 1000);
 
     const createdResult = await safePrisma((db) =>
       db.user.create({
         data: {
           email,
-          name,
           role,
           status,
+          inviteTokenHash,
+          inviteExpiresAt,
         },
         select: {
           id: true,
           email: true,
-          name: true,
           role: true,
           status: true,
+          inviteExpiresAt: true,
           createdAt: true,
           updatedAt: true,
-          lastLoginAt: true,
         },
       }),
     );
@@ -115,7 +117,10 @@ export async function POST(request: Request) {
       });
     }
 
-    return jsonOk({ user: createdResult.data }, { status: 201, requestId });
+    const appUrl = process.env.APP_URL ?? new URL(request.url).origin;
+    const inviteLink = `${appUrl.replace(/\/$/, "")}/activate?token=${inviteToken}`;
+
+    return jsonOk({ user: createdResult.data, inviteLink }, { status: 201, requestId });
   } catch (error: any) {
     console.error("Error creating user", {
       requestId,

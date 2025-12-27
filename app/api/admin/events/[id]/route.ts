@@ -7,7 +7,7 @@ import { eventSchema } from "@/lib/validation/admin";
 type Params = { params: { id: string } };
 
 export async function PUT(request: Request, { params }: Params) {
-  const authError = requireAdmin();
+  const authError = await requireAdmin();
   if (authError) return authError;
   const requestId = createRequestId();
   try {
@@ -63,7 +63,7 @@ export async function PUT(request: Request, { params }: Params) {
 }
 
 export async function DELETE(_request: Request, { params }: Params) {
-  const authError = requireAdmin();
+  const authError = await requireAdmin();
   if (authError) return authError;
   const requestId = createRequestId();
   try {

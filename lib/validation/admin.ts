@@ -100,25 +100,10 @@ export const userStatusSchema = z.enum(["active", "disabled", "pending"]);
 
 export const userCreateSchema = z.object({
   email: z.string().trim().email("Email invalide"),
-  name: z
-    .string()
-    .trim()
-    .min(1, "Nom invalide")
-    .max(120, "Le nom ne doit pas dépasser 120 caractères")
-    .optional(),
   role: userRoleSchema.optional(),
-  status: userStatusSchema.optional(),
 });
 
 export const userUpdateSchema = z.object({
-  email: z.string().trim().email("Email invalide").optional(),
-  name: z
-    .string()
-    .trim()
-    .min(1, "Nom invalide")
-    .max(120, "Le nom ne doit pas dépasser 120 caractères")
-    .optional()
-    .nullable(),
   role: userRoleSchema.optional(),
   status: userStatusSchema.optional(),
 });

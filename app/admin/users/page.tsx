@@ -24,8 +24,6 @@ const SORT_OPTIONS = [
   { value: "createdAt_asc", label: "Premiers créés" },
   { value: "email_asc", label: "Email A → Z" },
   { value: "email_desc", label: "Email Z → A" },
-  { value: "name_asc", label: "Nom A → Z" },
-  { value: "name_desc", label: "Nom Z → A" },
   { value: "role_asc", label: "Rôle A → Z" },
   { value: "role_desc", label: "Rôle Z → A" },
   { value: "status_asc", label: "Statut A → Z" },
@@ -39,12 +37,11 @@ type UserStatus = "active" | "disabled" | "pending";
 type AdminUser = {
   id: string;
   email: string;
-  name: string | null;
   role: UserRole;
   status: UserStatus;
+  inviteExpiresAt?: string | null;
   createdAt: string;
   updatedAt: string;
-  lastLoginAt: string | null;
 };
 
 type ToastState = {
@@ -54,16 +51,12 @@ type ToastState = {
 
 type UserFormState = {
   email: string;
-  name: string;
   role: UserRole;
-  status: UserStatus;
 };
 
 const emptyForm: UserFormState = {
   email: "",
-  name: "",
   role: "client",
-  status: "active",
 };
 
 const formatDate = (value?: string | null) => {
@@ -87,7 +80,7 @@ async function fetchWithTimeout(input: RequestInfo, init: RequestInit = {}, time
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), timeoutMs);
   try {
-    const response = await fetch(input, { ...init, signal: controller.signal });
+    const response = await fetch(input, { credentials: "include", ...init, signal: controller.signal });
     return response;
   } finally {
     clearTimeout(timeout);
@@ -110,9 +103,9 @@ export default function AdminUsersPage() {
   const [sort, setSort] = useState<(typeof SORT_OPTIONS)[number]["value"]>("createdAt_desc");
   const [modalOpen, setModalOpen] = useState(false);
   const [form, setForm] = useState<UserFormState>(emptyForm);
-  const [editingUser, setEditingUser] = useState<AdminUser | null>(null);
   const [formError, setFormError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
+  const [inviteLink, setInviteLink] = useState<string | null>(null);
 
   useEffect(() => {
     if (!toast) return undefined;
@@ -176,30 +169,18 @@ export default function AdminUsersPage() {
     fetchUsers();
   }, [fetchUsers]);
 
-  const openCreateModal = () => {
-    setEditingUser(null);
+  const openInviteModal = () => {
     setForm(emptyForm);
     setFormError(null);
-    setModalOpen(true);
-  };
-
-  const openEditModal = (user: AdminUser) => {
-    setEditingUser(user);
-    setForm({
-      email: user.email,
-      name: user.name ?? "",
-      role: user.role,
-      status: user.status,
-    });
-    setFormError(null);
+    setInviteLink(null);
     setModalOpen(true);
   };
 
   const closeModal = () => {
     setModalOpen(false);
-    setEditingUser(null);
     setForm(emptyForm);
     setFormError(null);
+    setInviteLink(null);
   };
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
@@ -207,19 +188,16 @@ export default function AdminUsersPage() {
     setSaving(true);
     setFormError(null);
 
-    const trimmedName = form.name.trim();
     const payload = {
       email: form.email.trim(),
-      name: trimmedName ? trimmedName : editingUser ? null : undefined,
       role: form.role,
-      status: form.status,
     };
 
     try {
-      const isEditing = Boolean(editingUser);
-      const response = await fetch(isEditing ? `/api/admin/users/${editingUser?.id}` : "/api/admin/users", {
-        method: isEditing ? "PATCH" : "POST",
+      const response = await fetch("/api/admin/users", {
+        method: "POST",
         headers: { "Content-Type": "application/json" },
+        credentials: "include",
         body: JSON.stringify(payload),
       });
       const data = await response.json();
@@ -229,8 +207,11 @@ export default function AdminUsersPage() {
         return;
       }
 
-      setToast({ type: "success", message: isEditing ? "Utilisateur mis à jour." : "Utilisateur créé." });
-      closeModal();
+      const link = data?.data?.inviteLink as string | undefined;
+      if (link) {
+        setInviteLink(link);
+      }
+      setToast({ type: "success", message: "Invitation envoyée." });
       await fetchUsers();
     } catch (submitError) {
       console.error(submitError);
@@ -243,7 +224,7 @@ export default function AdminUsersPage() {
   const handleDelete = async (user: AdminUser) => {
     if (!window.confirm(`Supprimer l'utilisateur ${user.email} ?`)) return;
     try {
-      const response = await fetch(`/api/admin/users/${user.id}`, { method: "DELETE" });
+      const response = await fetch(`/api/admin/users/${user.id}`, { method: "DELETE", credentials: "include" });
       const data = await response.json();
       if (!response.ok || data?.ok === false) {
         const errorMessage = data?.error || data?.message || "Erreur lors de la suppression";
@@ -263,6 +244,7 @@ export default function AdminUsersPage() {
       const response = await fetch(`/api/admin/users/${id}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
+        credentials: "include",
         body: JSON.stringify(update),
       });
       const data = await response.json();
@@ -283,8 +265,8 @@ export default function AdminUsersPage() {
   };
 
   const headerActions = (
-    <Button variant="secondary" onClick={openCreateModal}>
-      Ajouter un user
+    <Button variant="secondary" onClick={openInviteModal}>
+      Inviter un user
     </Button>
   );
 
@@ -330,7 +312,7 @@ export default function AdminUsersPage() {
                 setPage(1);
                 setSearch(event.target.value);
               }}
-              placeholder="Email ou nom"
+              placeholder="Email"
               className="w-full rounded-lg border border-white/10 bg-slate-900 px-3 py-2 text-sm text-white focus:border-emerald-400 focus:outline-none"
             />
           </div>
@@ -404,7 +386,6 @@ export default function AdminUsersPage() {
             <thead className="text-xs uppercase tracking-wide text-slate-400">
               <tr>
                 <th className="px-3 py-2">Email</th>
-                <th className="px-3 py-2">Nom</th>
                 <th className="px-3 py-2">Rôle</th>
                 <th className="px-3 py-2">Statut</th>
                 <th className="px-3 py-2">Créé le</th>
@@ -415,43 +396,55 @@ export default function AdminUsersPage() {
               {users.map((user) => (
                 <tr key={user.id} className="hover:bg-white/5">
                   <td className="px-3 py-3 font-medium text-white">{user.email}</td>
-                  <td className="px-3 py-3 text-slate-300">{user.name || "-"}</td>
                   <td className="px-3 py-3">
-                    <select
-                      value={user.role}
-                      onChange={(event) => handleQuickUpdate(user.id, { role: event.target.value as UserRole })}
-                      className="rounded-lg border border-white/10 bg-slate-900 px-2 py-1 text-xs text-white focus:border-emerald-400 focus:outline-none"
-                    >
-                      <option value="admin">Admin</option>
-                      <option value="client">Client</option>
-                    </select>
+                    <div className="flex items-center gap-2">
+                      <span className="rounded-full bg-white/10 px-2 py-1 text-[11px] font-semibold text-white">
+                        {user.role}
+                      </span>
+                      <Button
+                        variant="ghost"
+                        className="border border-white/10 px-3 py-1 text-xs"
+                        onClick={() =>
+                          handleQuickUpdate(user.id, {
+                            role: user.role === "admin" ? "client" : "admin",
+                          })
+                        }
+                      >
+                        Passer {user.role === "admin" ? "client" : "admin"}
+                      </Button>
+                    </div>
                   </td>
                   <td className="px-3 py-3">
                     <div className="flex items-center gap-2">
                       <span className={`rounded-full px-2 py-1 text-[11px] font-semibold ${statusStyles[user.status]}`}>
                         {user.status}
                       </span>
-                      <select
-                        value={user.status}
-                        onChange={(event) => handleQuickUpdate(user.id, { status: event.target.value as UserStatus })}
-                        className="rounded-lg border border-white/10 bg-slate-900 px-2 py-1 text-xs text-white focus:border-emerald-400 focus:outline-none"
-                      >
-                        <option value="active">Actif</option>
-                        <option value="disabled">Désactivé</option>
-                        <option value="pending">En attente</option>
-                      </select>
+                      {user.status === "pending" ? (
+                        <Button
+                          variant="ghost"
+                          className="border border-white/10 px-3 py-1 text-xs"
+                          onClick={() => handleQuickUpdate(user.id, { status: "disabled" })}
+                        >
+                          Désactiver
+                        </Button>
+                      ) : (
+                        <Button
+                          variant="ghost"
+                          className="border border-white/10 px-3 py-1 text-xs"
+                          onClick={() =>
+                            handleQuickUpdate(user.id, {
+                              status: user.status === "active" ? "disabled" : "active",
+                            })
+                          }
+                        >
+                          {user.status === "active" ? "Désactiver" : "Activer"}
+                        </Button>
+                      )}
                     </div>
                   </td>
                   <td className="px-3 py-3 text-slate-300">{formatDate(user.createdAt)}</td>
                   <td className="px-3 py-3 text-right">
                     <div className="flex flex-wrap justify-end gap-2">
-                      <Button
-                        variant="ghost"
-                        className="border border-white/10 px-3 py-1 text-xs"
-                        onClick={() => openEditModal(user)}
-                      >
-                        Modifier
-                      </Button>
                       <Button
                         variant="ghost"
                         className="border border-white/10 px-3 py-1 text-xs text-rose-200 hover:text-rose-100"
@@ -518,10 +511,8 @@ export default function AdminUsersPage() {
           <div className="w-full max-w-lg rounded-2xl border border-white/10 bg-slate-900 p-6 shadow-2xl">
             <div className="flex items-start justify-between gap-4">
               <div>
-                <h3 className="text-lg font-semibold text-white">
-                  {editingUser ? "Modifier un user" : "Créer un user"}
-                </h3>
-                <p className="text-sm text-slate-300">Renseignez les informations principales du compte.</p>
+                <h3 className="text-lg font-semibold text-white">Inviter un user</h3>
+                <p className="text-sm text-slate-300">Créez un compte en attente et partagez le lien d'activation.</p>
               </div>
               <Button variant="ghost" className="border border-white/10 px-3 py-1 text-xs" onClick={closeModal}>
                 Fermer
@@ -542,52 +533,52 @@ export default function AdminUsersPage() {
                 />
               </div>
               <div className="space-y-2">
-                <label className="text-sm font-semibold text-white" htmlFor="user-name">
-                  Nom
+                <label className="text-sm font-semibold text-white" htmlFor="user-role-form">
+                  Rôle
                 </label>
-                <input
-                  id="user-name"
-                  value={form.name}
-                  onChange={(event) => setForm((prev) => ({ ...prev, name: event.target.value }))}
+                <select
+                  id="user-role-form"
+                  value={form.role}
+                  onChange={(event) => setForm((prev) => ({ ...prev, role: event.target.value as UserRole }))}
                   className="w-full rounded-lg border border-white/10 bg-slate-950 px-3 py-2 text-sm text-white focus:border-emerald-400 focus:outline-none"
-                  placeholder="Optionnel"
-                />
+                >
+                  <option value="admin">Admin</option>
+                  <option value="client">Client</option>
+                </select>
               </div>
-              <div className="grid gap-4 sm:grid-cols-2">
-                <div className="space-y-2">
-                  <label className="text-sm font-semibold text-white" htmlFor="user-role-form">
-                    Rôle
-                  </label>
-                  <select
-                    id="user-role-form"
-                    value={form.role}
-                    onChange={(event) => setForm((prev) => ({ ...prev, role: event.target.value as UserRole }))}
-                    className="w-full rounded-lg border border-white/10 bg-slate-950 px-3 py-2 text-sm text-white focus:border-emerald-400 focus:outline-none"
-                  >
-                    <option value="admin">Admin</option>
-                    <option value="client">Client</option>
-                  </select>
+              {inviteLink ? (
+                <div className="space-y-2 rounded-xl border border-emerald-500/30 bg-emerald-500/10 p-4 text-sm text-emerald-100">
+                  <p className="font-semibold text-emerald-100">Lien d'activation</p>
+                  <div className="flex flex-wrap items-center gap-2">
+                    <input
+                      value={inviteLink}
+                      readOnly
+                      className="flex-1 rounded-lg border border-emerald-400/40 bg-emerald-950/40 px-3 py-2 text-xs text-emerald-50"
+                    />
+                    <Button
+                      type="button"
+                      variant="secondary"
+                      className="px-3 py-2 text-xs"
+                      onClick={async () => {
+                        try {
+                          await navigator.clipboard.writeText(inviteLink);
+                          setToast({ type: "success", message: "Lien copié." });
+                        } catch (copyError) {
+                          console.error(copyError);
+                          setToast({ type: "error", message: "Impossible de copier le lien." });
+                        }
+                      }}
+                    >
+                      Copier
+                    </Button>
+                  </div>
+                  <p className="text-xs text-emerald-100/80">Valable 48h pour activer le compte.</p>
                 </div>
-                <div className="space-y-2">
-                  <label className="text-sm font-semibold text-white" htmlFor="user-status-form">
-                    Statut
-                  </label>
-                  <select
-                    id="user-status-form"
-                    value={form.status}
-                    onChange={(event) => setForm((prev) => ({ ...prev, status: event.target.value as UserStatus }))}
-                    className="w-full rounded-lg border border-white/10 bg-slate-950 px-3 py-2 text-sm text-white focus:border-emerald-400 focus:outline-none"
-                  >
-                    <option value="active">Actif</option>
-                    <option value="disabled">Désactivé</option>
-                    <option value="pending">En attente</option>
-                  </select>
-                </div>
-              </div>
+              ) : null}
               {formError ? <p className="text-sm text-rose-200">{formError}</p> : null}
               <div className="flex items-center gap-3">
                 <Button type="submit" disabled={saving}>
-                  {saving ? "Sauvegarde..." : editingUser ? "Mettre à jour" : "Créer"}
+                  {saving ? "Invitation..." : "Créer l'invitation"}
                 </Button>
                 <Button type="button" variant="ghost" className="border border-white/10" onClick={closeModal}>
                   Annuler

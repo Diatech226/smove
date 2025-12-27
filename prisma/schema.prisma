@@ -126,17 +126,27 @@ model SiteSettings {
   updatedAt     DateTime @updatedAt
 }
 
+enum UserRole {
+  admin
+  client
+}
+
+enum UserStatus {
+  pending
+  active
+  disabled
+}
+
 model User {
   id           String   @id @default(auto()) @map("_id") @db.ObjectId
   email        String   @unique
-  name         String?
-  role         String   @default("client")
-  status       String   @default("active")
   passwordHash String?
-  lastLoginAt  DateTime?
+  role         UserRole @default(client)
+  status       UserStatus @default(pending)
+  inviteTokenHash String? @unique
+  inviteExpiresAt DateTime?
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
-
   @@index([role])
   @@index([status])
 }

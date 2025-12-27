@@ -6,7 +6,7 @@ export type UserQueryParams = {
   search: string;
   role: "all" | "admin" | "client";
   status: "all" | "active" | "disabled" | "pending";
-  sort: "createdAt_desc" | "createdAt_asc" | "email_asc" | "email_desc" | "name_asc" | "name_desc" | "role_asc" | "role_desc" | "status_asc" | "status_desc";
+  sort: "createdAt_desc" | "createdAt_asc" | "email_asc" | "email_desc" | "role_asc" | "role_desc" | "status_asc" | "status_desc";
   page: number;
   limit: number;
 };
@@ -29,8 +29,6 @@ export function parseUserQueryParams(params: RawParams): UserQueryParams {
     sortParam === "createdAt_asc" ||
     sortParam === "email_asc" ||
     sortParam === "email_desc" ||
-    sortParam === "name_asc" ||
-    sortParam === "name_desc" ||
     sortParam === "role_asc" ||
     sortParam === "role_desc" ||
     sortParam === "status_asc" ||
@@ -57,7 +55,6 @@ export function buildUserWhere(params: UserQueryParams): Prisma.UserWhereInput {
   if (params.search) {
     where.OR = [
       { email: { contains: params.search, mode: "insensitive" } },
-      { name: { contains: params.search, mode: "insensitive" } },
     ];
   }
 

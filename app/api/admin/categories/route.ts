@@ -6,7 +6,7 @@ import { safePrisma } from "@/lib/safePrisma";
 import { categorySchema } from "@/lib/validation/admin";
 
 export async function GET(request: Request) {
-  const authError = requireAdmin();
+  const authError = await requireAdmin();
   if (authError) return authError;
   const requestId = createRequestId();
 
@@ -33,7 +33,7 @@ export async function GET(request: Request) {
 }
 
 export async function POST(request: Request) {
-  const authError = requireAdmin();
+  const authError = await requireAdmin();
   if (authError) return authError;
   const requestId = createRequestId();
 
