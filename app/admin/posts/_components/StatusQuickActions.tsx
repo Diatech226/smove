@@ -51,13 +51,13 @@ export function StatusQuickActions({ postId, status, publishedAt, onStatusChange
       });
       const data = await response.json();
 
-      if (!response.ok || data?.success === false) {
+      if (!response.ok || data?.ok === false) {
         onStatusChange(previousStatus, previousPublishedAt);
         setToast({ type: "error", message: data?.error || "Impossible de mettre à jour le statut." });
         return;
       }
 
-      onStatusChange(nextStatus, data?.post?.publishedAt ?? optimisticPublishedAt);
+      onStatusChange(nextStatus, data?.data?.post?.publishedAt ?? optimisticPublishedAt);
       setToast({ type: "success", message: "Statut mis à jour." });
     } catch (error) {
       console.error(error);

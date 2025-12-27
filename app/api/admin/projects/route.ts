@@ -1,9 +1,13 @@
 // file: app/api/admin/projects/route.ts
-import { createRequestId, jsonWithRequestId } from "@/lib/api/requestId";
+import { jsonError, jsonOk } from "@/lib/api/response";
+import { createRequestId } from "@/lib/api/requestId";
+import { requireAdmin } from "@/lib/admin/auth";
 import { safePrisma } from "@/lib/safePrisma";
 import { projectSchema } from "@/lib/validation/admin";
 
 export async function GET(request: Request) {
+  const authError = requireAdmin();
+  if (authError) return authError;
   const requestId = createRequestId();
   const url = new URL(request.url);
   const rawPage = Number(url.searchParams.get("page") ?? "1");
@@ -36,29 +40,30 @@ export async function GET(request: Request) {
       requestId,
       detail: projectsResult.ok ? countResult.message : projectsResult.message,
     });
-    return jsonWithRequestId(
-      { success: false, error: "Failed to fetch projects", detail: projectsResult.ok ? countResult.message : projectsResult.message },
-      { status: 503, requestId },
-    );
+    return jsonError("Failed to fetch projects", {
+      status: 503,
+      requestId,
+      data: { detail: projectsResult.ok ? countResult.message : projectsResult.message },
+    });
   }
 
   const total = countResult.data;
   const totalPages = Math.max(1, Math.ceil(total / limit));
 
-  return jsonWithRequestId(
-    { success: true, projects: projectsResult.data, page, total, totalPages, limit },
-    { status: 200, requestId },
-  );
+  return jsonOk({ projects: projectsResult.data, page, total, totalPages, limit }, { status: 200, requestId });
 }
 
 export async function POST(request: Request) {
+  const authError = requireAdmin();
+  if (authError) return authError;
+  const requestId = createRequestId();
   try {
     const json = await request.json().catch(() => null);
     const parsed = projectSchema.safeParse(json ?? {});
 
     if (!parsed.success) {
       const message = parsed.error.issues.at(0)?.message ?? "Payload invalide";
-      return jsonWithRequestId({ success: false, error: message }, { status: 400 });
+      return jsonError(message, { status: 400, requestId });
     }
 
     const { slug, title, client, sector, summary, body: content, results, category, coverImage } = parsed.data;
@@ -84,23 +89,17 @@ export async function POST(request: Request) {
     if (!createdResult.ok) {
       const error = createdResult.error as any;
       if (error?.code === "P2002") {
-        return jsonWithRequestId({ success: false, error: "Un projet utilise déjà ce slug." }, { status: 400 });
+        return jsonError("Un projet utilise déjà ce slug.", { status: 400, requestId });
       }
-      return jsonWithRequestId({ success: false, error: "Failed to create project" }, { status: 503 });
+      return jsonError("Failed to create project", { status: 503, requestId });
     }
 
-    return jsonWithRequestId({ success: true, project: createdResult.data }, { status: 201 });
+    return jsonOk({ project: createdResult.data }, { status: 201, requestId });
   } catch (error: any) {
     console.error("Error creating project", {
       code: error?.code,
       message: error?.message,
     });
-    return jsonWithRequestId(
-      {
-        success: false,
-        error: "Failed to create project",
-      },
-      { status: 500 },
-    );
+    return jsonError("Failed to create project", { status: 500, requestId });
   }
 }

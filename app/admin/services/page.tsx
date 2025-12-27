@@ -53,7 +53,7 @@ export default function AdminServicesPage() {
       setLoading(true);
       const response = await fetch(`/api/admin/services?page=${page}&limit=${limit}`);
       const data = await response.json();
-      if (!response.ok || data?.success === false) {
+      if (!response.ok || data?.ok === false) {
         const errorMessage = data?.error || data?.message || "Impossible de charger les services";
         setError(errorMessage);
         setItems([]);
@@ -62,10 +62,11 @@ export default function AdminServicesPage() {
         return;
       }
       setError(null);
-      setItems(Array.isArray(data.services) ? data.services : []);
-      const nextTotalPages = Number(data.totalPages) || 1;
+      const payload = data?.data ?? {};
+      setItems(Array.isArray(payload.services) ? payload.services : []);
+      const nextTotalPages = Number(payload.totalPages) || 1;
       setTotalPages(nextTotalPages);
-      setTotal(Number(data.total) || 0);
+      setTotal(Number(payload.total) || 0);
       if (page > nextTotalPages) {
         setPage(nextTotalPages);
       }
@@ -106,7 +107,7 @@ export default function AdminServicesPage() {
         body: JSON.stringify({ name, slug: computedSlug, description, category, image }),
       });
       const data = await response.json();
-      if (!response.ok || data?.success === false) {
+      if (!response.ok || data?.ok === false) {
         const errorMessage = data?.error || data?.message || "Erreur lors de l'enregistrement";
         setError(errorMessage);
         return;
@@ -127,7 +128,7 @@ export default function AdminServicesPage() {
     try {
       const response = await fetch(`/api/admin/services/${id}`, { method: "DELETE" });
       const data = await response.json();
-      if (!response.ok || data?.success === false) {
+      if (!response.ok || data?.ok === false) {
         const errorMessage = data?.error || data?.message || "Erreur lors de la suppression";
         setError(errorMessage);
         return;

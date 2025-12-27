@@ -1,5 +1,6 @@
 // file: app/api/admin/posts/route.ts
-import { createRequestId, jsonWithRequestId } from "@/lib/api/requestId";
+import { jsonError, jsonOk } from "@/lib/api/response";
+import { createRequestId } from "@/lib/api/requestId";
 import { requireAdmin } from "@/lib/admin/auth";
 import { findAvailablePostSlug } from "@/lib/admin/slug";
 import { buildPostOrderBy, buildPostWhere, parsePostQueryParams } from "@/lib/admin/postQueries";
@@ -46,22 +47,18 @@ export async function GET(request: Request) {
       postError: postsResult.ok ? undefined : postsResult.message,
       countError: countResult.ok ? undefined : countResult.message,
     });
-    return jsonWithRequestId(
-      {
-        success: false,
-        error: "Database unreachable",
-        detail: postsResult.ok ? countResult.message : postsResult.message,
-      },
-      { status: 503, requestId },
-    );
+    return jsonError("Database unreachable", {
+      status: 503,
+      requestId,
+      data: { detail: postsResult.ok ? countResult.message : postsResult.message },
+    });
   }
 
   const total = countResult.data;
   const totalPages = Math.max(1, Math.ceil(total / params.limit));
 
-  return jsonWithRequestId(
+  return jsonOk(
     {
-      success: true,
       posts: postsResult.data,
       page: params.page,
       total,
@@ -81,7 +78,7 @@ export async function POST(request: Request) {
 
   if (!parsed.success) {
     const message = parsed.error.issues.at(0)?.message ?? "Payload invalide";
-    return jsonWithRequestId({ success: false, error: message }, { status: 400, requestId });
+    return jsonError(message, { status: 400, requestId });
   }
 
   const payload = parsed.data;
@@ -89,21 +86,19 @@ export async function POST(request: Request) {
   const existingResult = await safePrisma((db) => db.post.findUnique({ where: { slug: payload.slug } }));
   if (!existingResult.ok) {
     console.error("Failed to validate post slug", { requestId, detail: existingResult.message });
-    return jsonWithRequestId(
-      { success: false, error: "Database unreachable", detail: existingResult.message },
-      { status: 503, requestId },
-    );
+    return jsonError("Database unreachable", {
+      status: 503,
+      requestId,
+      data: { detail: existingResult.message },
+    });
   }
   if (existingResult.data) {
     const suggestion = await findAvailablePostSlug(payload.slug);
-    return jsonWithRequestId(
-      {
-        success: false,
-        error: "Un article utilise déjà ce slug.",
-        suggestedSlug: suggestion,
-      },
-      { status: 400, requestId },
-    );
+    return jsonError("Un article utilise déjà ce slug.", {
+      status: 400,
+      requestId,
+      data: { suggestedSlug: suggestion },
+    });
   }
 
   const status = payload.status ?? "draft";
@@ -131,21 +126,19 @@ export async function POST(request: Request) {
     const error = createdResult.error as any;
     if (error?.code === "P2002") {
       const suggestion = await findAvailablePostSlug(payload.slug);
-      return jsonWithRequestId(
-        {
-          success: false,
-          error: "Un article utilise déjà ce slug.",
-          suggestedSlug: suggestion,
-        },
-        { status: 400, requestId },
-      );
+      return jsonError("Un article utilise déjà ce slug.", {
+        status: 400,
+        requestId,
+        data: { suggestedSlug: suggestion },
+      });
     }
     console.error("Failed to create post", { requestId, detail: createdResult.message });
-    return jsonWithRequestId(
-      { success: false, error: "Database unreachable", detail: createdResult.message },
-      { status: 503, requestId },
-    );
+    return jsonError("Database unreachable", {
+      status: 503,
+      requestId,
+      data: { detail: createdResult.message },
+    });
   }
 
-  return jsonWithRequestId({ success: true, post: createdResult.data }, { status: 201, requestId });
+  return jsonOk({ post: createdResult.data }, { status: 201, requestId });
 }

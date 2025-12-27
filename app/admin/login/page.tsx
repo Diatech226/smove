@@ -29,7 +29,7 @@ export default function AdminLoginPage() {
 
       const result = await response.json();
 
-      if (!response.ok || !result.success) {
+      if (!response.ok || !result.ok) {
         const errorMessage = result.error ?? (response.status === 500 ? "Configuration serveur manquante." : "Mot de passe incorrect.");
         setError(errorMessage);
         setIsSubmitting(false);

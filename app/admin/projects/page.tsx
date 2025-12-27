@@ -64,7 +64,7 @@ export default function AdminProjectsPage() {
       setLoading(true);
       const response = await fetch(`/api/admin/projects?page=${page}&limit=${limit}`);
       const data = await response.json();
-      if (!response.ok || data?.success === false) {
+      if (!response.ok || data?.ok === false) {
         const errorMessage = data?.error || data?.message || "Impossible de charger les projets";
         setError(errorMessage);
         setItems([]);
@@ -73,10 +73,11 @@ export default function AdminProjectsPage() {
         return;
       }
       setError(null);
-      setItems(Array.isArray(data.projects) ? data.projects : []);
-      const nextTotalPages = Number(data.totalPages) || 1;
+      const payload = data?.data ?? {};
+      setItems(Array.isArray(payload.projects) ? payload.projects : []);
+      const nextTotalPages = Number(payload.totalPages) || 1;
       setTotalPages(nextTotalPages);
-      setTotal(Number(data.total) || 0);
+      setTotal(Number(payload.total) || 0);
       if (page > nextTotalPages) {
         setPage(nextTotalPages);
       }
@@ -129,7 +130,7 @@ export default function AdminProjectsPage() {
         body: JSON.stringify(payload),
       });
       const data = await response.json();
-      if (!response.ok || data?.success === false) {
+      if (!response.ok || data?.ok === false) {
         const errorMessage = data?.error || data?.message || "Erreur lors de l'enregistrement";
         setError(errorMessage);
         return;
@@ -150,7 +151,7 @@ export default function AdminProjectsPage() {
     try {
       const response = await fetch(`/api/admin/projects/${id}`, { method: "DELETE" });
       const data = await response.json();
-      if (!response.ok || data?.success === false) {
+      if (!response.ok || data?.ok === false) {
         const errorMessage = data?.error || data?.message || "Erreur lors de la suppression";
         setError(errorMessage);
         return;
@@ -174,12 +175,12 @@ export default function AdminProjectsPage() {
     try {
       const response = await fetch(`/api/admin/projects/${id}`);
       const data = await response.json();
-      if (!response.ok || data?.success === false) {
+      if (!response.ok || data?.ok === false) {
         setError(data?.error || "Impossible de charger ce projet.");
         setEditingId(null);
         return;
       }
-      const project = data.project as AdminProject;
+      const project = data?.data?.project as AdminProject;
       setEditingId(project.id);
       setForm({
         slug: project.slug,

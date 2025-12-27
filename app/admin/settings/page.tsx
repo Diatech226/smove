@@ -94,11 +94,11 @@ export default function AdminSettingsPage() {
         setLoading(true);
         const response = await fetch("/api/admin/settings");
         const data = await response.json();
-        if (!response.ok || data?.success === false) {
+        if (!response.ok || data?.ok === false) {
           setError(data?.error || "Impossible de charger les paramètres.");
           return;
         }
-        setForm(mapSettingsToForm(data.settings));
+        setForm(mapSettingsToForm(data.data.settings));
         setError(null);
       } catch (fetchError) {
         console.error(fetchError);
@@ -132,12 +132,12 @@ export default function AdminSettingsPage() {
         body: JSON.stringify(payload),
       });
       const data = await response.json();
-      if (!response.ok || data?.success === false) {
+      if (!response.ok || data?.ok === false) {
         setError(data?.error || "Impossible de sauvegarder les paramètres.");
         return;
       }
 
-      setForm(mapSettingsToForm(data.settings));
+      setForm(mapSettingsToForm(data.data.settings));
       setStatusMessage("Paramètres sauvegardés avec succès.");
     } catch (submitError) {
       console.error(submitError);
