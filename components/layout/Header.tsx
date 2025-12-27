@@ -17,7 +17,12 @@ const navLinks = [
   { href: "/contact", label: "Contact" },
 ];
 
-export default function Header() {
+type HeaderProps = {
+  siteName: string;
+  logoUrl?: string | null;
+};
+
+export default function Header({ siteName, logoUrl }: HeaderProps) {
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
 
@@ -26,8 +31,11 @@ export default function Header() {
   return (
     <header className="border-b border-slate-800 bg-slate-950/70 backdrop-blur">
       <Container className="flex items-center justify-between py-4">
-        <Link href="/" className="text-lg font-semibold tracking-tight text-white">
-          SMOVE Communication
+        <Link href="/" className="flex items-center gap-3 text-lg font-semibold tracking-tight text-white">
+          {logoUrl ? (
+            <img src={logoUrl} alt={siteName} className="h-9 w-9 rounded-lg object-contain" />
+          ) : null}
+          <span>{siteName}</span>
         </Link>
 
         <nav className="hidden items-center gap-6 text-sm text-slate-200 md:flex" aria-label="Navigation principale">

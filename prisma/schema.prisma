@@ -107,3 +107,21 @@ model Category {
   @@unique([type, slug])
   @@index([type, order])
 }
+
+model SiteSettings {
+  id            String   @id @default(auto()) @map("_id") @db.ObjectId
+  key           String   @unique
+  siteName      String
+  siteTagline   String
+  logo          String?
+  favicon       String?
+  primaryColor  String?
+  secondaryColor String?
+  socialLinks   Json?
+  contact       Json?
+  seo           Json?
+  blog          Json?
+  homepage      Json?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+}

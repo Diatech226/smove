@@ -1,5 +1,5 @@
 import { cookies } from "next/headers";
-import { NextResponse } from "next/server";
+import { jsonWithRequestId } from "@/lib/api/requestId";
 
 const AUTH_COOKIE_NAME = "smove_admin_auth";
 
@@ -11,5 +11,5 @@ export function requireAdmin() {
     return null;
   }
 
-  return NextResponse.json({ success: false, error: "Non autorisé" }, { status: 401 });
+  return jsonWithRequestId({ success: false, error: "Non autorisé" }, { status: 401 });
 }

@@ -1,10 +1,11 @@
-// file: app/api/admin/logout/route.ts
 import { cookies } from "next/headers";
-import { NextResponse } from "next/server";
+
+import { createRequestId, jsonWithRequestId } from "@/lib/api/requestId";
 
 const AUTH_COOKIE_NAME = "smove_admin_auth";
 
 export async function POST() {
+  const requestId = createRequestId();
   const cookieStore = cookies();
   cookieStore.set({
     name: AUTH_COOKIE_NAME,
@@ -15,7 +16,7 @@ export async function POST() {
     sameSite: "lax",
   });
 
-  return NextResponse.json({ success: true });
+  return jsonWithRequestId({ success: true }, { status: 200, requestId });
 }
 
 export const dynamic = "force-dynamic";
