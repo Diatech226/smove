@@ -16,26 +16,28 @@ SMOVE – site vitrine avec hero 3D et back-office CMS pour une agence de commun
 - `/prisma` : schéma Prisma
 
 ## Variables d'environnement (`.env` / `.env.local`)
-Créez un fichier `.env` (ou `.env.local` pour Next.js) à la racine avec :
+Next.js charge automatiquement `.env` puis surcharge avec `.env.local` à la racine du projet.
+Créez un fichier `.env` (ou `.env.local`) à la racine avec :
 
 ```
-JWT_SECRET="une_longue_cle_aleatoire"
-APP_URL="http://localhost:3000"
-SMOVE_ADMIN_SEED_EMAIL="admin@smove.local"
-SMOVE_ADMIN_SEED_PASSWORD="ChangeMe123!"
-SMOVE_ADMIN_SEED_PASSWORD_HASH=""
+JWT_SECRET=une_longue_cle_aleatoire
+APP_URL=http://localhost:3000
+SMOVE_ADMIN_SEED_EMAIL=admin@smove.local
+SMOVE_ADMIN_SEED_PASSWORD=ChangeMe123!
+SMOVE_ADMIN_SEED_PASSWORD_HASH=
 
 # MongoDB connection for Prisma
 # IMPORTANT: must start with mongodb:// ou mongodb+srv:// et contenir le nom de base smove
-DATABASE_URL="mongodb+srv://USERNAME:PASSWORD@cluster0.wxdxz04.mongodb.net/smove?retryWrites=true&w=majority&appName=Cluster0"
-DIRECT_DATABASE_URL="mongodb+srv://USERNAME:PASSWORD@cluster0.wxdxz04.mongodb.net/smove?retryWrites=true&w=majority&appName=Cluster0"
+DATABASE_URL=mongodb+srv://USERNAME:PASSWORD@cluster0.wxdxz04.mongodb.net/smove?retryWrites=true&w=majority&appName=Cluster0
+DIRECT_DATABASE_URL=mongodb+srv://USERNAME:PASSWORD@cluster0.wxdxz04.mongodb.net/smove?retryWrites=true&w=majority&appName=Cluster0
 
 # Public site
 NEXT_PUBLIC_SITE_URL=https://smove.example.com
-NEXT_PUBLIC_BRAND_NAME="SMOVE Communication"
+NEXT_PUBLIC_BRAND_NAME=SMOVE Communication
 ```
 
 - **Toujours** inclure le nom de base de données `/smove` dans le chemin. Les erreurs `P2010` / "empty database name" viennent généralement d'une URL tronquée.
+- **Pas de guillemets ni d'espaces** dans les valeurs (ex: pas de `"..."` autour de l'URI MongoDB).
 - Le client Prisma est initialisé via `env("DATABASE_URL")` (voir `prisma/schema.prisma` et `lib/prisma.ts`).
 - `DIRECT_DATABASE_URL` est également supporté par Prisma pour les migrations : dupliquez l'URL principale avec le suffixe `/smove` pour éviter les erreurs d'auth ou de base introuvable.
 - Pour MongoDB, les identifiants utilisent `String @id @default(auto()) @map("_id") @db.ObjectId`.
@@ -58,6 +60,7 @@ NEXT_PUBLIC_BRAND_NAME="SMOVE Communication"
 ### Dépannage connexion MongoDB
 - **Server selection timeout / ReplicaSetNoPrimary / P2010** : vérifiez que l'IP est bien autorisée dans Atlas, que le cluster est démarré et que l'URI pointe sur la base `smove`.
 - **Bad auth / authentification échouée** : confirmez l'utilisateur/mot de passe utilisés et les droits sur la base `smove`.
+- **Caractères spéciaux dans le password** : encodez-les (`@` → `%40`, `:` → `%3A`, etc.) avant de les mettre dans l'URI.
 - **Base manquante** : ajoutez impérativement `/smove` à la fin du chemin dans `DATABASE_URL`.
 - **Chaîne d'URL** : utilisez l'URI `mongodb+srv://.../smove?retryWrites=true&w=majority&appName=Cluster0` fournie par Atlas (n'oubliez pas le nom de la base).
 - **Whitelisting IP** : autorisez l'adresse IP de votre machine (ou `0.0.0.0/0` temporairement) dans l'onglet Network Access.
@@ -68,6 +71,7 @@ NEXT_PUBLIC_BRAND_NAME="SMOVE Communication"
 ### Vérifier la santé de la base
 - Endpoint de santé API : `GET /api/health/db` effectue un `post.count` rapide (timeout 2.5s) et retourne `status: ok` ou `status: error`.
 - Les pages publiques affichent un message de secours plutôt que de planter si la base est inaccessible.
+- Diagnostic local : `npm run db:check` affiche la présence de `DATABASE_URL` (masquée) et tente un `prisma.$connect()` + requête simple.
 
 ### Commandes Prisma après modification du schéma
 - Pousser le schéma vers la base : `npm run prisma:push`
@@ -83,11 +87,15 @@ NEXT_PUBLIC_BRAND_NAME="SMOVE Communication"
    ```bash
    npx prisma db push
    ```
-4. Générer le client Prisma (automatique avec `next dev`, mais possible manuellement) :
+4. Créer le singleton SiteSettings si nécessaire :
+   ```bash
+   npm run db:seed
+   ```
+5. Générer le client Prisma (automatique avec `next dev`, mais possible manuellement) :
    ```bash
    npx prisma generate
    ```
-5. Lancer le serveur de développement :
+6. Lancer le serveur de développement :
    ```bash
    npm run dev
    ```
@@ -108,6 +116,7 @@ NEXT_PUBLIC_BRAND_NAME="SMOVE Communication"
 ## Paramètres du site (Settings)
 - Page CMS dédiée : `/admin/settings` pour configurer le branding, les réseaux, le SEO et les réglages blog/homepage.
 - Les paramètres sont stockés dans la collection `SiteSettings` (singleton) et un enregistrement par défaut est créé au premier accès.
+- Un seed dédié est disponible via `npm run db:seed` pour créer ce document si besoin.
 - Logo, favicon et Open Graph peuvent être renseignés via URL (ou chemins relatifs).
 - `seo.metadataBase` alimente directement la base SEO/OG pour éviter le warning Next.js.
 
