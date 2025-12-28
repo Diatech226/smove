@@ -2,6 +2,7 @@
 import { jsonError, jsonOk } from "@/lib/api/response";
 import { createRequestId } from "@/lib/api/requestId";
 import { requireAdmin } from "@/lib/admin/auth";
+import { findAvailableSlug } from "@/lib/admin/slug";
 import { safePrisma } from "@/lib/safePrisma";
 import { serviceSchema } from "@/lib/validation/admin";
 
@@ -68,6 +69,25 @@ export async function POST(request: Request) {
 
     const { name, slug, description, category, image } = parsed.data;
 
+    const existingResult = await safePrisma((db) => db.service.findUnique({ where: { slug }, select: { id: true } }));
+    if (!existingResult.ok) {
+      console.error("Failed to validate service slug", { requestId, detail: existingResult.message });
+      return jsonError("Database unreachable", {
+        status: 503,
+        requestId,
+        data: { detail: existingResult.message },
+      });
+    }
+
+    if (existingResult.data) {
+      const suggestion = await findAvailableSlug("service", slug);
+      return jsonError("Un service utilise déjà ce slug.", {
+        status: 400,
+        requestId,
+        data: { suggestedSlug: suggestion },
+      });
+    }
+
     const createdResult = await safePrisma((db) =>
       db.service.create({
         data: {
@@ -83,7 +103,12 @@ export async function POST(request: Request) {
     if (!createdResult.ok) {
       const error = (createdResult.error as any) ?? {};
       if (error?.code === "P2002") {
-        return jsonError("Un service utilise déjà ce slug.", { status: 400, requestId });
+        const suggestion = await findAvailableSlug("service", slug);
+        return jsonError("Un service utilise déjà ce slug.", {
+          status: 400,
+          requestId,
+          data: { suggestedSlug: suggestion },
+        });
       }
       return jsonError("Database unreachable", {
         status: 503,

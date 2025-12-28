@@ -17,32 +17,13 @@ SMOVE – site vitrine avec hero 3D et back-office CMS pour une agence de commun
 
 ## Variables d'environnement (`.env` / `.env.local`)
 Next.js charge automatiquement `.env` puis surcharge avec `.env.local` à la racine du projet.
-Créez un fichier `.env` (ou `.env.local`) à la racine avec :
+Copiez `.env.example` puis ajustez les valeurs **localement** :
 
+```bash
+cp .env.example .env.local
 ```
-JWT_SECRET=une_longue_cle_aleatoire
-APP_URL=http://localhost:3000
-SMOVE_ADMIN_SEED_EMAIL=admin@smove.local
-SMOVE_ADMIN_SEED_PASSWORD=ChangeMe123!
-SMOVE_ADMIN_SEED_PASSWORD_HASH=
 
-# Optional admin bootstrap (local only by default)
-ADMIN_BOOTSTRAP_ENABLED=true
-ADMIN_BOOTSTRAP_EMAIL=admin@smove.com
-ADMIN_BOOTSTRAP_PASSWORD=ChangeMe123!
-ADMIN_BOOTSTRAP_ROLE=admin
-# Allow bootstrap in production ONLY if explicitly enabled
-ADMIN_BOOTSTRAP_ALLOW_PROD=false
-
-# MongoDB connection for Prisma
-# IMPORTANT: must start with mongodb:// ou mongodb+srv:// et contenir le nom de base smove
-DATABASE_URL=mongodb+srv://USERNAME:PASSWORD@cluster0.wxdxz04.mongodb.net/smove?retryWrites=true&w=majority&appName=Cluster0
-DIRECT_DATABASE_URL=mongodb+srv://USERNAME:PASSWORD@cluster0.wxdxz04.mongodb.net/smove?retryWrites=true&w=majority&appName=Cluster0
-
-# Public site
-NEXT_PUBLIC_SITE_URL=https://smove.example.com
-NEXT_PUBLIC_BRAND_NAME=SMOVE Communication
-```
+Ensuite, remplissez `JWT_SECRET`, `DATABASE_URL` et les variables liées au bootstrap admin selon votre environnement.
 
 - **Toujours** inclure le nom de base de données `/smove` dans le chemin. Les erreurs `P2010` / "empty database name" viennent généralement d'une URL tronquée.
 - **Pas de guillemets ni d'espaces** dans les valeurs (ex: pas de `"..."` autour de l'URI MongoDB).
@@ -90,7 +71,10 @@ NEXT_PUBLIC_BRAND_NAME=SMOVE Communication
    ```bash
    npm install
    ```
-2. Créer `.env` ou `.env.local` avec les variables ci-dessus.
+2. Créer `.env` ou `.env.local` à partir du modèle :
+   ```bash
+   cp .env.example .env.local
+   ```
 3. Générer/mettre à jour la base MongoDB :
    ```bash
    npx prisma db push
@@ -99,6 +83,7 @@ NEXT_PUBLIC_BRAND_NAME=SMOVE Communication
    ```bash
    npm run db:seed
    ```
+   > Le seed initialise aussi les catégories par défaut et peut créer un admin bootstrap si activé dans `.env.local`.
 5. Générer le client Prisma (automatique avec `next dev`, mais possible manuellement) :
    ```bash
    npx prisma generate
@@ -135,6 +120,7 @@ ADMIN_BOOTSTRAP_ALLOW_PROD=true
 
 - Lors d'un login bootstrap réussi, un user est créé (ou mis à jour) avec `status=active` et `role` défini.
 - Ne loggez jamais le mot de passe et pensez à **désactiver** le bootstrap après initialisation.
+ - Le seed (`npm run db:seed`) utilise également ces variables pour créer un admin bootstrap si besoin.
 
 ### Flux d'invitation
 1. **Invitation** : depuis `/admin/users`, cliquez sur "Inviter un user" et récupérez le lien généré.

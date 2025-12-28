@@ -59,19 +59,42 @@ function detectErrorType(error: unknown): SafePrismaErrorType {
   return isDbConnectivityIssue(error) ? "DB_UNREACHABLE" : "UNKNOWN";
 }
 
+type SafePrismaOptions = {
+  timeoutMs?: number;
+  retries?: number;
+  retryDelayMs?: number;
+};
+
+const delay = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+
 export async function safePrisma<T>(
   callback: (client: typeof prisma) => Promise<T>,
-  { timeoutMs = 4500 }: { timeoutMs?: number } = {},
+  { timeoutMs = 4500, retries = 1, retryDelayMs = 200 }: SafePrismaOptions = {},
 ): Promise<SafePrismaResult<T>> {
-  try {
-    const data = await withTimeout(callback(prisma), timeoutMs);
-    return { ok: true, data } as const;
-  } catch (error) {
-    const errorType = detectErrorType(error);
-    const message = buildPrismaErrorMessage(error, errorType);
-    console.error("Prisma client error", { errorType, message });
-    return { ok: false, error: error as Error, message, errorType } as const;
+  let lastError: unknown;
+
+  for (let attempt = 0; attempt <= retries; attempt += 1) {
+    try {
+      const data = await withTimeout(callback(prisma), timeoutMs);
+      return { ok: true, data } as const;
+    } catch (error) {
+      lastError = error;
+      const errorType = detectErrorType(error);
+      const shouldRetry = errorType === "DB_UNREACHABLE" && attempt < retries;
+      if (shouldRetry) {
+        await delay(retryDelayMs * (attempt + 1));
+        continue;
+      }
+      const message = buildPrismaErrorMessage(error, errorType);
+      console.error("Prisma client error", { errorType, message });
+      return { ok: false, error: error as Error, message, errorType } as const;
+    }
   }
+
+  const errorType = detectErrorType(lastError);
+  const message = buildPrismaErrorMessage(lastError, errorType);
+  console.error("Prisma client error", { errorType, message });
+  return { ok: false, error: lastError as Error, message, errorType } as const;
 }
 
 function buildPrismaErrorMessage(error: unknown, errorType: SafePrismaErrorType): string {
