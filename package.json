@@ -7,9 +7,14 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
+    "db:check": "node scripts/db-check.mjs",
+    "db:seed": "prisma db seed",
     "seed:admin": "node scripts/seed-admin-user.mjs",
     "prisma:generate": "prisma generate",
     "prisma:push": "prisma db push"
+  },
+  "prisma": {
+    "seed": "node --loader ts-node/esm prisma/seed.ts"
   },
   "dependencies": {
     "@prisma/client": "^5.21.1",
@@ -37,6 +42,7 @@
     "eslint": "8.57.0",
     "eslint-config-next": "14.2.3",
     "tailwindcss": "^4",
+    "ts-node": "^10.9.2",
     "typescript": "^5"
   },
   "overrides": {

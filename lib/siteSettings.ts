@@ -107,27 +107,30 @@ export const DEFAULT_SITE_SETTINGS: SiteSettings = {
 };
 
 export const getSiteSettings = cache(async (): Promise<SiteSettings> => {
-  const settingsResult = await safePrisma((db) =>
-    db.siteSettings.findUnique({ where: { key: SETTINGS_KEY } }),
+  const settingsResult = await safePrisma(
+    (db) => db.siteSettings.findUnique({ where: { key: SETTINGS_KEY } }),
+    { timeoutMs: 2000 },
   );
 
   if (!settingsResult.ok) {
-    console.error("Failed to load site settings", { message: settingsResult.message });
+    logSiteSettingsError("load", settingsResult);
     return DEFAULT_SITE_SETTINGS;
   }
 
   if (!settingsResult.data) {
-    const createResult = await safePrisma((db) =>
-      db.siteSettings.create({
-        data: {
-          key: SETTINGS_KEY,
-          ...buildSiteSettingsPayload(DEFAULT_SITE_SETTINGS),
-        },
-      }),
+    const createResult = await safePrisma(
+      (db) =>
+        db.siteSettings.create({
+          data: {
+            key: SETTINGS_KEY,
+            ...buildSiteSettingsPayload(DEFAULT_SITE_SETTINGS),
+          },
+        }),
+      { timeoutMs: 2000 },
     );
 
     if (!createResult.ok) {
-      console.error("Failed to create default site settings", { message: createResult.message });
+      logSiteSettingsError("create", createResult);
       return DEFAULT_SITE_SETTINGS;
     }
 
@@ -241,4 +244,24 @@ function mergeObject<T extends Record<string, unknown>>(
 function normalizeObject<T extends Record<string, unknown>>(value: T, transform: (input: unknown) => unknown): T {
   const entries = Object.entries(value).map(([key, entry]) => [key, transform(entry)]);
   return Object.fromEntries(entries) as T;
+}
+
+function logSiteSettingsError(
+  action: "load" | "create",
+  result: { message: string; errorType: string },
+): void {
+  const hints: Record<string, string> = {
+    AUTH_FAILED: "Vérifiez les identifiants MongoDB et encodez les caractères spéciaux dans l'URI.",
+    IP_NOT_ALLOWED: "Ajoutez l'IP du serveur dans Atlas > Network Access.",
+    INVALID_URL: "Contrôlez le format mongodb+srv://.../smove et supprimez les guillemets dans .env.",
+    DB_UNREACHABLE: "Vérifiez l'état du cluster et l'accès réseau (whitelist).",
+  };
+
+  const hint = hints[result.errorType] ?? "Consultez les logs Prisma pour plus de détails.";
+
+  console.error(`[SiteSettings] Failed to ${action} settings`, {
+    message: result.message,
+    errorType: result.errorType,
+    hint,
+  });
 }
