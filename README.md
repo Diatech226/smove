@@ -26,6 +26,14 @@ SMOVE_ADMIN_SEED_EMAIL=admin@smove.local
 SMOVE_ADMIN_SEED_PASSWORD=ChangeMe123!
 SMOVE_ADMIN_SEED_PASSWORD_HASH=
 
+# Optional admin bootstrap (local only by default)
+ADMIN_BOOTSTRAP_ENABLED=true
+ADMIN_BOOTSTRAP_EMAIL=admin@smove.com
+ADMIN_BOOTSTRAP_PASSWORD=ChangeMe123!
+ADMIN_BOOTSTRAP_ROLE=admin
+# Allow bootstrap in production ONLY if explicitly enabled
+ADMIN_BOOTSTRAP_ALLOW_PROD=false
+
 # MongoDB connection for Prisma
 # IMPORTANT: must start with mongodb:// ou mongodb+srv:// et contenir le nom de base smove
 DATABASE_URL=mongodb+srv://USERNAME:PASSWORD@cluster0.wxdxz04.mongodb.net/smove?retryWrites=true&w=majority&appName=Cluster0
@@ -107,6 +115,26 @@ NEXT_PUBLIC_BRAND_NAME=SMOVE Communication
 - La section **Users** permet de gérer les comptes (rôles admin/client, statuts active/disabled/pending) et d'envoyer des invitations.
 - Les slugs sont vérifiés côté serveur via `GET /api/admin/slug?model=<post|project|service|event>&slug=...&excludeId=...` pour garantir l'unicité dès la saisie.
 - Un squelette `app/admin/loading.tsx` évite les flashes blancs pendant les chargements du back-office.
+
+### Bootstrap admin (local/dev)
+Si vous devez démarrer sans utilisateur en base, vous pouvez activer un **bootstrap admin** via `.env.local` :
+
+```bash
+ADMIN_BOOTSTRAP_ENABLED=true
+ADMIN_BOOTSTRAP_EMAIL=admin@smove.com
+ADMIN_BOOTSTRAP_PASSWORD=ChangeMe123!
+ADMIN_BOOTSTRAP_ROLE=admin
+```
+
+- Le bootstrap est **désactivé par défaut** en production. Pour l'autoriser explicitement :
+
+```bash
+ADMIN_BOOTSTRAP_ENABLED=true
+ADMIN_BOOTSTRAP_ALLOW_PROD=true
+```
+
+- Lors d'un login bootstrap réussi, un user est créé (ou mis à jour) avec `status=active` et `role` défini.
+- Ne loggez jamais le mot de passe et pensez à **désactiver** le bootstrap après initialisation.
 
 ### Flux d'invitation
 1. **Invitation** : depuis `/admin/users`, cliquez sur "Inviter un user" et récupérez le lien généré.

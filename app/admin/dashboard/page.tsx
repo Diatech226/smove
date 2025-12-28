@@ -4,6 +4,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { motion } from "framer-motion";
 import Link from "next/link";
+import { useRouter, useSearchParams } from "next/navigation";
 
 import { AdminPageHeader } from "@/components/admin/AdminPageHeader";
 import { Card } from "@/components/ui/Card";
@@ -29,9 +30,20 @@ const statConfig: Omit<StatCard, "value">[] = [
 ];
 
 export default function AdminDashboardPage() {
+  const router = useRouter();
+  const searchParams = useSearchParams();
   const [services, setServices] = useState<RemoteData<any>>({ loading: true, data: [], total: 0 });
   const [projects, setProjects] = useState<RemoteData<any>>({ loading: true, data: [], total: 0 });
   const [posts, setPosts] = useState<RemoteData<any>>({ loading: true, data: [], total: 0 });
+  const showBootstrapNotice = searchParams?.get("bootstrap") === "1";
+
+  useEffect(() => {
+    if (!showBootstrapNotice) return;
+    const params = new URLSearchParams(searchParams?.toString() ?? "");
+    params.delete("bootstrap");
+    const nextUrl = params.toString() ? `/admin/dashboard?${params.toString()}` : "/admin/dashboard";
+    router.replace(nextUrl);
+  }, [router, searchParams, showBootstrapNotice]);
 
   useEffect(() => {
     const fetchAll = async () => {
@@ -89,6 +101,11 @@ export default function AdminDashboardPage() {
         subtitle="Une vue rapide sur l'activité du back-office SMOVE."
         actions={<Button href="/" variant="secondary">Voir le site public</Button>}
       />
+      {showBootstrapNotice ? (
+        <Card className="border-emerald-400/30 bg-emerald-500/10 p-4 text-sm text-emerald-100">
+          Admin initialisé.
+        </Card>
+      ) : null}
 
       <div className="grid gap-4 md:grid-cols-3">
         {stats.map((stat, index) => (
