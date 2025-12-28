@@ -4,7 +4,7 @@ import { z } from "zod";
 import { jsonError, jsonOk } from "@/lib/api/response";
 import { createRequestId } from "@/lib/api/requestId";
 import { AUTH_COOKIE_NAME, AUTH_TOKEN_TTL_SECONDS, signAuthToken } from "@/lib/auth";
-import { prisma } from "@/lib/prisma";
+import { safePrisma } from "@/lib/safePrisma";
 
 const failedLoginAttempts = new Map<
   string,
@@ -83,16 +83,29 @@ export async function POST(request: Request) {
       return jsonError("Trop de tentatives. Réessayez dans quelques instants.", { status: 429, requestId });
     }
 
-    const user = await prisma.user.findUnique({
-      where: { email: normalizedEmail },
-      select: {
-        id: true,
-        email: true,
-        role: true,
-        status: true,
-        passwordHash: true,
-      },
-    });
+    const userResult = await safePrisma((db) =>
+      db.user.findUnique({
+        where: { email: normalizedEmail },
+        select: {
+          id: true,
+          email: true,
+          role: true,
+          status: true,
+          passwordHash: true,
+        },
+      }),
+    );
+
+    if (!userResult.ok) {
+      console.error("Login database error", { requestId, detail: userResult.message });
+      return jsonError("Connexion à la base de données impossible.", {
+        status: 503,
+        requestId,
+        data: { detail: userResult.message },
+      });
+    }
+
+    const user = userResult.data;
 
     if (user && user.status === "active" && user.passwordHash) {
       const isValid = await bcrypt.compare(password, user.passwordHash);
@@ -140,25 +153,38 @@ export async function POST(request: Request) {
       if (bootstrapPassword === password) {
         const shouldCreate = !user;
         const passwordHash = await bcrypt.hash(bootstrapPassword, 12);
-        const bootstrapUser = await prisma.user.upsert({
-          where: { email: bootstrapEmail },
-          update: {
-            role: bootstrapRole,
-            status: "active",
-            passwordHash,
-          },
-          create: {
-            email: bootstrapEmail,
-            role: bootstrapRole,
-            status: "active",
-            passwordHash,
-          },
-          select: {
-            id: true,
-            email: true,
-            role: true,
-          },
-        });
+        const bootstrapResult = await safePrisma((db) =>
+          db.user.upsert({
+            where: { email: bootstrapEmail },
+            update: {
+              role: bootstrapRole,
+              status: "active",
+              passwordHash,
+            },
+            create: {
+              email: bootstrapEmail,
+              role: bootstrapRole,
+              status: "active",
+              passwordHash,
+            },
+            select: {
+              id: true,
+              email: true,
+              role: true,
+            },
+          }),
+        );
+
+        if (!bootstrapResult.ok) {
+          console.error("Bootstrap admin creation failed", { requestId, detail: bootstrapResult.message });
+          return jsonError("Connexion à la base de données impossible.", {
+            status: 503,
+            requestId,
+            data: { detail: bootstrapResult.message },
+          });
+        }
+
+        const bootstrapUser = bootstrapResult.data;
 
         if (!isProd) {
           console.warn("Admin bootstrap login used", { requestId, email: bootstrapUser.email });

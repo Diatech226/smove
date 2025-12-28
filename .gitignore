@@ -34,6 +34,7 @@ yarn-error.log*
 # Allow committing the main .env to document required parameters.
 !.env
 .env.*
+!.env.example
 
 # vercel
 .vercel

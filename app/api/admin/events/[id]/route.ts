@@ -1,6 +1,7 @@
 import { jsonError, jsonOk } from "@/lib/api/response";
 import { createRequestId } from "@/lib/api/requestId";
 import { requireAdmin } from "@/lib/admin/auth";
+import { findAvailableSlug } from "@/lib/admin/slug";
 import { safePrisma } from "@/lib/safePrisma";
 import { eventSchema } from "@/lib/validation/admin";
 
@@ -26,6 +27,25 @@ export async function PUT(request: Request, { params }: Params) {
     const { slug, title, date, location, description, category, coverImage } = parsed.data;
     const parsedDate = date instanceof Date ? date : new Date(date);
 
+    const existingResult = await safePrisma((db) => db.event.findUnique({ where: { slug }, select: { id: true } }));
+    if (!existingResult.ok) {
+      console.error("Failed to validate event slug", { requestId, detail: existingResult.message });
+      return jsonError("Database unreachable", {
+        status: 503,
+        requestId,
+        data: { detail: existingResult.message },
+      });
+    }
+
+    if (existingResult.data && existingResult.data.id !== params.id) {
+      const suggestion = await findAvailableSlug("event", slug, params.id);
+      return jsonError("Un autre événement utilise déjà ce slug.", {
+        status: 400,
+        requestId,
+        data: { suggestedSlug: suggestion },
+      });
+    }
+
     const updatedResult = await safePrisma((db) =>
       db.event.update({
         where: { id: params.id },
@@ -43,7 +63,12 @@ export async function PUT(request: Request, { params }: Params) {
 
     if (!updatedResult.ok) {
       if ((updatedResult.error as any)?.code === "P2002") {
-        return jsonError("Un autre événement utilise déjà ce slug.", { status: 400, requestId });
+        const suggestion = await findAvailableSlug("event", slug, params.id);
+        return jsonError("Un autre événement utilise déjà ce slug.", {
+          status: 400,
+          requestId,
+          data: { suggestedSlug: suggestion },
+        });
       }
       return jsonError("Failed to update event", {
         status: 503,

@@ -2,6 +2,7 @@
 import { jsonError, jsonOk } from "@/lib/api/response";
 import { createRequestId } from "@/lib/api/requestId";
 import { requireAdmin } from "@/lib/admin/auth";
+import { findAvailableSlug } from "@/lib/admin/slug";
 import { safePrisma } from "@/lib/safePrisma";
 import { serviceSchema } from "@/lib/validation/admin";
 
@@ -28,6 +29,31 @@ export async function PUT(request: Request, { params }: Params) {
 
     const { name, slug, description, category, image } = parsed.data;
 
+    const existingResult = await safePrisma((db) =>
+      db.service.findUnique({
+        where: { slug },
+        select: { id: true },
+      }),
+    );
+
+    if (!existingResult.ok) {
+      console.error("Failed to validate service slug", { requestId, detail: existingResult.message });
+      return jsonError("Database unreachable", {
+        status: 503,
+        requestId,
+        data: { detail: existingResult.message },
+      });
+    }
+
+    if (existingResult.data && existingResult.data.id !== params.id) {
+      const suggestion = await findAvailableSlug("service", slug, params.id);
+      return jsonError("Un autre service utilise déjà ce slug.", {
+        status: 400,
+        requestId,
+        data: { suggestedSlug: suggestion },
+      });
+    }
+
     const updatedResult = await safePrisma((db) =>
       db.service.update({
         where: { id: params.id },
@@ -44,7 +70,12 @@ export async function PUT(request: Request, { params }: Params) {
     if (!updatedResult.ok) {
       const error = updatedResult.error as any;
       if (error?.code === "P2002") {
-        return jsonError("Un autre service utilise déjà ce slug.", { status: 400, requestId });
+        const suggestion = await findAvailableSlug("service", slug, params.id);
+        return jsonError("Un autre service utilise déjà ce slug.", {
+          status: 400,
+          requestId,
+          data: { suggestedSlug: suggestion },
+        });
       }
       console.error("Database error updating service", { requestId, detail: updatedResult.message });
       return jsonError("Database unreachable", {
