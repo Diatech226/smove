@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { slugify } from "@/lib/utils";
 import type { MediaItem } from "@/lib/media/types";
+import { ContentStatusQuickActions, type ContentStatus } from "@/components/admin/ContentStatusQuickActions";
 import { MediaPickerField } from "@/components/admin/media/MediaPickerField";
 
 type AdminEvent = {
@@ -20,6 +21,7 @@ type AdminEvent = {
   category?: string | null;
   coverMediaId: string;
   cover?: MediaItem | null;
+  status?: ContentStatus | null;
 };
 
 const emptyForm: Omit<AdminEvent, "id" | "cover"> = {
@@ -30,6 +32,25 @@ const emptyForm: Omit<AdminEvent, "id" | "cover"> = {
   description: "",
   category: "",
   coverMediaId: "",
+  status: "draft",
+};
+
+type CategoryOption = {
+  id: string;
+  slug: string;
+  name: string;
+};
+
+const STATUS_LABELS: Record<ContentStatus, string> = {
+  draft: "Brouillon",
+  published: "Publié",
+  archived: "Archivé",
+};
+
+const STATUS_STYLES: Record<ContentStatus, string> = {
+  draft: "bg-white/10 text-slate-200",
+  published: "bg-emerald-500/20 text-emerald-100",
+  archived: "bg-amber-500/20 text-amber-100",
 };
 
 export default function AdminEventsPage() {
@@ -44,6 +65,7 @@ export default function AdminEventsPage() {
   const [limit, setLimit] = useState(12);
   const [totalPages, setTotalPages] = useState(1);
   const [total, setTotal] = useState(0);
+  const [categoryOptions, setCategoryOptions] = useState<CategoryOption[]>([]);
 
   const isCreating = useMemo(() => !editingId, [editingId]);
   const computedSlug = useMemo(() => (form.slug.trim() ? form.slug : slugify(form.title)), [form.slug, form.title]);
@@ -77,6 +99,22 @@ export default function AdminEventsPage() {
     fetchEvents();
   }, [page, limit]);
 
+  useEffect(() => {
+    const fetchCategories = async () => {
+      try {
+        const response = await fetch("/api/admin/categories?type=event");
+        const json = await response.json();
+        if (response.ok) {
+          setCategoryOptions(Array.isArray(json?.data?.categories) ? json.data.categories : []);
+        }
+      } catch (fetchError) {
+        console.error(fetchError);
+      }
+    };
+
+    fetchCategories();
+  }, []);
+
   const resetForm = () => {
     setForm(emptyForm);
     setEditingId(null);
@@ -88,7 +126,7 @@ export default function AdminEventsPage() {
     setStatusMessage(null);
     setError(null);
 
-    const { title, date, location, description, category, coverMediaId } = form;
+    const { title, date, location, description, category, coverMediaId, status } = form;
     if (!title || !computedSlug || !date || !coverMediaId) {
       setStatusMessage("Merci de renseigner le titre, la date, le slug et la couverture.");
       return;
@@ -102,6 +140,7 @@ export default function AdminEventsPage() {
       description,
       category,
       coverMediaId,
+      status: status ?? "draft",
     };
 
     try {
@@ -178,12 +217,32 @@ export default function AdminEventsPage() {
                 key={item.id}
                 className="flex items-start justify-between gap-3 rounded-xl border border-white/5 bg-white/5 p-4"
               >
-                <div className="space-y-1">
-                  <p className="text-sm font-medium text-white">{item.title}</p>
-                  <p className="text-xs uppercase tracking-wide text-emerald-200/80">{new Date(item.date).toLocaleDateString("fr-FR")}</p>
+                <div className="space-y-2">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <p className="text-sm font-medium text-white">{item.title}</p>
+                    <span
+                      className={`rounded-full px-2 py-1 text-[11px] font-semibold ${
+                        STATUS_STYLES[(item.status ?? "published") as ContentStatus]
+                      }`}
+                    >
+                      {STATUS_LABELS[(item.status ?? "published") as ContentStatus]}
+                    </span>
+                  </div>
+                  <p className="text-xs uppercase tracking-wide text-emerald-200/80">
+                    {new Date(item.date).toLocaleDateString("fr-FR")}
+                  </p>
                   <p className="text-xs text-slate-300">{item.slug}</p>
                   {item.category ? <p className="text-xs text-emerald-200">{item.category}</p> : null}
                   {item.location ? <p className="text-sm text-slate-200">{item.location}</p> : null}
+                  <ContentStatusQuickActions
+                    endpoint={`/api/admin/events/${item.id}`}
+                    status={(item.status ?? "published") as ContentStatus}
+                    onStatusChange={(nextStatus) =>
+                      setItems((prev) =>
+                        prev.map((event) => (event.id === item.id ? { ...event, status: nextStatus } : event)),
+                      )
+                    }
+                  />
                 </div>
                 <div className="flex flex-col gap-2 text-sm">
                   <Button
@@ -199,6 +258,7 @@ export default function AdminEventsPage() {
                         description: item.description ?? "",
                         category: item.category ?? "",
                         coverMediaId: item.coverMediaId ?? "",
+                        status: (item.status ?? "published") as ContentStatus,
                       });
                       setCoverMedia(item.cover ?? null);
                       setStatusMessage(null);
@@ -321,18 +381,31 @@ export default function AdminEventsPage() {
             </div>
 
             <div className="grid gap-4 md:grid-cols-2">
-              <div className="space-y-2">
-                <label className="text-sm font-semibold text-white" htmlFor="category">
-                  Catégorie / type
-                </label>
-                <input
-                  id="category"
-                  name="category"
-                  value={form.category ?? ""}
-                  onChange={(event) => setForm((prev) => ({ ...prev, category: event.target.value }))}
-                  className="w-full rounded-lg border border-white/10 bg-slate-900 px-3 py-2 text-sm text-white focus:border-emerald-400 focus:outline-none"
-                />
-              </div>
+            <div className="space-y-2">
+              <label className="text-sm font-semibold text-white" htmlFor="category">
+                Catégorie / type
+              </label>
+              <select
+                id="category"
+                name="category"
+                value={form.category ?? ""}
+                onChange={(event) => setForm((prev) => ({ ...prev, category: event.target.value }))}
+                className="w-full rounded-lg border border-white/10 bg-slate-900 px-3 py-2 text-sm text-white focus:border-emerald-400 focus:outline-none"
+              >
+                <option value="">Sélectionner une catégorie</option>
+                {form.category && !categoryOptions.find((option) => option.name === form.category) ? (
+                  <option value={form.category}>{form.category}</option>
+                ) : null}
+                {categoryOptions.map((option) => (
+                  <option key={option.id} value={option.name}>
+                    {option.name}
+                  </option>
+                ))}
+              </select>
+              {!categoryOptions.length ? (
+                <p className="text-xs text-slate-400">Ajoutez des catégories via Admin → Catégories.</p>
+              ) : null}
+            </div>
               <MediaPickerField
                 label="Image de couverture"
                 description="Sélectionnez la couverture dans la médiathèque."
@@ -358,6 +431,25 @@ export default function AdminEventsPage() {
                 onChange={(event) => setForm((prev) => ({ ...prev, description: event.target.value }))}
                 className="w-full rounded-lg border border-white/10 bg-slate-900 px-3 py-2 text-sm text-white focus:border-emerald-400 focus:outline-none"
               />
+            </div>
+
+            <div className="space-y-2">
+              <label className="text-sm font-semibold text-white" htmlFor="status">
+                Statut
+              </label>
+              <select
+                id="status"
+                name="status"
+                value={form.status ?? "draft"}
+                onChange={(event) => setForm((prev) => ({ ...prev, status: event.target.value as ContentStatus }))}
+                className="w-full rounded-lg border border-white/10 bg-slate-900 px-3 py-2 text-sm text-white focus:border-emerald-400 focus:outline-none"
+              >
+                {(["draft", "published", "archived"] as const).map((value) => (
+                  <option key={value} value={value}>
+                    {STATUS_LABELS[value]}
+                  </option>
+                ))}
+              </select>
             </div>
 
             <div className="flex items-center gap-3">

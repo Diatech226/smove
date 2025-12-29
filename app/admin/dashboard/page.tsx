@@ -69,10 +69,11 @@ export default function AdminDashboardPage() {
             const response = await fetch(url);
             const json = await response.json();
             if (!response.ok) throw new Error(json.error || "Erreur de chargement");
+            const payload = json?.data ?? {};
             stateSetters[key]({
               loading: false,
-              data: json[payloadKey] ?? [],
-              total: Number(json.total) || (json[payloadKey]?.length ?? 0),
+              data: payload[payloadKey] ?? [],
+              total: Number(payload.total) || (payload[payloadKey]?.length ?? 0),
               error: null,
             });
           } catch (error) {

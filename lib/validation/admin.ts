@@ -47,13 +47,20 @@ export const postSchema = z.object({
 
 export const postUpdateSchema = postSchema.partial();
 
+export const contentStatusSchema = z.enum(["draft", "published", "archived"]);
+
 export const serviceSchema = z.object({
   name: z.string().min(1, "Nom obligatoire"),
   slug: slugSchema,
   description: z.string().min(1, "Description obligatoire"),
   category: z.string().trim().optional().nullable(),
+  categorySlug: slugSchema.optional().nullable(),
+  sectorSlug: slugSchema.optional().nullable(),
   coverMediaId: objectIdSchema,
+  status: contentStatusSchema.optional(),
 });
+
+export const serviceUpdateSchema = serviceSchema.partial();
 
 export const projectSchema = z.object({
   client: z.string().min(1, "Client obligatoire"),
@@ -64,8 +71,13 @@ export const projectSchema = z.object({
   body: z.string().trim().optional().nullable(),
   results: z.array(z.string().trim().min(1)).max(20).optional(),
   category: z.string().trim().optional().nullable(),
+  categorySlug: slugSchema.optional().nullable(),
+  sectorSlug: slugSchema.optional().nullable(),
   coverMediaId: objectIdSchema,
+  status: contentStatusSchema.optional(),
 });
+
+export const projectUpdateSchema = projectSchema.partial();
 
 export const eventSchema = z.object({
   title: z.string().min(1, "Titre obligatoire"),
@@ -75,7 +87,10 @@ export const eventSchema = z.object({
   description: z.string().trim().optional().nullable(),
   category: z.string().trim().optional().nullable(),
   coverMediaId: objectIdSchema,
+  status: contentStatusSchema.optional(),
 });
+
+export const eventUpdateSchema = eventSchema.partial();
 
 export const taxonomySchema = z.object({
   type: z

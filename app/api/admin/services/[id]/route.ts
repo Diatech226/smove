@@ -4,7 +4,7 @@ import { createRequestId } from "@/lib/api/requestId";
 import { requireAdmin } from "@/lib/admin/auth";
 import { findAvailableSlug } from "@/lib/admin/slug";
 import { safePrisma } from "@/lib/safePrisma";
-import { serviceSchema } from "@/lib/validation/admin";
+import { contentStatusSchema, serviceSchema } from "@/lib/validation/admin";
 
 type Params = {
   params: { id: string };
@@ -27,7 +27,7 @@ export async function PUT(request: Request, { params }: Params) {
       return jsonError(message, { status: 400, requestId });
     }
 
-    const { name, slug, description, category, coverMediaId } = parsed.data;
+    const { name, slug, description, category, categorySlug, sectorSlug, coverMediaId, status } = parsed.data;
 
     const existingResult = await safePrisma((db) =>
       db.service.findUnique({
@@ -62,7 +62,10 @@ export async function PUT(request: Request, { params }: Params) {
           slug,
           description,
           category: typeof category === "string" ? category : null,
+          categorySlug: typeof categorySlug === "string" && categorySlug ? categorySlug : null,
+          sectorSlug: typeof sectorSlug === "string" && sectorSlug ? sectorSlug : null,
           coverMediaId,
+          status: status ?? "published",
         },
       }),
     );
@@ -96,6 +99,47 @@ export async function PUT(request: Request, { params }: Params) {
       return jsonError("Un autre service utilise déjà ce slug.", { status: 400, requestId });
     }
     return jsonError("Failed to update service", { status: 500, requestId });
+  }
+}
+
+export async function PATCH(request: Request, { params }: Params) {
+  const authError = await requireAdmin();
+  if (authError) return authError;
+  const requestId = createRequestId();
+  try {
+    if (!params.id) {
+      return jsonError("Service id is required", { status: 400, requestId });
+    }
+    const json = await request.json().catch(() => null);
+    const parsed = contentStatusSchema.safeParse(json?.status);
+    if (!parsed.success) {
+      const message = parsed.error.issues.at(0)?.message ?? "Statut invalide";
+      return jsonError(message, { status: 400, requestId });
+    }
+
+    const updatedResult = await safePrisma((db) =>
+      db.service.update({
+        where: { id: params.id },
+        data: { status: parsed.data },
+      }),
+    );
+
+    if (!updatedResult.ok) {
+      console.error("Database error updating service status", { requestId, detail: updatedResult.message });
+      return jsonError("Database unreachable", {
+        status: 503,
+        requestId,
+        data: { detail: updatedResult.message },
+      });
+    }
+
+    return jsonOk({ service: updatedResult.data }, { status: 200, requestId });
+  } catch (error: any) {
+    console.error("Error updating service status", {
+      requestId,
+      message: error?.message,
+    });
+    return jsonError("Failed to update service status", { status: 500, requestId });
   }
 }
 

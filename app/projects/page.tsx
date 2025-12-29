@@ -20,6 +20,9 @@ export const metadata: Metadata = createMetadata({
 export default async function ProjectsPage() {
   const projectsResult = await safePrisma((db) =>
     db.project.findMany({
+      where: {
+        OR: [{ status: "published" }, { status: null }],
+      },
       orderBy: { createdAt: "desc" },
       include: { cover: true },
     }),

@@ -14,6 +14,38 @@ SMOVE – site vitrine premium avec hero animé (2 écrans + vidéo) et back-off
 - `/lib` : utilitaires (Prisma, hooks, configuration)
 - `/prisma` : schéma Prisma
 
+## État actuel (production-ready)
+### ✅ Ce qui fonctionne
+- Site public (home, services, projets, blog) avec fallback UI si la DB est indisponible.
+- CMS admin complet (posts, services, projets, événements, catégories, taxonomies, users, settings, media).
+- Auth admin (login, activation, session) protégée par middleware.
+- Media Library avec upload local (dev) ou S3/R2 (prod), génération de variants.
+- Slugs contrôlés côté API + suggestion automatique en cas de conflit.
+- Dashboard admin avec compteurs fiables et chargement optimisé.
+
+### ⚠️ Ce qui reste à prévoir
+- Tests E2E et CI/CD (non configurés).
+- Monitoring/alerting (Sentry/Logtail/Datadog).
+- Rôles avancés (éditeur/relecteur) + workflow éditorial multi-étapes.
+
+## Checklist production
+- ✅ Variables d’environnement à jour (`.env.example`).
+- ✅ Build Next.js (`npm run build`).
+- ✅ Base MongoDB accessible (Atlas, IP whitelist, auth).
+- ✅ Seed initial (`npm run db:seed`) + admin bootstrap si nécessaire.
+- ✅ Média : config `MEDIA_STORAGE` + bucket S3/R2 pour la prod.
+- ✅ DNS / domaine (mettre à jour `NEXT_PUBLIC_SITE_URL`).
+- ✅ Vérifier `APP_URL` pour l’activation d’invitations.
+- ✅ Déploiement (Vercel/Fly.io) avec volumes ou S3.
+- ✅ Vérifier les politiques CORS / CSP si besoin.
+
+## Bugs corrigés (audit)
+- Dashboard admin : comptages incohérents corrigés (lecture `json.data`).
+- Status rapides pour services/projets/événements (PATCH sécurisé + UI).
+- Dropdowns alimentés par taxonomies/catégories (services/projets/événements).
+- Filtrage public sur les contenus publiés (draft/archived exclus).
+- Limites d’upload média (taille + volume) + validations renforcées.
+
 ## UI refonte
 - Layout global : header sticky, footer enrichi, design system bleu/blanc + accents.
 - Sections publiques : hero animé en 2 écrans, services, portfolio, blog, testimonials, CTA.
@@ -44,6 +76,9 @@ Ensuite, remplissez `JWT_SECRET`, `DATABASE_URL` et les variables liées au boot
 - `NEXT_PUBLIC_SITE_URL` sert de fallback pour `metadataBase` (SEO/OG) si aucun paramètre n'est défini dans le CMS.
 - `JWT_SECRET` signe les JWT stockés en cookie httpOnly pour l'accès admin.
 - `APP_URL` sert à générer les liens d'activation d'invitation.
+- `MEDIA_STORAGE` (`local` ou `s3`) détermine le stockage des fichiers média.
+- `MEDIA_PUBLIC_BASE_URL` / `S3_PUBLIC_BASE_URL` servent à construire les URLs publiques.
+- `MEDIA_MAX_BYTES` / `MEDIA_MAX_FILES` limitent la taille et le volume d'uploads.
 
 ## Setup Mongo Atlas
 1. Créez un cluster MongoDB Atlas et une base nommée **smove** (ou assurez-vous que l'URL se termine par `/smove`).
@@ -153,10 +188,10 @@ ADMIN_BOOTSTRAP_ALLOW_PROD=true
 ## Modèles de données
 Les modèles Prisma/MongoDB sont définis dans `prisma/schema.prisma` :
 - `Media` : type (image/vidéo), dossier, URL originale, variantes (JSON), poster vidéo, dimensions, taille, durée optionnelle, timestamps.
-- `Service` : slug unique, nom, description, catégorie/type, `categorySlug` et `sectorSlug` (dropdown admin), `coverMediaId`.
-- `Project` : slug unique, client, titre, secteur, `sectorSlug` et `categorySlug` (dropdown admin), résumé, corps, résultats, catégorie/type et `coverMediaId`.
+- `Service` : slug unique, nom, description, catégorie/type, `categorySlug` et `sectorSlug` (dropdown admin), `status` (draft/published/archived), `coverMediaId`.
+- `Project` : slug unique, client, titre, secteur, `sectorSlug` et `categorySlug` (dropdown admin), résumé, corps, résultats, catégorie/type, `status` et `coverMediaId`.
 - `Post` : slug unique, titre, extrait, contenu, `tags`, `categoryId`, `coverMediaId`, `galleryMediaIds`, `videoMediaId`, statut `status` (draft/published/archived/removed), dates de création/mise à jour + `publishedAt`.
-- `Event` : slug unique, titre, date, lieu, description, catégorie/type et `coverMediaId`.
+- `Event` : slug unique, titre, date, lieu, description, catégorie/type, `status` et `coverMediaId`.
 - `User` : email unique, `role` (admin/client), `status` (pending/active/disabled), `passwordHash` optionnel, token d'invitation (hash + expiry), timestamps.
 - `Category` : typée (`post`, `service`, `project`, `event`), `name`, `slug`, ordre, timestamps.
 - `Taxonomy` : type (`service_sector`, `service_category`, `project_sector`, `project_category`, `post_category`), slug, label, ordre, actif, timestamps.
@@ -215,6 +250,7 @@ Flux de gestion :
 - `MEDIA_PUBLIC_BASE_URL` : base publique en local (ex: `http://localhost:3000`). Les fichiers sont servis depuis `/uploads/...`.
 - `S3_PUBLIC_BASE_URL` : base publique du bucket (ex: `https://cdn.example.com`).
 - `S3_BUCKET`, `S3_ENDPOINT`, `S3_REGION`, `S3_ACCESS_KEY_ID`, `S3_SECRET_ACCESS_KEY` : accès S3/R2.
+- `MEDIA_MAX_BYTES` et `MEDIA_MAX_FILES` : limite de taille par fichier et nombre d'uploads par requête.
 
 ### Endpoints
 - `GET /api/admin/media?type=image|video&folder=...&search=...&page=1&limit=24`
@@ -243,12 +279,28 @@ SMOVE_ADMIN_SEED_EMAIL="admin@smove.local" SMOVE_ADMIN_SEED_PASSWORD="ChangeMe12
 - Le hero public est désormais animé en 2 écrans avec une vidéo fullscreen (supporte poster + preload metadata).
 - Les routes `/portfolio` redirigent vers la convention unique `/projects`.
 
+## Known issues
+- Pas de suite de tests automatisés (unit/e2e) intégrée.
+- Pas de système d’analytics ni monitoring applicatif.
+- Les contenus existants sans `status` sont considérés publiés pour compatibilité.
+
 ## Commandes Prisma utiles
 - Pousser le schéma vers la base : `npx prisma db push`
 - Générer le client : `npx prisma generate`
 - Visualiser les données : `npx prisma studio`
 
-## Améliorations futures proposées
-- Design : enrichir les pages publiques (services/projets/blog) avec plus de visuels et d'animations micro-interactions.
-- Animations 3D : affiner les matériaux/éclairages du hero et proposer des variantes mobiles plus légères.
-- CMS : ajouter la prévisualisation côté public, la gestion des brouillons/publications programmées et une recherche plein texte.
+## Roadmap (P0 / P1 / P2)
+### P0 — Qualité & workflow éditorial
+- Prévisualisation des pages publiques depuis le CMS.
+- Workflow multi-rôles (éditeur, relecteur, admin) + permissions fines.
+- Validation avancée des formulaires (bloquer publication sans media/SEO).
+
+### P1 — Performance & SEO
+- Cache revalidate par page (services/projets/blog).
+- Pagination + recherche full-text (posts, projets, services).
+- Optimisation Core Web Vitals (media lazy + compression).
+
+### P2 — Observabilité & CI/CD
+- Tests E2E (Playwright) + unit tests (Vitest).
+- Monitoring (Sentry, métriques uptime).
+- CI/CD avec déploiement automatique + environnements de staging.

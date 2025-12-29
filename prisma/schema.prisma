@@ -17,6 +17,12 @@ enum PostStatus {
   removed
 }
 
+enum ContentStatus {
+  draft
+  published
+  archived
+}
+
 model Service {
   id          String   @id @default(auto()) @map("_id") @db.ObjectId
   slug        String   @unique
@@ -27,6 +33,7 @@ model Service {
   sectorSlug  String?
   coverMediaId String @db.ObjectId
   cover       Media   @relation("ServiceCover", fields: [coverMediaId], references: [id])
+  status      ContentStatus? @default(published)
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 }
@@ -45,6 +52,7 @@ model Project {
   category  String?
   coverMediaId String @db.ObjectId
   cover       Media   @relation("ProjectCover", fields: [coverMediaId], references: [id])
+  status     ContentStatus? @default(published)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }
@@ -79,6 +87,7 @@ model Event {
   category    String?
   coverMediaId String @db.ObjectId
   cover       Media   @relation("EventCover", fields: [coverMediaId], references: [id])
+  status      ContentStatus? @default(published)
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 }

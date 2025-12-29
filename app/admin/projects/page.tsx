@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { slugify } from "@/lib/utils";
 import type { MediaItem } from "@/lib/media/types";
+import { ContentStatusQuickActions, type ContentStatus } from "@/components/admin/ContentStatusQuickActions";
 import { MediaPickerField } from "@/components/admin/media/MediaPickerField";
 
 type AdminProject = {
@@ -16,19 +17,25 @@ type AdminProject = {
   title: string;
   client: string;
   sector: string;
+  sectorSlug?: string | null;
   summary: string | null;
   body?: string;
   results?: string[];
   category?: string | null;
+  categorySlug?: string | null;
   coverMediaId: string;
   cover?: MediaItem | null;
+  status?: ContentStatus | null;
 };
 
 const emptyForm: Pick<AdminProject, "slug" | "title" | "client" | "sector" | "summary"> & {
   body?: string;
   results?: string[];
   category?: string;
+  categorySlug?: string;
+  sectorSlug?: string;
   coverMediaId?: string;
+  status?: ContentStatus;
 } = {
   slug: "",
   title: "",
@@ -38,12 +45,28 @@ const emptyForm: Pick<AdminProject, "slug" | "title" | "client" | "sector" | "su
   body: "",
   results: [],
   category: "",
+  categorySlug: "",
+  sectorSlug: "",
   coverMediaId: "",
+  status: "draft",
 };
 
-type ToastState = {
-  type: "success" | "error";
-  message: string;
+type TaxonomyOption = {
+  id: string;
+  slug: string;
+  label: string;
+};
+
+const STATUS_LABELS: Record<ContentStatus, string> = {
+  draft: "Brouillon",
+  published: "Publié",
+  archived: "Archivé",
+};
+
+const STATUS_STYLES: Record<ContentStatus, string> = {
+  draft: "bg-white/10 text-slate-200",
+  published: "bg-emerald-500/20 text-emerald-100",
+  archived: "bg-amber-500/20 text-amber-100",
 };
 
 export default function AdminProjectsPage() {
@@ -59,9 +82,19 @@ export default function AdminProjectsPage() {
   const [limit, setLimit] = useState(12);
   const [total, setTotal] = useState(0);
   const [totalPages, setTotalPages] = useState(1);
+  const [categoryOptions, setCategoryOptions] = useState<TaxonomyOption[]>([]);
+  const [sectorOptions, setSectorOptions] = useState<TaxonomyOption[]>([]);
 
   const isCreating = useMemo(() => !editingId, [editingId]);
   const computedSlug = useMemo(() => (form.slug.trim() ? form.slug : slugify(form.title)), [form.slug, form.title]);
+  const categoryLabelMap = useMemo(
+    () => new Map(categoryOptions.map((option) => [option.slug, option.label])),
+    [categoryOptions],
+  );
+  const sectorLabelMap = useMemo(
+    () => new Map(sectorOptions.map((option) => [option.slug, option.label])),
+    [sectorOptions],
+  );
 
   const fetchProjects = useCallback(async () => {
     try {
@@ -97,6 +130,28 @@ export default function AdminProjectsPage() {
     fetchProjects();
   }, [fetchProjects]);
 
+  useEffect(() => {
+    const fetchTaxonomies = async () => {
+      try {
+        const [categoryRes, sectorRes] = await Promise.all([
+          fetch("/api/admin/taxonomies?type=project_category"),
+          fetch("/api/admin/taxonomies?type=project_sector"),
+        ]);
+        const [categoryJson, sectorJson] = await Promise.all([categoryRes.json(), sectorRes.json()]);
+        if (categoryRes.ok) {
+          setCategoryOptions(Array.isArray(categoryJson?.data?.taxonomies) ? categoryJson.data.taxonomies : []);
+        }
+        if (sectorRes.ok) {
+          setSectorOptions(Array.isArray(sectorJson?.data?.taxonomies) ? sectorJson.data.taxonomies : []);
+        }
+      } catch (fetchError) {
+        console.error(fetchError);
+      }
+    };
+
+    fetchTaxonomies();
+  }, []);
+
   const resetForm = () => {
     setForm(emptyForm);
     setEditingId(null);
@@ -109,7 +164,7 @@ export default function AdminProjectsPage() {
     setStatusMessage(null);
     setError(null);
 
-    const { title, client, sector, summary, body, results, category, coverMediaId } = form;
+    const { title, client, sector, sectorSlug, summary, body, results, category, categorySlug, coverMediaId, status } = form;
     if (!computedSlug || !title || !client || !sector || !summary || !coverMediaId) {
       setStatusMessage("Merci de renseigner le slug, le titre, le client, le secteur, le résumé et la couverture.");
       return;
@@ -118,16 +173,21 @@ export default function AdminProjectsPage() {
     try {
       const method = isCreating ? "POST" : "PUT";
       const url = isCreating ? "/api/admin/projects" : `/api/admin/projects/${editingId}`;
+      const resolvedCategoryLabel = categorySlug ? categoryLabelMap.get(categorySlug) ?? "" : category ?? "";
+      const resolvedSectorLabel = sectorSlug ? sectorLabelMap.get(sectorSlug) ?? sector : sector;
       const payload = {
         slug: computedSlug,
         title,
         client,
-        sector,
+        sector: resolvedSectorLabel,
+        sectorSlug: sectorSlug || null,
         summary,
         body,
         results,
-        category,
+        category: resolvedCategoryLabel || null,
+        categorySlug: categorySlug || null,
         coverMediaId,
+        status: status ?? "draft",
       };
       const response = await fetch(url, {
         method,
@@ -192,11 +252,14 @@ export default function AdminProjectsPage() {
         title: project.title,
         client: project.client,
         sector: project.sector,
+        sectorSlug: project.sectorSlug ?? "",
         summary: project.summary ?? "",
         body: project.body ?? "",
         results: project.results ?? [],
         category: project.category ?? "",
+        categorySlug: project.categorySlug ?? "",
         coverMediaId: project.coverMediaId ?? "",
+        status: (project.status ?? "published") as ContentStatus,
       });
       setCoverMedia(project.cover ?? null);
     } catch (fetchError) {
@@ -238,12 +301,38 @@ export default function AdminProjectsPage() {
                 key={project.id}
                 className="flex items-start justify-between gap-3 rounded-xl border border-white/5 bg-white/5 p-4"
               >
-                <div className="space-y-1">
-                  <p className="text-sm font-medium text-white">{project.title}</p>
+                <div className="space-y-2">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <p className="text-sm font-medium text-white">{project.title}</p>
+                    <span
+                      className={`rounded-full px-2 py-1 text-[11px] font-semibold ${
+                        STATUS_STYLES[(project.status ?? "published") as ContentStatus]
+                      }`}
+                    >
+                      {STATUS_LABELS[(project.status ?? "published") as ContentStatus]}
+                    </span>
+                  </div>
                   <p className="text-xs uppercase tracking-wide text-emerald-200/80">
-                    {project.client} · {project.sector}
+                    {project.client} · {sectorLabelMap.get(project.sectorSlug ?? "") ?? project.sector}
                   </p>
-                  <p className="mt-2 text-sm text-slate-300">{project.summary ?? "—"}</p>
+                  <div className="flex flex-wrap gap-2 text-xs text-slate-300">
+                    {project.category || project.categorySlug ? (
+                      <span>
+                        Catégorie:{" "}
+                        {project.category ?? (project.categorySlug ? categoryLabelMap.get(project.categorySlug) : null) ?? "—"}
+                      </span>
+                    ) : null}
+                  </div>
+                  <p className="text-sm text-slate-300">{project.summary ?? "—"}</p>
+                  <ContentStatusQuickActions
+                    endpoint={`/api/admin/projects/${project.id}`}
+                    status={(project.status ?? "published") as ContentStatus}
+                    onStatusChange={(nextStatus) =>
+                      setItems((prev) =>
+                        prev.map((item) => (item.id === project.id ? { ...item, status: nextStatus } : item)),
+                      )
+                    }
+                  />
                 </div>
                 <div className="flex flex-col gap-2 text-sm">
                   <Button
@@ -353,30 +442,84 @@ export default function AdminProjectsPage() {
               />
             </div>
 
-            <div className="space-y-2">
-              <label className="text-sm font-semibold text-white" htmlFor="sector">
-                Secteur
-              </label>
-              <input
-                id="sector"
-                name="sector"
-                value={form.sector}
-                onChange={(event) => setForm((prev) => ({ ...prev, sector: event.target.value }))}
-                className="w-full rounded-lg border border-white/10 bg-slate-900 px-3 py-2 text-sm text-white focus:border-emerald-400 focus:outline-none"
-              />
-            </div>
+            <div className="grid gap-4 sm:grid-cols-2">
+              <div className="space-y-2">
+                <label className="text-sm font-semibold text-white" htmlFor="sector">
+                  Secteur
+                </label>
+                {sectorOptions.length ? (
+                  <select
+                    id="sector"
+                    name="sector"
+                    value={form.sectorSlug ?? ""}
+                    onChange={(event) => {
+                      const nextSlug = event.target.value;
+                      const nextLabel = sectorLabelMap.get(nextSlug) ?? "";
+                      setForm((prev) => ({
+                        ...prev,
+                        sectorSlug: nextSlug,
+                        sector: nextLabel || prev.sector,
+                      }));
+                    }}
+                    className="w-full rounded-lg border border-white/10 bg-slate-900 px-3 py-2 text-sm text-white focus:border-emerald-400 focus:outline-none"
+                  >
+                    <option value="">Sélectionner un secteur</option>
+                    {form.sectorSlug && !sectorOptions.find((option) => option.slug === form.sectorSlug) ? (
+                      <option value={form.sectorSlug}>{form.sector}</option>
+                    ) : null}
+                    {sectorOptions.map((option) => (
+                      <option key={option.id} value={option.slug}>
+                        {option.label}
+                      </option>
+                    ))}
+                  </select>
+                ) : (
+                  <input
+                    id="sector"
+                    name="sector"
+                    value={form.sector}
+                    onChange={(event) => setForm((prev) => ({ ...prev, sector: event.target.value }))}
+                    className="w-full rounded-lg border border-white/10 bg-slate-900 px-3 py-2 text-sm text-white focus:border-emerald-400 focus:outline-none"
+                  />
+                )}
+                {!sectorOptions.length ? (
+                  <p className="text-xs text-slate-400">Ajoutez des secteurs via Admin → Taxonomies.</p>
+                ) : null}
+              </div>
 
-            <div className="space-y-2">
-              <label className="text-sm font-semibold text-white" htmlFor="category">
-                Catégorie / type
-              </label>
-              <input
-                id="category"
-                name="category"
-                value={form.category ?? ""}
-                onChange={(event) => setForm((prev) => ({ ...prev, category: event.target.value }))}
-                className="w-full rounded-lg border border-white/10 bg-slate-900 px-3 py-2 text-sm text-white focus:border-emerald-400 focus:outline-none"
-              />
+              <div className="space-y-2">
+                <label className="text-sm font-semibold text-white" htmlFor="category">
+                  Catégorie / type
+                </label>
+                <select
+                  id="category"
+                  name="category"
+                  value={form.categorySlug ?? ""}
+                  onChange={(event) => {
+                    const nextSlug = event.target.value;
+                    const nextLabel = categoryLabelMap.get(nextSlug) ?? "";
+                    setForm((prev) => ({
+                      ...prev,
+                      categorySlug: nextSlug,
+                      category: nextLabel,
+                    }));
+                  }}
+                  className="w-full rounded-lg border border-white/10 bg-slate-900 px-3 py-2 text-sm text-white focus:border-emerald-400 focus:outline-none"
+                >
+                  <option value="">Sélectionner une catégorie</option>
+                  {form.categorySlug && !categoryOptions.find((option) => option.slug === form.categorySlug) ? (
+                    <option value={form.categorySlug}>{form.category ?? form.categorySlug}</option>
+                  ) : null}
+                  {categoryOptions.map((option) => (
+                    <option key={option.id} value={option.slug}>
+                      {option.label}
+                    </option>
+                  ))}
+                </select>
+                {!categoryOptions.length ? (
+                  <p className="text-xs text-slate-400">Ajoutez des catégories via Admin → Taxonomies.</p>
+                ) : null}
+              </div>
             </div>
 
             <MediaPickerField
@@ -433,6 +576,25 @@ export default function AdminProjectsPage() {
                 }
                 className="w-full rounded-lg border border-white/10 bg-slate-900 px-3 py-2 text-sm text-white focus:border-emerald-400 focus:outline-none"
               />
+            </div>
+
+            <div className="space-y-2">
+              <label className="text-sm font-semibold text-white" htmlFor="status">
+                Statut
+              </label>
+              <select
+                id="status"
+                name="status"
+                value={form.status ?? "draft"}
+                onChange={(event) => setForm((prev) => ({ ...prev, status: event.target.value as ContentStatus }))}
+                className="w-full rounded-lg border border-white/10 bg-slate-900 px-3 py-2 text-sm text-white focus:border-emerald-400 focus:outline-none"
+              >
+                {(["draft", "published", "archived"] as const).map((value) => (
+                  <option key={value} value={value}>
+                    {STATUS_LABELS[value]}
+                  </option>
+                ))}
+              </select>
             </div>
 
             <div className="flex items-center gap-3">

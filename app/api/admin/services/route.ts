@@ -62,7 +62,7 @@ export async function POST(request: Request) {
       return jsonError(message, { status: 400, requestId });
     }
 
-    const { name, slug, description, category, coverMediaId } = parsed.data;
+    const { name, slug, description, category, categorySlug, sectorSlug, coverMediaId, status } = parsed.data;
 
     const existingResult = await safePrisma((db) => db.service.findUnique({ where: { slug }, select: { id: true } }));
     if (!existingResult.ok) {
@@ -90,7 +90,10 @@ export async function POST(request: Request) {
           slug,
           description,
           category: typeof category === "string" ? category : null,
+          categorySlug: typeof categorySlug === "string" && categorySlug ? categorySlug : null,
+          sectorSlug: typeof sectorSlug === "string" && sectorSlug ? sectorSlug : null,
           coverMediaId,
+          status: status ?? "published",
         },
       }),
     );

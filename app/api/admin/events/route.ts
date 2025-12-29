@@ -59,7 +59,7 @@ export async function POST(request: Request) {
       return jsonError(message, { status: 400, requestId });
     }
 
-    const { slug, title, date, location, description, category, coverMediaId } = parsed.data;
+    const { slug, title, date, location, description, category, coverMediaId, status } = parsed.data;
     const parsedDate = date instanceof Date ? date : new Date(date);
 
     const existingResult = await safePrisma((db) => db.event.findUnique({ where: { slug }, select: { id: true } }));
@@ -91,6 +91,7 @@ export async function POST(request: Request) {
           description: typeof description === "string" ? description : null,
           category: typeof category === "string" ? category : null,
           coverMediaId,
+          status: status ?? "published",
         },
       }),
     );
