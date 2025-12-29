@@ -1,5 +1,6 @@
 // file: app/blog/page.tsx
 import type { Metadata } from "next";
+import Image from "next/image";
 import Link from "next/link";
 import { safePrisma } from "@/lib/safePrisma";
 import { createMetadata } from "@/lib/config/seo";
@@ -8,6 +9,8 @@ import { Container } from "@/components/ui/Container";
 import { SectionHeader } from "@/components/ui/SectionHeader";
 import { CategoryBadge } from "@/components/ui/CategoryBadge";
 import { DatabaseWarning } from "@/components/ui/DatabaseWarning";
+import { getMediaVariantUrl } from "@/lib/media/utils";
+import type { MediaItem } from "@/lib/media/types";
 
 export const dynamic = "force-dynamic";
 
@@ -18,7 +21,7 @@ type BlogListPost = {
   excerpt: string | null;
   body: string | null;
   tags: string[];
-  coverImage?: string | null;
+  cover?: MediaItem | null;
   status: "draft" | "published" | "archived" | "removed";
   publishedAt: string | Date | null;
   createdAt: string | Date;
@@ -53,6 +56,9 @@ export default async function BlogPage() {
         { publishedAt: "desc" },
         { createdAt: "desc" },
       ],
+      include: {
+        cover: true,
+      },
     }),
   );
 
@@ -83,15 +89,18 @@ export default async function BlogPage() {
               as="article"
               className="flex h-full flex-col gap-4 overflow-hidden border-white/10 bg-white/5/30 p-0 transition duration-200 hover:-translate-y-1 hover:border-emerald-400/50 hover:shadow-xl hover:shadow-emerald-500/20"
             >
-              <div
-                className="relative aspect-[16/9] w-full overflow-hidden bg-cover bg-center"
-                style={{ backgroundImage: post.coverImage ? `url(${post.coverImage})` : undefined }}
-              >
-                {!post.coverImage ? (
-                  <div className="absolute inset-0 bg-gradient-to-br from-emerald-500/20 via-white/10 to-indigo-500/20" />
+              <div className="relative aspect-[16/9] w-full overflow-hidden bg-cover bg-center">
+                {post.cover ? (
+                  <Image
+                    src={getMediaVariantUrl(post.cover, "sm") ?? post.cover.originalUrl}
+                    alt={post.title}
+                    fill
+                    className="object-cover"
+                  />
                 ) : (
-                  <div className="absolute inset-0 bg-black/20" />
+                  <div className="absolute inset-0 bg-gradient-to-br from-emerald-500/20 via-white/10 to-indigo-500/20" />
                 )}
+                {post.cover ? <div className="absolute inset-0 bg-black/20" /> : null}
               </div>
 
               <div className="space-y-2 px-6 pb-6 pt-4">

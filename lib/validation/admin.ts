@@ -2,12 +2,17 @@
 import { z } from "zod";
 
 const urlRegex = /^(https?:\/\/|\/)[^\s/$.?#].[^\s]*$/i;
-
 export const slugSchema = z
   .string({ required_error: "Slug requis" })
   .min(1, "Le slug est obligatoire")
   .max(120, "Le slug ne doit pas dépasser 120 caractères")
   .regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/, "Le slug doit utiliser des minuscules et des tirets");
+
+export const objectIdSchema = z
+  .string()
+  .trim()
+  .min(1, "Identifiant requis")
+  .regex(/^[a-f0-9]{24}$/i, "Identifiant invalide");
 
 export const mediaUrlSchema = z
   .string()
@@ -33,9 +38,9 @@ export const postSchema = z.object({
     .max(15000, "Le contenu est trop long")
     .optional()
     .nullable(),
-  coverImage: mediaUrlSchema.nullish(),
-  gallery: z.array(mediaUrlSchema.or(z.literal(""))).max(20).optional(),
-  videoUrl: mediaUrlSchema.nullish(),
+  coverMediaId: objectIdSchema,
+  galleryMediaIds: z.array(objectIdSchema).max(20).optional(),
+  videoMediaId: objectIdSchema.optional().nullable(),
   status: z.enum(["draft", "published", "archived", "removed"]).optional(),
   tags: z.array(z.string().trim().min(1)).max(12).optional(),
 });
@@ -47,7 +52,7 @@ export const serviceSchema = z.object({
   slug: slugSchema,
   description: z.string().min(1, "Description obligatoire"),
   category: z.string().trim().optional().nullable(),
-  image: mediaUrlSchema.nullish(),
+  coverMediaId: objectIdSchema,
 });
 
 export const projectSchema = z.object({
@@ -59,7 +64,7 @@ export const projectSchema = z.object({
   body: z.string().trim().optional().nullable(),
   results: z.array(z.string().trim().min(1)).max(20).optional(),
   category: z.string().trim().optional().nullable(),
-  coverImage: mediaUrlSchema.nullish(),
+  coverMediaId: objectIdSchema,
 });
 
 export const eventSchema = z.object({
@@ -69,7 +74,7 @@ export const eventSchema = z.object({
   location: z.string().trim().optional().nullable(),
   description: z.string().trim().optional().nullable(),
   category: z.string().trim().optional().nullable(),
-  coverImage: mediaUrlSchema.nullish(),
+  coverMediaId: objectIdSchema,
 });
 
 export const taxonomySchema = z.object({

@@ -23,13 +23,8 @@ export async function GET(request: Request) {
         orderBy: { createdAt: "desc" },
         skip,
         take: limit,
-        select: {
-          id: true,
-          slug: true,
-          title: true,
-          client: true,
-          sector: true,
-          summary: true,
+        include: {
+          cover: true,
         },
       }),
     ),
@@ -67,7 +62,7 @@ export async function POST(request: Request) {
       return jsonError(message, { status: 400, requestId });
     }
 
-    const { slug, title, client, sector, summary, body: content, results, category, coverImage } = parsed.data;
+    const { slug, title, client, sector, summary, body: content, results, category, coverMediaId } = parsed.data;
 
     const existingResult = await safePrisma((db) => db.project.findUnique({ where: { slug }, select: { id: true } }));
     if (!existingResult.ok) {
@@ -101,7 +96,7 @@ export async function POST(request: Request) {
             ? results.map((item) => (typeof item === "string" ? item : String(item))).filter(Boolean)
             : [],
           category: typeof category === "string" ? category : null,
-          coverImage: typeof coverImage === "string" ? coverImage : null,
+          coverMediaId,
         },
       }),
     );

@@ -9,6 +9,9 @@ import { useRouter } from "next/navigation";
 import { AdminPageHeader } from "@/components/admin/AdminPageHeader";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
+import { MediaGalleryField } from "@/components/admin/media/MediaGalleryField";
+import { MediaPickerField } from "@/components/admin/media/MediaPickerField";
+import type { MediaItem } from "@/lib/media/types";
 import { cn, slugify } from "@/lib/utils";
 
 export type PostFormValues = {
@@ -17,9 +20,12 @@ export type PostFormValues = {
   categoryId?: string | null;
   excerpt?: string | null;
   body?: string | null;
-  coverImage?: string | null;
-  gallery?: string[];
-  videoUrl?: string | null;
+  coverMediaId?: string | null;
+  coverMedia?: MediaItem | null;
+  galleryMediaIds?: string[];
+  galleryMedia?: MediaItem[];
+  videoMediaId?: string | null;
+  videoMedia?: MediaItem | null;
   status?: "draft" | "published" | "archived" | "removed";
   tags?: string[];
 };
@@ -41,12 +47,15 @@ export function PostForm({ initialValues, postId, mode, categories = [] }: PostF
       excerpt: "",
       body: "",
       status: "draft",
-      coverImage: "",
-      gallery: [],
-      videoUrl: "",
+      coverMediaId: "",
+      galleryMediaIds: [],
+      videoMediaId: "",
       tags: [],
     },
   );
+  const [coverMedia, setCoverMedia] = useState<MediaItem | null>(initialValues?.coverMedia ?? null);
+  const [galleryMedia, setGalleryMedia] = useState<MediaItem[]>(initialValues?.galleryMedia ?? []);
+  const [videoMedia, setVideoMedia] = useState<MediaItem | null>(initialValues?.videoMedia ?? null);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
@@ -64,6 +73,9 @@ export function PostForm({ initialValues, postId, mode, categories = [] }: PostF
       setForm((current) => ({ ...current, ...initialValues }));
       setSlugLocked(Boolean(initialValues.slug));
       setSlugInput(initialValues.slug);
+      setCoverMedia(initialValues.coverMedia ?? null);
+      setGalleryMedia(initialValues.galleryMedia ?? []);
+      setVideoMedia(initialValues.videoMedia ?? null);
     }
   }, [initialValues]);
 
@@ -122,7 +134,6 @@ export function PostForm({ initialValues, postId, mode, categories = [] }: PostF
     };
   }, [computedSlug, isEditing, postId]);
 
-  const gallery = useMemo(() => form.gallery ?? [], [form.gallery]);
   const tags = useMemo(() => form.tags ?? [], [form.tags]);
   const currentStatus = form.status ?? "draft";
 
@@ -160,12 +171,14 @@ export function PostForm({ initialValues, postId, mode, categories = [] }: PostF
       ...form,
       slug: computedSlug,
       categoryId: form.categoryId?.trim() ? form.categoryId : null,
-      gallery: gallery.filter((item) => item.trim()),
+      coverMediaId: coverMedia?.id ?? form.coverMediaId ?? null,
+      galleryMediaIds: galleryMedia.map((item) => item.id),
+      videoMediaId: videoMedia?.id ?? null,
       tags: tags.map((tag) => tag.trim()).filter(Boolean),
     };
 
-    if (!payload.title.trim() || !payload.slug.trim() || !(payload.body ?? "").trim()) {
-      setError("Le titre, le slug et le contenu sont obligatoires.");
+    if (!payload.title.trim() || !payload.slug.trim() || !(payload.body ?? "").trim() || !payload.coverMediaId) {
+      setError("Le titre, le slug, le contenu et la couverture sont obligatoires.");
       return;
     }
 
@@ -380,82 +393,38 @@ export function PostForm({ initialValues, postId, mode, categories = [] }: PostF
           </div>
 
           <div className="grid gap-4 md:grid-cols-2">
-            <div className="space-y-2">
-              <label className="text-sm font-semibold text-white" htmlFor="coverImage">
-                Image de couverture
-              </label>
-              <input
-                id="coverImage"
-                name="coverImage"
-                value={form.coverImage ?? ""}
-                onChange={(event) => setForm((prev) => ({ ...prev, coverImage: event.target.value }))}
-                className="w-full rounded-lg border border-white/10 bg-slate-900 px-3 py-2 text-sm text-white focus:border-emerald-400 focus:outline-none"
-                placeholder="https://..."
-              />
-              <p className="text-xs text-slate-300">Grande image utilisée sur la page article et les cartes.</p>
-            </div>
+            <MediaPickerField
+              label="Image de couverture"
+              description="Grande image utilisée sur la page article et les cartes."
+              selected={coverMedia}
+              onChange={(media) => {
+                setCoverMedia(media);
+                setForm((prev) => ({ ...prev, coverMediaId: media?.id ?? "" }));
+              }}
+              folder="posts"
+              typeFilter="image"
+            />
 
-            <div className="space-y-2">
-              <label className="text-sm font-semibold text-white" htmlFor="videoUrl">
-                Vidéo (YouTube, Vimeo ou MP4)
-              </label>
-              <input
-                id="videoUrl"
-                name="videoUrl"
-                value={form.videoUrl ?? ""}
-                onChange={(event) => setForm((prev) => ({ ...prev, videoUrl: event.target.value }))}
-                className="w-full rounded-lg border border-white/10 bg-slate-900 px-3 py-2 text-sm text-white focus:border-emerald-400 focus:outline-none"
-                placeholder="https://www.youtube.com/embed/..."
-              />
-              <p className="text-xs text-slate-300">Affichée sous le header si renseignée.</p>
-            </div>
+            <MediaPickerField
+              label="Vidéo (MP4)"
+              description="Affichée sous le header si renseignée."
+              selected={videoMedia}
+              onChange={(media) => {
+                setVideoMedia(media);
+                setForm((prev) => ({ ...prev, videoMediaId: media?.id ?? "" }));
+              }}
+              folder="posts"
+              typeFilter="video"
+            />
           </div>
 
-          <div className="space-y-3">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-semibold text-white">Galerie d'images</p>
-                <p className="text-xs text-slate-300">Ajoutez plusieurs visuels pour enrichir l'article.</p>
-              </div>
-              <Button
-                type="button"
-                variant="secondary"
-                onClick={() => setForm((prev) => ({ ...prev, gallery: [...gallery, ""] }))}
-                className="text-xs"
-              >
-                Ajouter une image
-              </Button>
-            </div>
-
-            <div className="space-y-2">
-              {gallery.map((image, index) => (
-                <div key={index} className="flex items-center gap-3">
-                  <input
-                    value={image}
-                    onChange={(event) => {
-                      const next = [...gallery];
-                      next[index] = event.target.value;
-                      setForm((prev) => ({ ...prev, gallery: next }));
-                    }}
-                    className="w-full rounded-lg border border-white/10 bg-slate-900 px-3 py-2 text-sm text-white focus:border-emerald-400 focus:outline-none"
-                    placeholder="https://..."
-                  />
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    onClick={() => {
-                      const next = gallery.filter((_, i) => i !== index);
-                      setForm((prev) => ({ ...prev, gallery: next }));
-                    }}
-                    className="border border-white/10 px-3 py-2 text-xs text-rose-200 hover:text-rose-100"
-                  >
-                    Retirer
-                  </Button>
-                </div>
-              ))}
-              {!gallery.length ? <p className="text-sm text-slate-300">Aucune image dans la galerie.</p> : null}
-            </div>
-          </div>
+          <MediaGalleryField
+            label="Galerie d'images"
+            description="Ajoutez plusieurs visuels pour enrichir l'article."
+            items={galleryMedia}
+            onChange={setGalleryMedia}
+            folder="posts"
+          />
 
           <div className="space-y-2">
             <label className="text-sm font-semibold text-white" htmlFor="body">

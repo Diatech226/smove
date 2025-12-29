@@ -19,7 +19,15 @@ export async function GET(_request: Request, { params }: Params) {
       return jsonError("Post id is required", { status: 400, requestId });
     }
 
-    const postResult = await safePrisma((db) => db.post.findUnique({ where: { id: params.id } }));
+    const postResult = await safePrisma((db) =>
+      db.post.findUnique({
+        where: { id: params.id },
+        include: {
+          cover: true,
+          video: true,
+        },
+      }),
+    );
     if (!postResult.ok) {
       console.error("Failed to fetch post", { requestId, detail: postResult.message });
       return jsonError("Failed to fetch post", { status: 503, requestId });
@@ -99,9 +107,9 @@ export async function PUT(request: Request, { params }: Params) {
           excerpt: payload.excerpt ?? null,
           body: payload.body ?? null,
           tags: payload.tags ?? existingPost.tags,
-          coverImage: payload.coverImage ?? null,
-          gallery: payload.gallery?.filter(Boolean) ?? existingPost.gallery,
-          videoUrl: payload.videoUrl ?? null,
+          coverMediaId: payload.coverMediaId ?? existingPost.coverMediaId,
+          galleryMediaIds: payload.galleryMediaIds ?? existingPost.galleryMediaIds,
+          videoMediaId: payload.videoMediaId ?? existingPost.videoMediaId,
           status: nextStatus,
           publishedAt,
         },
@@ -112,18 +120,18 @@ export async function PUT(request: Request, { params }: Params) {
       const error = updatedResult.error as any;
       if (error?.code === "P2002") {
         const suggestion = await findAvailablePostSlug(payload.slug, params.id);
-      return jsonError("Un autre article utilise déjà ce slug.", {
-        status: 400,
-        requestId,
-        data: { suggestedSlug: suggestion },
-      });
+        return jsonError("Un autre article utilise déjà ce slug.", {
+          status: 400,
+          requestId,
+          data: { suggestedSlug: suggestion },
+        });
+      }
+      console.error("Failed to update post", { requestId, detail: updatedResult.message });
+      return jsonError("Failed to update post", { status: 503, requestId });
     }
-    console.error("Failed to update post", { requestId, detail: updatedResult.message });
-    return jsonError("Failed to update post", { status: 503, requestId });
-  }
 
-  return jsonOk({ post: updatedResult.data }, { status: 200, requestId });
-} catch (error: any) {
+    return jsonOk({ post: updatedResult.data }, { status: 200, requestId });
+  } catch (error: any) {
     console.error("Error updating post", {
       requestId,
       code: error?.code,
@@ -204,9 +212,9 @@ export async function PATCH(request: Request, { params }: Params) {
           excerpt: payload.excerpt ?? existingPost.excerpt,
           body: payload.body ?? existingPost.body,
           tags: payload.tags ?? existingPost.tags,
-          coverImage: payload.coverImage ?? existingPost.coverImage,
-          gallery: payload.gallery ?? existingPost.gallery,
-          videoUrl: payload.videoUrl ?? existingPost.videoUrl,
+          coverMediaId: payload.coverMediaId ?? existingPost.coverMediaId,
+          galleryMediaIds: payload.galleryMediaIds ?? existingPost.galleryMediaIds,
+          videoMediaId: payload.videoMediaId ?? existingPost.videoMediaId,
           status: nextStatus,
           publishedAt,
         },

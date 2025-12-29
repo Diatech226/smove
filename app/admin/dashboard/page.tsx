@@ -27,6 +27,7 @@ const statConfig: Omit<StatCard, "value">[] = [
   { label: "Services", href: "/admin/services" },
   { label: "Projets", href: "/admin/projects" },
   { label: "Articles", href: "/admin/posts" },
+  { label: "Événements", href: "/admin/events" },
 ];
 
 export default function AdminDashboardPage() {
@@ -35,6 +36,7 @@ export default function AdminDashboardPage() {
   const [services, setServices] = useState<RemoteData<any>>({ loading: true, data: [], total: 0 });
   const [projects, setProjects] = useState<RemoteData<any>>({ loading: true, data: [], total: 0 });
   const [posts, setPosts] = useState<RemoteData<any>>({ loading: true, data: [], total: 0 });
+  const [events, setEvents] = useState<RemoteData<any>>({ loading: true, data: [], total: 0 });
   const showBootstrapNotice = searchParams?.get("bootstrap") === "1";
 
   useEffect(() => {
@@ -47,17 +49,18 @@ export default function AdminDashboardPage() {
 
   useEffect(() => {
     const fetchAll = async () => {
-      const endpoints: [keyof typeof stateSetters, string, string][] = [
-        ["services", "/api/admin/services", "services"],
-        ["projects", "/api/admin/projects", "projects"],
-        ["posts", "/api/admin/posts", "posts"],
-      ];
-
       const stateSetters = {
         services: setServices,
         projects: setProjects,
         posts: setPosts,
+        events: setEvents,
       } as const;
+      const endpoints: [keyof typeof stateSetters, string, string][] = [
+        ["services", "/api/admin/services?limit=1", "services"],
+        ["projects", "/api/admin/projects?limit=1", "projects"],
+        ["posts", "/api/admin/posts?limit=1", "posts"],
+        ["events", "/api/admin/events?limit=1", "events"],
+      ];
 
       await Promise.all(
         endpoints.map(async ([key, url, payloadKey]) => {
@@ -88,8 +91,18 @@ export default function AdminDashboardPage() {
       { ...statConfig[0], value: services.total || services.data.length },
       { ...statConfig[1], value: projects.total || projects.data.length },
       { ...statConfig[2], value: posts.total || posts.data.length },
+      { ...statConfig[3], value: events.total || events.data.length },
     ],
-    [services.data.length, services.total, projects.data.length, projects.total, posts.data.length, posts.total],
+    [
+      services.data.length,
+      services.total,
+      projects.data.length,
+      projects.total,
+      posts.data.length,
+      posts.total,
+      events.data.length,
+      events.total,
+    ],
   );
 
   const latestPosts = useMemo(() => posts.data.slice(0, 4), [posts.data]);
@@ -107,9 +120,14 @@ export default function AdminDashboardPage() {
         </Card>
       ) : null}
 
-      <div className="grid gap-4 md:grid-cols-3">
+      <div className="grid gap-4 md:grid-cols-4">
         {stats.map((stat, index) => (
-          <StatCardBlock key={stat.label} stat={stat} loading={services.loading && projects.loading && posts.loading} index={index} />
+          <StatCardBlock
+            key={stat.label}
+            stat={stat}
+            loading={services.loading && projects.loading && posts.loading && events.loading}
+            index={index}
+          />
         ))}
       </div>
 

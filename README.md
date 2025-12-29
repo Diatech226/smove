@@ -141,10 +141,11 @@ ADMIN_BOOTSTRAP_ALLOW_PROD=true
 
 ## Modèles de données
 Les modèles Prisma/MongoDB sont définis dans `prisma/schema.prisma` :
-- `Service` : slug unique, nom, description, catégorie/type, `categorySlug` et `sectorSlug` (dropdown admin), `image` pour les cartes.
-- `Project` : slug unique, client, titre, secteur, `sectorSlug` et `categorySlug` (dropdown admin), résumé, corps, résultats, catégorie/type et `coverImage`.
-- `Post` : slug unique, titre, extrait, contenu, `tags`, `categoryId`, `coverImage`, `gallery`, `videoUrl`, statut `status` (draft/published/archived/removed), dates de création/mise à jour + `publishedAt`.
-- `Event` : slug unique, titre, date, lieu, description, catégorie/type et `coverImage`.
+- `Media` : type (image/vidéo), dossier, URL originale, variantes (JSON), poster vidéo, dimensions, taille, durée optionnelle, timestamps.
+- `Service` : slug unique, nom, description, catégorie/type, `categorySlug` et `sectorSlug` (dropdown admin), `coverMediaId`.
+- `Project` : slug unique, client, titre, secteur, `sectorSlug` et `categorySlug` (dropdown admin), résumé, corps, résultats, catégorie/type et `coverMediaId`.
+- `Post` : slug unique, titre, extrait, contenu, `tags`, `categoryId`, `coverMediaId`, `galleryMediaIds`, `videoMediaId`, statut `status` (draft/published/archived/removed), dates de création/mise à jour + `publishedAt`.
+- `Event` : slug unique, titre, date, lieu, description, catégorie/type et `coverMediaId`.
 - `User` : email unique, `role` (admin/client), `status` (pending/active/disabled), `passwordHash` optionnel, token d'invitation (hash + expiry), timestamps.
 - `Category` : typée (`post`, `service`, `project`, `event`), `name`, `slug`, ordre, timestamps.
 - `Taxonomy` : type (`service_sector`, `service_category`, `project_sector`, `project_category`, `post_category`), slug, label, ordre, actif, timestamps.
@@ -153,7 +154,8 @@ Les modèles Prisma/MongoDB sont définis dans `prisma/schema.prisma` :
 ## Gestion du contenu
 - `admin/services` : lister, créer, mettre à jour et supprimer les services.
 - `admin/projects` : CRUD projets (slug, client, secteur, résumé, description, résultats).
-- `admin/posts` : CRUD articles (slug, titre, catégorie, extrait, contenu, publication, média). Les articles supportent l'image de couverture, une galerie, une vidéo et les tags/catégories.
+- `admin/posts` : CRUD articles (slug, titre, catégorie, extrait, contenu, publication, média). Les articles supportent une image de couverture, une galerie, une vidéo MP4 et les tags/catégories.
+- `admin/media` : médiathèque (upload, recherche, filtre, suppression, copie de lien).
 - `admin/categories` : gérer les catégories utilisées dans les formulaires CMS (par type).
 - `admin/users` : gérer les comptes, rôles et statuts depuis le CMS.
 - `admin/settings` : paramètres globaux (nom du site, SEO, réseaux, homepage, pagination blog).
@@ -195,6 +197,27 @@ Flux de gestion :
   - `GET /api/admin/users/:id`
   - `PATCH /api/admin/users/:id`
   - `DELETE /api/admin/users/:id`
+
+## Media system
+### Stockage (local vs S3/R2)
+- `MEDIA_STORAGE=local|s3` : sélection du provider.
+- `MEDIA_PUBLIC_BASE_URL` : base publique en local (ex: `http://localhost:3000`). Les fichiers sont servis depuis `/uploads/...`.
+- `S3_PUBLIC_BASE_URL` : base publique du bucket (ex: `https://cdn.example.com`).
+- `S3_BUCKET`, `S3_ENDPOINT`, `S3_REGION`, `S3_ACCESS_KEY_ID`, `S3_SECRET_ACCESS_KEY` : accès S3/R2.
+
+### Endpoints
+- `GET /api/admin/media?type=image|video&folder=...&search=...&page=1&limit=24`
+- `POST /api/admin/media` (multipart/form-data: `files[]`, `folder`, `poster` optionnel)
+- `DELETE /api/admin/media?id=<mediaId>`
+
+### CMS
+- Utilisez la médiathèque dans les formulaires (cover, galerie, vidéo). Les images génèrent des variantes webp (thumb 320, sm 640, md 1024, lg 1600).
+- Les vidéos MP4 peuvent avoir un poster (upload image -> variantes webp).
+
+### Script utilitaire
+```bash
+npm run media:clean
+```
 
 ## Seed admin (Users CMS)
 Si vous avez besoin d'un compte admin dans la collection `User`, lancez :

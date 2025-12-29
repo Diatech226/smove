@@ -24,7 +24,7 @@ export async function PUT(request: Request, { params }: Params) {
       return jsonError(message, { status: 400, requestId });
     }
 
-    const { slug, title, date, location, description, category, coverImage } = parsed.data;
+    const { slug, title, date, location, description, category, coverMediaId } = parsed.data;
     const parsedDate = date instanceof Date ? date : new Date(date);
 
     const existingResult = await safePrisma((db) => db.event.findUnique({ where: { slug }, select: { id: true } }));
@@ -56,7 +56,7 @@ export async function PUT(request: Request, { params }: Params) {
           location: typeof location === "string" ? location : null,
           description: typeof description === "string" ? description : null,
           category: typeof category === "string" ? category : null,
-          coverImage: typeof coverImage === "string" ? coverImage : null,
+          coverMediaId,
         },
       }),
     );

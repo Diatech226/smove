@@ -25,7 +25,8 @@ model Service {
   category    String?
   categorySlug String?
   sectorSlug  String?
-  image       String?
+  coverMediaId String @db.ObjectId
+  cover       Media   @relation("ServiceCover", fields: [coverMediaId], references: [id])
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 }
@@ -42,7 +43,8 @@ model Project {
   body      String?
   results   String[] @default([])
   category  String?
-  coverImage String?
+  coverMediaId String @db.ObjectId
+  cover       Media   @relation("ProjectCover", fields: [coverMediaId], references: [id])
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }
@@ -54,9 +56,11 @@ model Post {
   excerpt     String?
   body        String?
   tags        String[] @default([])
-  coverImage  String?
-  gallery     String[] @default([])
-  videoUrl    String?
+  coverMediaId String @db.ObjectId
+  cover       Media   @relation("PostCover", fields: [coverMediaId], references: [id])
+  galleryMediaIds String[] @db.ObjectId @default([])
+  videoMediaId String? @db.ObjectId
+  video       Media?  @relation("PostVideo", fields: [videoMediaId], references: [id])
   categoryId  String?  @db.ObjectId
   category    Category? @relation(fields: [categoryId], references: [id])
   status      PostStatus @default(draft)
@@ -73,9 +77,31 @@ model Event {
   location    String?
   description String?
   category    String?
-  coverImage  String?
+  coverMediaId String @db.ObjectId
+  cover       Media   @relation("EventCover", fields: [coverMediaId], references: [id])
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
+}
+
+model Media {
+  id          String   @id @default(auto()) @map("_id") @db.ObjectId
+  type        String
+  folder      String?
+  originalUrl String
+  variants    Json?
+  posterUrl   String?
+  mime        String
+  size        Int
+  width       Int?
+  height      Int?
+  duration    Int?
+  createdAt   DateTime @default(now())
+
+  services    Service[] @relation("ServiceCover")
+  projects    Project[] @relation("ProjectCover")
+  postCovers  Post[]    @relation("PostCover")
+  postVideos  Post[]    @relation("PostVideo")
+  events      Event[]   @relation("EventCover")
 }
 
 model Taxonomy {

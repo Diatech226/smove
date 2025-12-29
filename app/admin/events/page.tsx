@@ -7,6 +7,8 @@ import { AdminPageHeader } from "@/components/admin/AdminPageHeader";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { slugify } from "@/lib/utils";
+import type { MediaItem } from "@/lib/media/types";
+import { MediaPickerField } from "@/components/admin/media/MediaPickerField";
 
 type AdminEvent = {
   id: string;
@@ -16,17 +18,18 @@ type AdminEvent = {
   location?: string | null;
   description?: string | null;
   category?: string | null;
-  coverImage?: string | null;
+  coverMediaId: string;
+  cover?: MediaItem | null;
 };
 
-const emptyForm: Omit<AdminEvent, "id"> = {
+const emptyForm: Omit<AdminEvent, "id" | "cover"> = {
   slug: "",
   title: "",
   date: "",
   location: "",
   description: "",
   category: "",
-  coverImage: "",
+  coverMediaId: "",
 };
 
 export default function AdminEventsPage() {
@@ -36,6 +39,11 @@ export default function AdminEventsPage() {
   const [statusMessage, setStatusMessage] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [coverMedia, setCoverMedia] = useState<MediaItem | null>(null);
+  const [page, setPage] = useState(1);
+  const [limit, setLimit] = useState(12);
+  const [totalPages, setTotalPages] = useState(1);
+  const [total, setTotal] = useState(0);
 
   const isCreating = useMemo(() => !editingId, [editingId]);
   const computedSlug = useMemo(() => (form.slug.trim() ? form.slug : slugify(form.title)), [form.slug, form.title]);
@@ -44,13 +52,20 @@ export default function AdminEventsPage() {
     const fetchEvents = async () => {
       try {
         setLoading(true);
-        const response = await fetch("/api/admin/events");
+        const response = await fetch(`/api/admin/events?page=${page}&limit=${limit}`);
         const data = await response.json();
         if (!response.ok || data?.ok === false) {
           setError(data?.error || "Impossible de charger les événements.");
           return;
         }
-        setItems(Array.isArray(data?.data?.events) ? data.data.events : []);
+        const payload = data?.data ?? {};
+        setItems(Array.isArray(payload.events) ? payload.events : []);
+        const nextTotalPages = Number(payload.totalPages) || 1;
+        setTotalPages(nextTotalPages);
+        setTotal(Number(payload.total) || 0);
+        if (page > nextTotalPages) {
+          setPage(nextTotalPages);
+        }
       } catch (fetchError) {
         console.error(fetchError);
         setError("Impossible de charger les événements.");
@@ -60,11 +75,12 @@ export default function AdminEventsPage() {
     };
 
     fetchEvents();
-  }, []);
+  }, [page, limit]);
 
   const resetForm = () => {
     setForm(emptyForm);
     setEditingId(null);
+    setCoverMedia(null);
   };
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
@@ -72,9 +88,9 @@ export default function AdminEventsPage() {
     setStatusMessage(null);
     setError(null);
 
-    const { title, date, location, description, category, coverImage } = form;
-    if (!title || !computedSlug || !date) {
-      setStatusMessage("Merci de renseigner le titre, la date et le slug.");
+    const { title, date, location, description, category, coverMediaId } = form;
+    if (!title || !computedSlug || !date || !coverMediaId) {
+      setStatusMessage("Merci de renseigner le titre, la date, le slug et la couverture.");
       return;
     }
 
@@ -85,7 +101,7 @@ export default function AdminEventsPage() {
       location,
       description,
       category,
-      coverImage,
+      coverMediaId,
     };
 
     try {
@@ -182,8 +198,9 @@ export default function AdminEventsPage() {
                         location: item.location ?? "",
                         description: item.description ?? "",
                         category: item.category ?? "",
-                        coverImage: item.coverImage ?? "",
+                        coverMediaId: item.coverMediaId ?? "",
                       });
+                      setCoverMedia(item.cover ?? null);
                       setStatusMessage(null);
                     }}
                   >
@@ -200,6 +217,47 @@ export default function AdminEventsPage() {
               </div>
             ))}
             {!items.length && !loading ? <p className="text-sm text-slate-300">Aucun événement pour le moment.</p> : null}
+          </div>
+          <div className="mt-6 flex flex-wrap items-center justify-between gap-3 text-sm text-slate-300">
+            <p>
+              {total} événement(s) • page {page} / {totalPages}
+            </p>
+            <div className="flex flex-wrap items-center gap-2">
+              <label className="text-xs text-slate-400" htmlFor="events-per-page">
+                Par page
+              </label>
+              <select
+                id="events-per-page"
+                value={limit}
+                onChange={(event) => {
+                  setPage(1);
+                  setLimit(Number(event.target.value));
+                }}
+                className="rounded-lg border border-white/10 bg-slate-900 px-2 py-1 text-xs text-white focus:border-emerald-400 focus:outline-none"
+              >
+                {[6, 12, 24, 36].map((size) => (
+                  <option key={size} value={size}>
+                    {size}
+                  </option>
+                ))}
+              </select>
+              <Button
+                variant="secondary"
+                className="px-3 py-1 text-xs"
+                disabled={page <= 1}
+                onClick={() => setPage((prev) => Math.max(1, prev - 1))}
+              >
+                Précédent
+              </Button>
+              <Button
+                variant="secondary"
+                className="px-3 py-1 text-xs"
+                disabled={page >= totalPages}
+                onClick={() => setPage((prev) => Math.min(totalPages, prev + 1))}
+              >
+                Suivant
+              </Button>
+            </div>
           </div>
         </Card>
 
@@ -275,18 +333,17 @@ export default function AdminEventsPage() {
                   className="w-full rounded-lg border border-white/10 bg-slate-900 px-3 py-2 text-sm text-white focus:border-emerald-400 focus:outline-none"
                 />
               </div>
-              <div className="space-y-2">
-                <label className="text-sm font-semibold text-white" htmlFor="coverImage">
-                  Image de couverture
-                </label>
-                <input
-                  id="coverImage"
-                  name="coverImage"
-                  value={form.coverImage ?? ""}
-                  onChange={(event) => setForm((prev) => ({ ...prev, coverImage: event.target.value }))}
-                  className="w-full rounded-lg border border-white/10 bg-slate-900 px-3 py-2 text-sm text-white focus:border-emerald-400 focus:outline-none"
-                />
-              </div>
+              <MediaPickerField
+                label="Image de couverture"
+                description="Sélectionnez la couverture dans la médiathèque."
+                selected={coverMedia}
+                onChange={(media) => {
+                  setCoverMedia(media);
+                  setForm((prev) => ({ ...prev, coverMediaId: media?.id ?? "" }));
+                }}
+                folder="events"
+                typeFilter="image"
+              />
             </div>
 
             <div className="space-y-2">

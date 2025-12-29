@@ -27,7 +27,7 @@ export async function PUT(request: Request, { params }: Params) {
       return jsonError(message, { status: 400, requestId });
     }
 
-    const { name, slug, description, category, image } = parsed.data;
+    const { name, slug, description, category, coverMediaId } = parsed.data;
 
     const existingResult = await safePrisma((db) =>
       db.service.findUnique({
@@ -62,7 +62,7 @@ export async function PUT(request: Request, { params }: Params) {
           slug,
           description,
           category: typeof category === "string" ? category : null,
-          image: typeof image === "string" ? image : null,
+          coverMediaId,
         },
       }),
     );

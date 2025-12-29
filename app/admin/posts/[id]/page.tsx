@@ -13,7 +13,15 @@ type EditPostPageProps = {
 
 export default async function EditPostPage({ params }: EditPostPageProps) {
   const [postResult, categoriesResult] = await Promise.all([
-    safePrisma((db) => db.post.findUnique({ where: { id: params.id } })),
+    safePrisma((db) =>
+      db.post.findUnique({
+        where: { id: params.id },
+        include: {
+          cover: true,
+          video: true,
+        },
+      }),
+    ),
     safePrisma((db) =>
       db.category.findMany({
         where: { type: "post" },
@@ -36,11 +44,23 @@ export default async function EditPostPage({ params }: EditPostPageProps) {
     notFound();
   }
 
+  const galleryResult = post.galleryMediaIds?.length
+    ? await safePrisma((db) => db.media.findMany({ where: { id: { in: post.galleryMediaIds } } }))
+    : { ok: true as const, data: [] };
+  const galleryMedia = galleryResult.ok ? galleryResult.data : [];
+
+  const initialValues = {
+    ...post,
+    coverMedia: post.cover,
+    galleryMedia,
+    videoMedia: post.video,
+  };
+
   return (
     <PostForm
       mode="edit"
       postId={post.id}
-      initialValues={post}
+      initialValues={initialValues}
       categories={categoriesResult.ok ? categoriesResult.data : []}
     />
   );

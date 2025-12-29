@@ -11,12 +11,14 @@
     "db:seed": "prisma db seed",
     "seed:admin": "node scripts/seed-admin-user.mjs",
     "prisma:generate": "prisma generate",
-    "prisma:push": "prisma db push"
+    "prisma:push": "prisma db push",
+    "media:clean": "node scripts/clean-uploads.mjs"
   },
   "prisma": {
     "seed": "node --loader ts-node/esm prisma/seed.ts"
   },
   "dependencies": {
+    "@aws-sdk/client-s3": "^3.958.0",
     "@prisma/client": "^5.21.1",
     "@react-three/drei": "9.92.6",
     "@react-three/fiber": "8.13.0",
@@ -27,6 +29,8 @@
     "prisma": "^5.21.1",
     "react": "18.2.0",
     "react-dom": "18.2.0",
+    "sharp": "^0.34.5",
+    "swr": "^2.3.8",
     "three": "0.152.2",
     "troika-three-text": "0.49.1",
     "zod": "^4.1.13"
