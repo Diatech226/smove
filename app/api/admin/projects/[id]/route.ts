@@ -4,7 +4,7 @@ import { createRequestId } from "@/lib/api/requestId";
 import { requireAdmin } from "@/lib/admin/auth";
 import { findAvailableSlug } from "@/lib/admin/slug";
 import { safePrisma } from "@/lib/safePrisma";
-import { projectSchema } from "@/lib/validation/admin";
+import { contentStatusSchema, projectSchema } from "@/lib/validation/admin";
 
 type Params = {
   params: { id: string };
@@ -60,7 +60,20 @@ export async function PUT(request: Request, { params }: Params) {
       return jsonError(message, { status: 400, requestId });
     }
 
-    const { slug, title, client, sector, summary, body: content, results, category, coverMediaId } = parsed.data;
+    const {
+      slug,
+      title,
+      client,
+      sector,
+      sectorSlug,
+      summary,
+      body: content,
+      results,
+      category,
+      categorySlug,
+      coverMediaId,
+      status,
+    } = parsed.data;
 
     const existingResult = await safePrisma((db) => db.project.findUnique({ where: { slug }, select: { id: true } }));
     if (!existingResult.ok) {
@@ -89,13 +102,16 @@ export async function PUT(request: Request, { params }: Params) {
           title,
           client,
           sector,
+          sectorSlug: typeof sectorSlug === "string" && sectorSlug ? sectorSlug : null,
           summary,
           body: content ?? null,
           results: Array.isArray(results)
             ? results.map((item) => (typeof item === "string" ? item : String(item))).filter(Boolean)
             : [],
           category: typeof category === "string" ? category : null,
+          categorySlug: typeof categorySlug === "string" && categorySlug ? categorySlug : null,
           coverMediaId,
+          status: status ?? "published",
         },
       }),
     );
@@ -129,6 +145,47 @@ export async function PUT(request: Request, { params }: Params) {
       return jsonError("Un autre projet utilise déjà ce slug.", { status: 400, requestId });
     }
     return jsonError("Failed to update project", { status: 500, requestId });
+  }
+}
+
+export async function PATCH(request: Request, { params }: Params) {
+  const authError = await requireAdmin();
+  if (authError) return authError;
+  const requestId = createRequestId();
+  try {
+    if (!params.id) {
+      return jsonError("Project id is required", { status: 400, requestId });
+    }
+    const json = await request.json().catch(() => null);
+    const parsed = contentStatusSchema.safeParse(json?.status);
+    if (!parsed.success) {
+      const message = parsed.error.issues.at(0)?.message ?? "Statut invalide";
+      return jsonError(message, { status: 400, requestId });
+    }
+
+    const updatedResult = await safePrisma((db) =>
+      db.project.update({
+        where: { id: params.id },
+        data: { status: parsed.data },
+      }),
+    );
+
+    if (!updatedResult.ok) {
+      console.error("Failed to update project status", { requestId, detail: updatedResult.message });
+      return jsonError("Database unreachable", {
+        status: 503,
+        requestId,
+        data: { detail: updatedResult.message },
+      });
+    }
+
+    return jsonOk({ project: updatedResult.data }, { status: 200, requestId });
+  } catch (error: any) {
+    console.error("Error updating project status", {
+      requestId,
+      message: error?.message,
+    });
+    return jsonError("Failed to update project status", { status: 500, requestId });
   }
 }
 

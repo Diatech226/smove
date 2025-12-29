@@ -19,8 +19,11 @@ interface Props {
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const projectResult = await safePrisma((db) =>
-    db.project.findUnique({
-      where: { slug: params.slug },
+    db.project.findFirst({
+      where: {
+        slug: params.slug,
+        OR: [{ status: "published" }, { status: null }],
+      },
       include: { cover: true },
     }),
   );
@@ -43,8 +46,11 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
 export default async function ProjectPage({ params }: Props) {
   const projectResult = await safePrisma((db) =>
-    db.project.findUnique({
-      where: { slug: params.slug },
+    db.project.findFirst({
+      where: {
+        slug: params.slug,
+        OR: [{ status: "published" }, { status: null }],
+      },
       include: { cover: true },
     }),
   );

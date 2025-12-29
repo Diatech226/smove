@@ -5,6 +5,7 @@ import { createRequestId } from "@/lib/api/requestId";
 import { requireAdmin } from "@/lib/admin/auth";
 import { safePrisma } from "@/lib/safePrisma";
 import { processMediaFile, isVideoFile, isSupportedMedia } from "@/lib/media/processing";
+import { MEDIA_MAX_BYTES, MEDIA_MAX_FILES } from "@/lib/media/config";
 import { getStorageProvider } from "@/lib/media/storage";
 
 export const runtime = "nodejs";
@@ -101,8 +102,17 @@ export async function POST(request: Request) {
       return jsonError("Aucun fichier reçu.", { status: 400, requestId });
     }
 
+    if (files.length > MEDIA_MAX_FILES) {
+      return jsonError(`Vous pouvez uploader jusqu'à ${MEDIA_MAX_FILES} fichier(s) à la fois.`, { status: 400, requestId });
+    }
+
     if (files.some((file) => !isSupportedMedia(file))) {
       return jsonError("Formats acceptés : jpg, png, webp, mp4.", { status: 400, requestId });
+    }
+
+    if (files.some((file) => file.size > MEDIA_MAX_BYTES)) {
+      const maxMb = Math.round(MEDIA_MAX_BYTES / (1024 * 1024));
+      return jsonError(`Taille maximale par fichier : ${maxMb}MB.`, { status: 400, requestId });
     }
 
     const parsedFolder = folderParsed.data.folder ?? "";
