@@ -1,6 +1,9 @@
 // file: app/services/page.tsx
 import type { Metadata } from "next";
 import { safePrisma } from "@/lib/safePrisma";
+import { getMediaVariantUrl } from "@/lib/media/utils";
+import type { MediaItem } from "@/lib/media/types";
+import Image from "next/image";
 import { Card } from "@/components/ui/Card";
 import { Container } from "@/components/ui/Container";
 import { DatabaseWarning } from "@/components/ui/DatabaseWarning";
@@ -14,7 +17,7 @@ type ServiceListItem = {
   name: string;
   slug: string;
   description: string;
-  image?: string | null;
+  cover: MediaItem;
 };
 
 export const metadata: Metadata = createMetadata({
@@ -28,6 +31,7 @@ export default async function ServicesPage() {
   const servicesResult = await safePrisma((db) =>
     db.service.findMany({
       orderBy: { createdAt: "asc" },
+      include: { cover: true },
     }),
   );
   const services = (servicesResult.ok ? servicesResult.data : []) as ServiceListItem[];
@@ -55,6 +59,16 @@ export default async function ServicesPage() {
               key={service.id}
               className="group h-full overflow-hidden border-white/10 bg-gradient-to-br from-white/10 via-white/5 to-white/10 p-6 shadow-xl shadow-emerald-500/10 transition duration-300 hover:-translate-y-1 hover:border-emerald-400/40 hover:shadow-emerald-400/20"
             >
+              {service.cover ? (
+                <div className="relative mb-4 h-32 w-full overflow-hidden rounded-xl border border-white/10">
+                  <Image
+                    src={getMediaVariantUrl(service.cover, "sm") ?? service.cover.originalUrl}
+                    alt={service.name}
+                    fill
+                    className="object-cover"
+                  />
+                </div>
+              ) : null}
               <div className="flex items-start justify-between gap-3">
                 <div>
                   <h2 className="text-xl font-semibold text-white">{service.name}</h2>

@@ -18,7 +18,14 @@ export async function GET(_request: Request, { params }: Params) {
     return jsonError("Project id is required", { status: 400, requestId });
   }
 
-  const projectResult = await safePrisma((db) => db.project.findUnique({ where: { id: params.id } }));
+  const projectResult = await safePrisma((db) =>
+    db.project.findUnique({
+      where: { id: params.id },
+      include: {
+        cover: true,
+      },
+    }),
+  );
 
   if (!projectResult.ok) {
     console.error("Failed to load project", { requestId, detail: projectResult.message });
@@ -53,7 +60,7 @@ export async function PUT(request: Request, { params }: Params) {
       return jsonError(message, { status: 400, requestId });
     }
 
-    const { slug, title, client, sector, summary, body: content, results, category, coverImage } = parsed.data;
+    const { slug, title, client, sector, summary, body: content, results, category, coverMediaId } = parsed.data;
 
     const existingResult = await safePrisma((db) => db.project.findUnique({ where: { slug }, select: { id: true } }));
     if (!existingResult.ok) {
@@ -88,7 +95,7 @@ export async function PUT(request: Request, { params }: Params) {
             ? results.map((item) => (typeof item === "string" ? item : String(item))).filter(Boolean)
             : [],
           category: typeof category === "string" ? category : null,
-          coverImage: typeof coverImage === "string" ? coverImage : null,
+          coverMediaId,
         },
       }),
     );

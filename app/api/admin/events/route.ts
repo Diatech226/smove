@@ -6,22 +6,44 @@ import { findAvailableSlug } from "@/lib/admin/slug";
 import { safePrisma } from "@/lib/safePrisma";
 import { eventSchema } from "@/lib/validation/admin";
 
-export async function GET() {
+export async function GET(request: Request) {
   const authError = await requireAdmin();
   if (authError) return authError;
   const requestId = createRequestId();
-  const eventsResult = await safePrisma((db) => db.event.findMany({ orderBy: { date: "desc" } }));
+  const url = new URL(request.url);
+  const rawPage = Number(url.searchParams.get("page") ?? "1");
+  const rawLimit = Number(url.searchParams.get("limit") ?? "12");
+  const page = Number.isFinite(rawPage) && rawPage > 0 ? rawPage : 1;
+  const limit = Number.isFinite(rawLimit) && rawLimit > 0 ? Math.min(50, rawLimit) : 12;
+  const skip = (page - 1) * limit;
 
-  if (!eventsResult.ok) {
+  const [eventsResult, countResult] = await Promise.all([
+    safePrisma((db) =>
+      db.event.findMany({
+        orderBy: { date: "desc" },
+        skip,
+        take: limit,
+        include: {
+          cover: true,
+        },
+      }),
+    ),
+    safePrisma((db) => db.event.count()),
+  ]);
+
+  if (!eventsResult.ok || !countResult.ok) {
     console.error("Failed to fetch events", { requestId, detail: eventsResult.message });
     return jsonError("Failed to fetch events", {
       status: 503,
       requestId,
-      data: { detail: eventsResult.message },
+      data: { detail: eventsResult.ok ? countResult.message : eventsResult.message },
     });
   }
 
-  return jsonOk({ events: eventsResult.data }, { status: 200, requestId });
+  const total = countResult.data;
+  const totalPages = Math.max(1, Math.ceil(total / limit));
+
+  return jsonOk({ events: eventsResult.data, page, total, totalPages, limit }, { status: 200, requestId });
 }
 
 export async function POST(request: Request) {
@@ -37,7 +59,7 @@ export async function POST(request: Request) {
       return jsonError(message, { status: 400, requestId });
     }
 
-    const { slug, title, date, location, description, category, coverImage } = parsed.data;
+    const { slug, title, date, location, description, category, coverMediaId } = parsed.data;
     const parsedDate = date instanceof Date ? date : new Date(date);
 
     const existingResult = await safePrisma((db) => db.event.findUnique({ where: { slug }, select: { id: true } }));
@@ -68,7 +90,7 @@ export async function POST(request: Request) {
           location: typeof location === "string" ? location : null,
           description: typeof description === "string" ? description : null,
           category: typeof category === "string" ? category : null,
-          coverImage: typeof coverImage === "string" ? coverImage : null,
+          coverMediaId,
         },
       }),
     );

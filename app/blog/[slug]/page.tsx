@@ -9,6 +9,7 @@ import { SectionHeader } from "@/components/ui/SectionHeader";
 import { DatabaseWarning } from "@/components/ui/DatabaseWarning";
 import { createMetadata } from "@/lib/config/seo";
 import { safePrisma } from "@/lib/safePrisma";
+import { getMediaPosterUrl, getMediaVariantUrl } from "@/lib/media/utils";
 
 export const dynamic = "force-dynamic";
 
@@ -17,7 +18,15 @@ function formatDate(dateValue: string | Date) {
 }
 
 async function getPost(slug: string) {
-  const result = await safePrisma((db) => db.post.findFirst({ where: { slug, status: "published" } }));
+  const result = await safePrisma((db) =>
+    db.post.findFirst({
+      where: { slug, status: "published" },
+      include: {
+        cover: true,
+        video: true,
+      },
+    }),
+  );
   return { post: result.ok ? result.data : null, error: result.ok ? null : result.message, errorType: result.ok ? null : result.errorType } as const;
 }
 
@@ -68,7 +77,7 @@ export default async function BlogPostPage({ params }: BlogPostPageProps) {
   const displayDate = post.publishedAt ?? post.createdAt;
   const primaryTag = post.tags?.[0] ?? "Article";
 
-  const [relatedResult, latestResult] = await Promise.all([
+  const [relatedResult, latestResult, galleryResult] = await Promise.all([
     safePrisma((db) =>
       db.post.findMany({
         where: {
@@ -87,10 +96,14 @@ export default async function BlogPostPage({ params }: BlogPostPageProps) {
         take: 3,
       }),
     ),
+    post.galleryMediaIds?.length
+      ? safePrisma((db) => db.media.findMany({ where: { id: { in: post.galleryMediaIds } } }))
+      : Promise.resolve({ ok: true as const, data: [] }),
   ]);
 
   const relatedPosts = relatedResult.ok ? relatedResult.data : [];
   const latestPosts = latestResult.ok ? latestResult.data : [];
+  const galleryMedia = galleryResult.ok ? galleryResult.data : [];
 
   return (
     <div className="bg-slate-950 pb-20 pt-12">
@@ -98,26 +111,28 @@ export default async function BlogPostPage({ params }: BlogPostPageProps) {
         <div className="space-y-8">
           <div className="space-y-4">
             <SectionHeader eyebrow={primaryTag} title={post.title} subtitle={formatDate(displayDate)} />
-            <div className="relative h-64 w-full overflow-hidden rounded-2xl border border-white/10 bg-gradient-to-r from-white/5 via-white/10 to-white/5">
-              {post.coverImage ? (
-                <Image src={post.coverImage} alt="Illustration de l'article" fill className="object-cover" priority />
-              ) : null}
-            </div>
+          <div className="relative h-64 w-full overflow-hidden rounded-2xl border border-white/10 bg-gradient-to-r from-white/5 via-white/10 to-white/5">
+            {post.video ? (
+              <video
+                className="h-full w-full object-cover"
+                src={post.video.originalUrl}
+                poster={getMediaPosterUrl(post.video) ?? undefined}
+                autoPlay
+                muted
+                loop
+                playsInline
+              />
+            ) : post.cover ? (
+              <Image
+                src={getMediaVariantUrl(post.cover, "lg") ?? post.cover.originalUrl}
+                alt="Illustration de l'article"
+                fill
+                className="object-cover"
+                priority
+              />
+            ) : null}
           </div>
-
-          {post.videoUrl ? (
-            <div className="overflow-hidden rounded-2xl border border-white/10 bg-slate-900/60">
-              <div className="aspect-video">
-                <iframe
-                  title="Vidéo de l'article"
-                  src={post.videoUrl}
-                  className="h-full w-full"
-                  allow="accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture"
-                  allowFullScreen
-                />
-              </div>
-            </div>
-          ) : null}
+          </div>
 
           <article className="prose prose-lg prose-invert max-w-none prose-headings:text-white prose-p:text-slate-200 prose-strong:text-white prose-a:text-emerald-200">
             {(post.body ?? "").split(/\n\n+/).map((paragraph, index) => (
@@ -125,15 +140,18 @@ export default async function BlogPostPage({ params }: BlogPostPageProps) {
             ))}
           </article>
 
-          {post.gallery?.length ? (
+          {galleryMedia.length ? (
             <div className="space-y-3">
               <h3 className="text-lg font-semibold text-white">Galerie</h3>
               <div className="grid gap-4 md:grid-cols-2">
-                {post.gallery.map((image, index) => (
-                  <div key={index} className="relative aspect-[4/3] overflow-hidden rounded-xl border border-white/10">
-                    <Image src={image} alt={`Visuel ${index + 1}`} fill className="object-cover" />
-                  </div>
-                ))}
+                {galleryMedia.map((image, index) => {
+                  const src = getMediaVariantUrl(image, "md") ?? image.originalUrl;
+                  return (
+                    <div key={image.id ?? index} className="relative aspect-[4/3] overflow-hidden rounded-xl border border-white/10">
+                      <Image src={src} alt={`Visuel ${index + 1}`} fill className="object-cover" />
+                    </div>
+                  );
+                })}
               </div>
             </div>
           ) : null}

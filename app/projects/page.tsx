@@ -1,5 +1,6 @@
 // file: app/projects/page.tsx
 import Link from "next/link";
+import Image from "next/image";
 import type { Metadata } from "next";
 import { safePrisma } from "@/lib/safePrisma";
 import { Container } from "@/components/ui/Container";
@@ -7,6 +8,7 @@ import { SectionHeader } from "@/components/ui/SectionHeader";
 import { Card } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { DatabaseWarning } from "@/components/ui/DatabaseWarning";
+import { getMediaVariantUrl } from "@/lib/media/utils";
 
 export const metadata: Metadata = {
   title: "Nos projets – SMOVE Communication",
@@ -17,6 +19,7 @@ export default async function ProjectsPage() {
   const projectsResult = await safePrisma((db) =>
     db.project.findMany({
       orderBy: { createdAt: "desc" },
+      include: { cover: true },
     }),
   );
   const projects = projectsResult.ok ? projectsResult.data : [];
@@ -45,6 +48,16 @@ export default async function ProjectsPage() {
               as="article"
               className="flex h-full flex-col gap-3 transition duration-200 hover:-translate-y-1 hover:border-emerald-400/50 hover:shadow-xl hover:shadow-emerald-500/10"
             >
+              {project.cover ? (
+                <div className="relative h-40 w-full overflow-hidden rounded-2xl border border-white/10">
+                  <Image
+                    src={getMediaVariantUrl(project.cover, "sm") ?? project.cover.originalUrl}
+                    alt={project.title}
+                    fill
+                    className="object-cover"
+                  />
+                </div>
+              ) : null}
               <div className="flex items-start justify-between gap-3">
                 <div>
                   <p className="text-xs uppercase tracking-[0.2em] text-emerald-200">{project.client}</p>

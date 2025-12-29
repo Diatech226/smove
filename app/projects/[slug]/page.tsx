@@ -1,5 +1,6 @@
 // file: app/projects/[slug]/page.tsx
 import type { Metadata } from "next";
+import Image from "next/image";
 import { notFound } from "next/navigation";
 
 import { Card } from "@/components/ui/Card";
@@ -8,13 +9,19 @@ import { SectionHeader } from "@/components/ui/SectionHeader";
 import { Button } from "@/components/ui/Button";
 import { DatabaseWarning } from "@/components/ui/DatabaseWarning";
 import { safePrisma } from "@/lib/safePrisma";
+import { getMediaVariantUrl } from "@/lib/media/utils";
 
 interface Props {
   params: { slug: string };
 }
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
-  const projectResult = await safePrisma((db) => db.project.findUnique({ where: { slug: params.slug } }));
+  const projectResult = await safePrisma((db) =>
+    db.project.findUnique({
+      where: { slug: params.slug },
+      include: { cover: true },
+    }),
+  );
   const project = projectResult.ok ? projectResult.data : null;
 
   if (!project) {
@@ -28,7 +35,12 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 }
 
 export default async function ProjectPage({ params }: Props) {
-  const projectResult = await safePrisma((db) => db.project.findUnique({ where: { slug: params.slug } }));
+  const projectResult = await safePrisma((db) =>
+    db.project.findUnique({
+      where: { slug: params.slug },
+      include: { cover: true },
+    }),
+  );
   const project = projectResult.ok ? projectResult.data : null;
 
   if (!projectResult.ok) {
@@ -53,6 +65,18 @@ export default async function ProjectPage({ params }: Props) {
       </div>
       <Container className="relative space-y-10">
         <SectionHeader eyebrow={project.client} title={project.title} subtitle={`Secteur : ${project.sector}`} />
+
+        {project.cover ? (
+          <div className="relative h-72 w-full overflow-hidden rounded-2xl border border-white/10">
+            <Image
+              src={getMediaVariantUrl(project.cover, "lg") ?? project.cover.originalUrl}
+              alt={project.title}
+              fill
+              className="object-cover"
+              priority
+            />
+          </div>
+        ) : null}
 
         <Card className="space-y-4">
           <p className="text-lg text-slate-200">{project.summary}</p>

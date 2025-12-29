@@ -7,6 +7,8 @@ import { AdminPageHeader } from "@/components/admin/AdminPageHeader";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { slugify } from "@/lib/utils";
+import type { MediaItem } from "@/lib/media/types";
+import { MediaPickerField } from "@/components/admin/media/MediaPickerField";
 
 type AdminProject = {
   id: string;
@@ -18,14 +20,15 @@ type AdminProject = {
   body?: string;
   results?: string[];
   category?: string | null;
-  coverImage?: string | null;
+  coverMediaId: string;
+  cover?: MediaItem | null;
 };
 
 const emptyForm: Pick<AdminProject, "slug" | "title" | "client" | "sector" | "summary"> & {
   body?: string;
   results?: string[];
   category?: string;
-  coverImage?: string;
+  coverMediaId?: string;
 } = {
   slug: "",
   title: "",
@@ -35,7 +38,7 @@ const emptyForm: Pick<AdminProject, "slug" | "title" | "client" | "sector" | "su
   body: "",
   results: [],
   category: "",
-  coverImage: "",
+  coverMediaId: "",
 };
 
 type ToastState = {
@@ -51,6 +54,7 @@ export default function AdminProjectsPage() {
   const [loading, setLoading] = useState(true);
   const [detailLoading, setDetailLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [coverMedia, setCoverMedia] = useState<MediaItem | null>(null);
   const [page, setPage] = useState(1);
   const [limit, setLimit] = useState(12);
   const [total, setTotal] = useState(0);
@@ -97,6 +101,7 @@ export default function AdminProjectsPage() {
     setForm(emptyForm);
     setEditingId(null);
     setDetailLoading(false);
+    setCoverMedia(null);
   };
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
@@ -104,9 +109,9 @@ export default function AdminProjectsPage() {
     setStatusMessage(null);
     setError(null);
 
-    const { title, client, sector, summary, body, results, category, coverImage } = form;
-    if (!computedSlug || !title || !client || !sector || !summary) {
-      setStatusMessage("Merci de renseigner le slug, le titre, le client, le secteur et le résumé.");
+    const { title, client, sector, summary, body, results, category, coverMediaId } = form;
+    if (!computedSlug || !title || !client || !sector || !summary || !coverMediaId) {
+      setStatusMessage("Merci de renseigner le slug, le titre, le client, le secteur, le résumé et la couverture.");
       return;
     }
 
@@ -122,7 +127,7 @@ export default function AdminProjectsPage() {
         body,
         results,
         category,
-        coverImage,
+        coverMediaId,
       };
       const response = await fetch(url, {
         method,
@@ -191,8 +196,9 @@ export default function AdminProjectsPage() {
         body: project.body ?? "",
         results: project.results ?? [],
         category: project.category ?? "",
-        coverImage: project.coverImage ?? "",
+        coverMediaId: project.coverMediaId ?? "",
       });
+      setCoverMedia(project.cover ?? null);
     } catch (fetchError) {
       console.error(fetchError);
       setError("Impossible de charger ce projet.");
@@ -373,18 +379,17 @@ export default function AdminProjectsPage() {
               />
             </div>
 
-            <div className="space-y-2">
-              <label className="text-sm font-semibold text-white" htmlFor="coverImage">
-                Image de couverture
-              </label>
-              <input
-                id="coverImage"
-                name="coverImage"
-                value={form.coverImage ?? ""}
-                onChange={(event) => setForm((prev) => ({ ...prev, coverImage: event.target.value }))}
-                className="w-full rounded-lg border border-white/10 bg-slate-900 px-3 py-2 text-sm text-white focus:border-emerald-400 focus:outline-none"
-              />
-            </div>
+            <MediaPickerField
+              label="Image de couverture"
+              description="Choisissez une image principale pour le projet."
+              selected={coverMedia}
+              onChange={(media) => {
+                setCoverMedia(media);
+                setForm((prev) => ({ ...prev, coverMediaId: media?.id ?? "" }));
+              }}
+              folder="projects"
+              typeFilter="image"
+            />
 
             <div className="space-y-2">
               <label className="text-sm font-semibold text-white" htmlFor="summary">
