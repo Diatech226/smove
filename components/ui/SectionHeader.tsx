@@ -29,7 +29,7 @@ export function SectionHeader({
   return (
     <div className={cn("space-y-3", alignment, spacing, className)}>
       {eyebrow ? (
-        <p className="inline-flex items-center gap-2 rounded-full bg-emerald-500/10 px-4 py-1 text-xs font-semibold uppercase tracking-[0.24em] text-emerald-200">
+        <p className="inline-flex items-center gap-2 rounded-full bg-sky-500/15 px-4 py-1 text-xs font-semibold uppercase tracking-[0.24em] text-sky-200">
           {eyebrow}
         </p>
       ) : null}

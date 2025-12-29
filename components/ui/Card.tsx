@@ -20,7 +20,7 @@ export function Card<T extends ElementType = "div">({
   return (
     <Component
       className={cn(
-        "rounded-2xl border border-slate-800/80 bg-slate-900/50 p-6 shadow-lg shadow-black/10 backdrop-blur",
+        "rounded-3xl border border-white/10 bg-slate-900/60 p-6 shadow-[0_20px_60px_rgba(15,23,42,0.35)] backdrop-blur",
         className,
       )}
       {...props}

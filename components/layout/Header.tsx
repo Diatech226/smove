@@ -1,4 +1,3 @@
-// file: components/layout/Header.tsx
 "use client";
 
 import Link from "next/link";
@@ -29,36 +28,40 @@ export default function Header({ siteName, logoUrl }: HeaderProps) {
   const toggleMenu = () => setOpen((prev) => !prev);
 
   return (
-    <header className="border-b border-slate-800 bg-slate-950/70 backdrop-blur">
+    <header className="sticky top-0 z-40 border-b border-white/10 bg-slate-950/80 backdrop-blur">
       <Container className="flex items-center justify-between py-4">
         <Link href="/" className="flex items-center gap-3 text-lg font-semibold tracking-tight text-white">
           {logoUrl ? (
-            <img src={logoUrl} alt={siteName} className="h-9 w-9 rounded-lg object-contain" />
-          ) : null}
+            <img src={logoUrl} alt={siteName} className="h-10 w-10 rounded-xl object-contain" />
+          ) : (
+            <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-sky-500/15 text-sm font-semibold text-sky-200">
+              SM
+            </span>
+          )}
           <span>{siteName}</span>
         </Link>
 
-        <nav className="hidden items-center gap-6 text-sm text-slate-200 md:flex" aria-label="Navigation principale">
+        <nav className="hidden items-center gap-7 text-sm text-slate-200 lg:flex" aria-label="Navigation principale">
           {navLinks.map((link) => {
             const isActive = pathname === link.href;
             return (
               <Link
                 key={link.href}
-                className={`relative transition hover:text-white ${isActive ? "text-emerald-300" : ""}`}
+                className={`relative transition hover:text-white ${isActive ? "text-sky-200" : ""}`}
                 href={link.href}
               >
                 {link.label}
-                {isActive ? <span className="absolute -bottom-1 left-0 h-0.5 w-full bg-emerald-400" /> : null}
+                {isActive ? <span className="absolute -bottom-2 left-0 h-0.5 w-full bg-sky-400" /> : null}
               </Link>
             );
           })}
-          <Button href="/contact" className="ml-4" variant="secondary">
-            Brief gratuit
+          <Button href="/contact" className="ml-2" variant="primary">
+            Lancer un brief
           </Button>
         </nav>
 
         <button
-          className="inline-flex items-center justify-center rounded-lg border border-slate-800 px-3 py-2 text-slate-100 md:hidden"
+          className="inline-flex items-center justify-center rounded-full border border-white/10 bg-white/5 px-4 py-2 text-slate-100 lg:hidden"
           aria-label={open ? "Fermer la navigation" : "Ouvrir la navigation"}
           aria-expanded={open}
           onClick={toggleMenu}
@@ -75,16 +78,16 @@ export default function Header({ siteName, logoUrl }: HeaderProps) {
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -8 }}
             transition={{ duration: 0.2 }}
-            className="border-t border-slate-800 bg-slate-950 md:hidden"
+            className="border-t border-white/10 bg-slate-950 lg:hidden"
           >
-            <Container className="flex flex-col gap-4 py-4">
+            <Container className="flex flex-col gap-4 py-6">
               {navLinks.map((link) => {
                 const isActive = pathname === link.href;
                 return (
                   <Link
                     key={link.href}
                     href={link.href}
-                    className={`text-sm font-semibold transition hover:text-white ${isActive ? "text-emerald-300" : "text-slate-200"}`}
+                    className={`text-sm font-semibold transition hover:text-white ${isActive ? "text-sky-200" : "text-slate-200"}`}
                     onClick={() => setOpen(false)}
                   >
                     {link.label}
@@ -92,7 +95,7 @@ export default function Header({ siteName, logoUrl }: HeaderProps) {
                 );
               })}
               <Button href="/contact" onClick={() => setOpen(false)}>
-                Nous écrire
+                Parler à l'équipe
               </Button>
             </Container>
           </motion.div>

@@ -10,6 +10,8 @@ import { DatabaseWarning } from "@/components/ui/DatabaseWarning";
 import { createMetadata } from "@/lib/config/seo";
 import { safePrisma } from "@/lib/safePrisma";
 import { getMediaPosterUrl, getMediaVariantUrl } from "@/lib/media/utils";
+import { Card } from "@/components/ui/Card";
+import { MediaCover } from "@/components/ui/MediaCover";
 
 export const dynamic = "force-dynamic";
 
@@ -24,6 +26,7 @@ async function getPost(slug: string) {
       include: {
         cover: true,
         video: true,
+        category: true,
       },
     }),
   );
@@ -62,7 +65,7 @@ export default async function BlogPostPage({ params }: BlogPostPageProps) {
       <div className="bg-slate-950 pb-20 pt-12">
         <Container className="space-y-6">
           <DatabaseWarning message="Le blog est momentanément indisponible. Vérifiez la connexion à la base de données ou réessayez plus tard." />
-          <Link href="/blog" className="text-sm font-semibold text-emerald-300 transition hover:text-emerald-200">
+          <Link href="/blog" className="text-sm font-semibold text-sky-200 transition hover:text-sky-100">
             ← Retour au blog
           </Link>
         </Container>
@@ -75,25 +78,27 @@ export default async function BlogPostPage({ params }: BlogPostPageProps) {
   }
 
   const displayDate = post.publishedAt ?? post.createdAt;
-  const primaryTag = post.tags?.[0] ?? "Article";
+  const primaryTag = post.tags?.[0] ?? post.category?.name ?? "Article";
 
-  const [relatedResult, latestResult, galleryResult] = await Promise.all([
+  const [mostReadResult, latestResult, galleryResult] = await Promise.all([
     safePrisma((db) =>
       db.post.findMany({
         where: {
           status: "published",
           id: { not: post.id },
-          tags: post.tags?.length ? { hasSome: post.tags } : undefined,
+          ...(post.categoryId ? { categoryId: post.categoryId } : post.tags?.length ? { tags: { hasSome: post.tags } } : {}),
         },
         orderBy: [{ publishedAt: "desc" }, { createdAt: "desc" }],
-        take: 3,
+        take: 4,
+        include: { cover: true },
       }),
     ),
     safePrisma((db) =>
       db.post.findMany({
         where: { status: "published", id: { not: post.id } },
         orderBy: [{ publishedAt: "desc" }, { createdAt: "desc" }],
-        take: 3,
+        take: 4,
+        include: { cover: true },
       }),
     ),
     post.galleryMediaIds?.length
@@ -101,99 +106,115 @@ export default async function BlogPostPage({ params }: BlogPostPageProps) {
       : Promise.resolve({ ok: true as const, data: [] }),
   ]);
 
-  const relatedPosts = relatedResult.ok ? relatedResult.data : [];
+  const mostReadPosts = mostReadResult.ok ? mostReadResult.data : [];
   const latestPosts = latestResult.ok ? latestResult.data : [];
   const galleryMedia = galleryResult.ok ? galleryResult.data : [];
 
+  const heroCover = post.cover
+    ? getMediaVariantUrl(post.cover, "lg") ?? post.cover.originalUrl
+    : null;
+
   return (
     <div className="bg-slate-950 pb-20 pt-12">
-      <Container className="grid gap-12 lg:grid-cols-[2fr_1fr]">
-        <div className="space-y-8">
-          <div className="space-y-4">
-            <SectionHeader eyebrow={primaryTag} title={post.title} subtitle={formatDate(displayDate)} />
-          <div className="relative h-64 w-full overflow-hidden rounded-2xl border border-white/10 bg-gradient-to-r from-white/5 via-white/10 to-white/5">
-            {post.video ? (
-              <video
-                className="h-full w-full object-cover"
-                src={post.video.originalUrl}
-                poster={getMediaPosterUrl(post.video) ?? undefined}
-                autoPlay
-                muted
-                loop
-                playsInline
-              />
-            ) : post.cover ? (
-              <Image
-                src={getMediaVariantUrl(post.cover, "lg") ?? post.cover.originalUrl}
-                alt="Illustration de l'article"
-                fill
-                className="object-cover"
-                priority
-              />
-            ) : null}
-          </div>
-          </div>
-
-          <article className="prose prose-lg prose-invert max-w-none prose-headings:text-white prose-p:text-slate-200 prose-strong:text-white prose-a:text-emerald-200">
-            {(post.body ?? "").split(/\n\n+/).map((paragraph, index) => (
-              <p key={index}>{paragraph}</p>
-            ))}
-          </article>
-
-          {galleryMedia.length ? (
-            <div className="space-y-3">
-              <h3 className="text-lg font-semibold text-white">Galerie</h3>
-              <div className="grid gap-4 md:grid-cols-2">
-                {galleryMedia.map((image, index) => {
-                  const src = getMediaVariantUrl(image, "md") ?? image.originalUrl;
-                  return (
-                    <div key={image.id ?? index} className="relative aspect-[4/3] overflow-hidden rounded-xl border border-white/10">
-                      <Image src={src} alt={`Visuel ${index + 1}`} fill className="object-cover" />
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-          ) : null}
-
-          <Link href="/blog" className="text-sm font-semibold text-emerald-300 transition hover:text-emerald-200">
-            ← Retour au blog
-          </Link>
+      <Container className="space-y-12">
+        <div className="space-y-6">
+          <SectionHeader eyebrow={primaryTag} title={post.title} subtitle={formatDate(displayDate)} />
+          <MediaCover
+            src={heroCover}
+            alt={post.title}
+            className="h-72 w-full"
+            sizes="100vw"
+            priority
+          />
         </div>
 
-        <aside className="space-y-8">
-          <div className="rounded-2xl border border-white/10 bg-slate-900/70 p-5">
-            <h3 className="text-lg font-semibold text-white">Articles liés</h3>
-            <ul className="mt-4 space-y-3 text-sm text-slate-200">
-              {relatedPosts.length ? (
-                relatedPosts.map((item) => (
+        <div className="grid gap-12 lg:grid-cols-[2fr_1fr]">
+          <div className="space-y-8">
+            {post.video ? (
+              <div className="relative overflow-hidden rounded-2xl border border-white/10">
+                <video
+                  className="h-full w-full object-cover"
+                  src={post.video.originalUrl}
+                  poster={getMediaPosterUrl(post.video) ?? undefined}
+                  controls
+                />
+              </div>
+            ) : null}
+
+            <article className="prose prose-lg prose-invert max-w-none prose-headings:text-white prose-p:text-slate-200 prose-strong:text-white prose-a:text-sky-200">
+              {(post.body ?? "").split(/\n\n+/).map((paragraph, index) => (
+                <p key={index}>{paragraph}</p>
+              ))}
+            </article>
+
+            {galleryMedia.length ? (
+              <div className="space-y-3">
+                <h3 className="text-lg font-semibold text-white">Galerie</h3>
+                <div className="grid gap-4 md:grid-cols-2">
+                  {galleryMedia.map((image, index) => {
+                    const src = getMediaVariantUrl(image, "md") ?? image.originalUrl;
+                    return (
+                      <div key={image.id ?? index} className="relative aspect-[4/3] overflow-hidden rounded-xl border border-white/10">
+                        <Image src={src} alt={`Visuel ${index + 1}`} fill className="object-cover" />
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            ) : null}
+
+            <Link href="/blog" className="text-sm font-semibold text-sky-200 transition hover:text-sky-100">
+              ← Retour au blog
+            </Link>
+          </div>
+
+          <aside className="space-y-6">
+            <Card className="space-y-4">
+              <h3 className="text-lg font-semibold text-white">Les plus lus</h3>
+              <div className="space-y-3">
+                {(mostReadPosts.length ? mostReadPosts : latestPosts).map((item) => {
+                  const coverSrc = item.cover
+                    ? getMediaVariantUrl(item.cover, "thumb") ?? item.cover.originalUrl
+                    : null;
+
+                  return (
+                    <Link key={item.id} href={`/blog/${item.slug}`} className="group flex items-center gap-3">
+                      <div className="relative h-14 w-20 overflow-hidden rounded-lg border border-white/10">
+                        {coverSrc ? (
+                          <Image src={coverSrc} alt={item.title} fill className="object-cover" />
+                        ) : (
+                          <div className="h-full w-full bg-gradient-to-br from-slate-900 via-slate-800 to-sky-900/40" />
+                        )}
+                      </div>
+                      <div>
+                        <p className="text-sm font-semibold text-slate-100 group-hover:text-white">{item.title}</p>
+                        <span className="text-xs text-slate-400">{formatDate(item.publishedAt ?? item.createdAt)}</span>
+                      </div>
+                    </Link>
+                  );
+                })}
+                {!mostReadPosts.length && !latestPosts.length ? (
+                  <p className="text-sm text-slate-400">Pas encore d'articles similaires.</p>
+                ) : null}
+              </div>
+            </Card>
+
+            <Card className="space-y-4">
+              <h3 className="text-lg font-semibold text-white">Dernières publications</h3>
+              <ul className="space-y-3 text-sm text-slate-200">
+                {latestPosts.map((item) => (
                   <li key={item.id} className="flex flex-col gap-1">
-                    <Link href={`/blog/${item.slug}`} className="font-semibold text-emerald-200 hover:text-emerald-100">
+                    <Link href={`/blog/${item.slug}`} className="font-semibold text-sky-200 hover:text-sky-100">
                       {item.title}
                     </Link>
                     <span className="text-xs text-slate-400">{formatDate(item.publishedAt ?? item.createdAt)}</span>
                   </li>
-                ))
-              ) : (
-                <li className="text-slate-400">Pas encore d'articles similaires.</li>
-              )}
-            </ul>
-          </div>
-
-          <div className="rounded-2xl border border-white/10 bg-slate-900/70 p-5">
-            <h3 className="text-lg font-semibold text-white">Dernières publications</h3>
-            <ul className="mt-4 space-y-3 text-sm text-slate-200">
-              {latestPosts.map((item) => (
-                <li key={item.id} className="flex flex-col gap-1">
-                  <Link href={`/blog/${item.slug}`} className="font-semibold text-emerald-200 hover:text-emerald-100">
-                    {item.title}
-                  </Link>
-                  <span className="text-xs text-slate-400">{formatDate(item.publishedAt ?? item.createdAt)}</span>
-                </li>
-              ))}
-            </ul>
-          </div>
-        </aside>
+                ))}
+                {!latestPosts.length ? <li className="text-slate-400">Aucun article récent.</li> : null}
+              </ul>
+            </Card>
+          </aside>
+        </div>
       </Container>
     </div>
   );
