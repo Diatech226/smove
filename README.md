@@ -1,12 +1,11 @@
 # SMOVE
 
-SMOVE – site vitrine avec hero 3D et back-office CMS pour une agence de communication digitale.
+SMOVE – site vitrine premium avec hero animé (2 écrans + vidéo) et back-office CMS pour une agence de communication digitale.
 
 ## Stack technique
 - Next.js (App Router) & TypeScript
 - Tailwind CSS
 - Framer Motion
-- React Three Fiber (section hero 3D)
 - Prisma & MongoDB
 
 ## Structure des dossiers
@@ -14,6 +13,18 @@ SMOVE – site vitrine avec hero 3D et back-office CMS pour une agence de commun
 - `/components` : composants UI, layout, sections et 3D
 - `/lib` : utilitaires (Prisma, hooks, configuration)
 - `/prisma` : schéma Prisma
+
+## UI refonte
+- Layout global : header sticky, footer enrichi, design system bleu/blanc + accents.
+- Sections publiques : hero animé en 2 écrans, services, portfolio, blog, testimonials, CTA.
+- Composants clés : `components/sections/*`, `components/layout/*`, `components/ui/*` (notamment `MediaCover` pour les covers).
+- Animations : transitions `easeOut` ~800ms, reveal au scroll, micro-interactions hover.
+
+### Vidéo hero & SEO
+- `NEXT_PUBLIC_HERO_VIDEO_URL` : URL MP4 pour l'écran 2 (fullscreen background).
+- `NEXT_PUBLIC_HERO_VIDEO_POSTER` : poster de la vidéo (fallback `public/hero-poster.svg`).
+- `NEXT_PUBLIC_HERO_DELAY_MS` : délai avant transition auto entre les écrans (800 → 4000ms).
+- `NEXT_PUBLIC_SITE_URL` : fallback pour `metadataBase` (SEO/OG).
 
 ## Variables d'environnement (`.env` / `.env.local`)
 Next.js charge automatiquement `.env` puis surcharge avec `.env.local` à la racine du projet.
@@ -229,7 +240,7 @@ SMOVE_ADMIN_SEED_EMAIL="admin@smove.local" SMOVE_ADMIN_SEED_PASSWORD="ChangeMe12
 - `SMOVE_ADMIN_SEED_PASSWORD_HASH` est optionnel si vous stockez déjà des mots de passe hashés.
 
 ## Notes supplémentaires
-- Le hero 3D utilise des versions compatibles de `three`, `@react-three/fiber` et `@react-three/drei` pour éviter les warnings `PlaneBufferGeometry` de `troika-three-text`.
+- Le hero public est désormais animé en 2 écrans avec une vidéo fullscreen (supporte poster + preload metadata).
 - Les routes `/portfolio` redirigent vers la convention unique `/projects`.
 
 ## Commandes Prisma utiles

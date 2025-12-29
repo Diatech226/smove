@@ -41,6 +41,9 @@ export function createMetadata({
     title: resolvedTitle,
     description: resolvedDescription,
     metadataBase: baseUrl ?? undefined,
+    alternates: {
+      canonical: url,
+    },
     openGraph: {
       title: resolvedTitle,
       description: resolvedDescription,

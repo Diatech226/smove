@@ -1,6 +1,5 @@
 // file: app/blog/page.tsx
 import type { Metadata } from "next";
-import Image from "next/image";
 import Link from "next/link";
 import { safePrisma } from "@/lib/safePrisma";
 import { createMetadata } from "@/lib/config/seo";
@@ -11,6 +10,7 @@ import { CategoryBadge } from "@/components/ui/CategoryBadge";
 import { DatabaseWarning } from "@/components/ui/DatabaseWarning";
 import { getMediaVariantUrl } from "@/lib/media/utils";
 import type { MediaItem } from "@/lib/media/types";
+import { MediaCover } from "@/components/ui/MediaCover";
 
 export const dynamic = "force-dynamic";
 
@@ -52,10 +52,7 @@ export default async function BlogPage() {
   const postsResult = await safePrisma((db) =>
     db.post.findMany({
       where: { status: "published" },
-      orderBy: [
-        { publishedAt: "desc" },
-        { createdAt: "desc" },
-      ],
+      orderBy: [{ publishedAt: "desc" }, { createdAt: "desc" }],
       include: {
         cover: true,
       },
@@ -64,12 +61,14 @@ export default async function BlogPage() {
 
   const posts = (postsResult.ok ? postsResult.data : []) as BlogListPost[];
   const loadError = !postsResult.ok;
+  const topPosts = posts.slice(0, 3);
+  const remainingPosts = posts.slice(3);
 
   return (
-    <div className="relative bg-slate-950 pb-24 pt-14">
+    <div className="relative bg-slate-950 pb-24 pt-16">
       <div className="pointer-events-none absolute inset-0">
-        <div className="absolute left-[-5%] top-10 h-72 w-72 rounded-full bg-emerald-500/15 blur-[120px]" />
-        <div className="absolute right-[-8%] top-28 h-64 w-64 rounded-full bg-indigo-500/15 blur-[110px]" />
+        <div className="absolute left-[-5%] top-10 h-72 w-72 rounded-full bg-sky-500/15 blur-[120px]" />
+        <div className="absolute right-[-8%] top-28 h-64 w-64 rounded-full bg-blue-500/15 blur-[110px]" />
       </div>
 
       <Container className="relative space-y-12">
@@ -79,54 +78,108 @@ export default async function BlogPage() {
           subtitle="Analyses, inspirations et coulisses pour piloter votre visibilité avec méthode."
         />
 
-        <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-3">
-          {loadError ? (
-            <DatabaseWarning message="Le blog est momentanément indisponible. Vérifiez la connexion à la base de données ou réessayez plus tard." />
-          ) : null}
-          {posts.map((post) => (
-            <Card
-              key={post.id}
-              as="article"
-              className="flex h-full flex-col gap-4 overflow-hidden border-white/10 bg-white/5/30 p-0 transition duration-200 hover:-translate-y-1 hover:border-emerald-400/50 hover:shadow-xl hover:shadow-emerald-500/20"
-            >
-              <div className="relative aspect-[16/9] w-full overflow-hidden bg-cover bg-center">
-                {post.cover ? (
-                  <Image
-                    src={getMediaVariantUrl(post.cover, "sm") ?? post.cover.originalUrl}
-                    alt={post.title}
-                    fill
-                    className="object-cover"
-                  />
-                ) : (
-                  <div className="absolute inset-0 bg-gradient-to-br from-emerald-500/20 via-white/10 to-indigo-500/20" />
-                )}
-                {post.cover ? <div className="absolute inset-0 bg-black/20" /> : null}
-              </div>
+        {topPosts.length ? (
+          <section className="space-y-6">
+            <div className="flex items-center justify-between">
+              <h2 className="text-2xl font-semibold text-white">Top articles</h2>
+              <p className="text-xs uppercase tracking-[0.3em] text-slate-400">Les plus récents</p>
+            </div>
+            <div className="grid gap-6 lg:grid-cols-3">
+              {topPosts.map((post) => {
+                const coverSrc = post.cover
+                  ? getMediaVariantUrl(post.cover, "sm") ?? post.cover.originalUrl
+                  : null;
+                return (
+                  <Card
+                    key={post.id}
+                    as="article"
+                    className="flex h-full flex-col gap-4 overflow-hidden border-white/10 bg-slate-900/60 p-0 transition duration-200 hover:-translate-y-1 hover:border-sky-400/50"
+                  >
+                    <MediaCover
+                      src={coverSrc}
+                      alt={post.title}
+                      className="aspect-[16/9] w-full rounded-none border-none"
+                      sizes="(min-width: 1024px) 30vw, 100vw"
+                    />
+                    <div className="space-y-2 px-6 pb-6 pt-4">
+                      <div className="flex items-center justify-between">
+                        <CategoryBadge label={(post.tags?.[0] ?? "Article").toString()} />
+                        <p className="text-xs uppercase tracking-[0.2em] text-sky-200">
+                          {formatDate(post.publishedAt ?? post.createdAt)}
+                        </p>
+                      </div>
+                      <h3 className="text-xl font-semibold text-white">{post.title}</h3>
+                      <p className="text-sm leading-relaxed text-slate-200">{buildExcerpt(post)}</p>
+                      <Link
+                        href={`/blog/${post.slug}`}
+                        className="mt-2 inline-flex items-center gap-2 text-sm font-semibold text-sky-200 hover:text-sky-100"
+                      >
+                        Lire l'article
+                        <span aria-hidden>→</span>
+                      </Link>
+                    </div>
+                  </Card>
+                );
+              })}
+            </div>
+          </section>
+        ) : null}
 
-              <div className="space-y-2 px-6 pb-6 pt-4">
-                <div className="flex items-center justify-between">
-                  <CategoryBadge label={(post.tags?.[0] ?? "Article").toString()} />
-                  <p className="text-xs uppercase tracking-[0.2em] text-emerald-200">
-                    {formatDate(post.publishedAt ?? post.createdAt)}
-                  </p>
-                </div>
-                <h3 className="text-2xl font-semibold text-white">{post.title}</h3>
-                <p className="text-sm leading-relaxed text-slate-200">{buildExcerpt(post)}</p>
-                <div className="mt-auto flex items-center justify-between text-sm font-semibold text-emerald-300">
-                  <span className="transition hover:text-emerald-200">
-                    <Link href={`/blog/${post.slug}`}>Lire l'article</Link>
-                  </span>
-                  <span aria-hidden>→</span>
-                </div>
-              </div>
-            </Card>
-          ))}
-          {!posts.length ? (
-            <Card className="border-white/10 bg-white/5/30 p-6 text-slate-200">
-              Aucun article publié pour le moment. Revenez bientôt pour découvrir nos dernières réflexions.
-            </Card>
-          ) : null}
-        </div>
+        <section className="space-y-6">
+          <div className="flex items-center justify-between">
+            <h2 className="text-2xl font-semibold text-white">Tous les articles</h2>
+            <p className="text-xs uppercase tracking-[0.3em] text-slate-400">
+              {posts.length} publication{posts.length > 1 ? "s" : ""}
+            </p>
+          </div>
+          <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-3">
+            {loadError ? (
+              <DatabaseWarning message="Le blog est momentanément indisponible. Vérifiez la connexion à la base de données ou réessayez plus tard." />
+            ) : null}
+            {(remainingPosts.length ? remainingPosts : posts).map((post) => {
+              const coverSrc = post.cover
+                ? getMediaVariantUrl(post.cover, "sm") ?? post.cover.originalUrl
+                : null;
+
+              return (
+                <Card
+                  key={post.id}
+                  as="article"
+                  className="flex h-full flex-col gap-4 overflow-hidden border-white/10 bg-slate-900/60 p-0 transition duration-200 hover:-translate-y-1 hover:border-sky-400/50"
+                >
+                  <MediaCover
+                    src={coverSrc}
+                    alt={post.title}
+                    className="aspect-[16/9] w-full rounded-none border-none"
+                    sizes="(min-width: 1024px) 30vw, 100vw"
+                  />
+                  <div className="space-y-2 px-6 pb-6 pt-4">
+                    <div className="flex items-center justify-between">
+                      <CategoryBadge label={(post.tags?.[0] ?? "Article").toString()} />
+                      <p className="text-xs uppercase tracking-[0.2em] text-sky-200">
+                        {formatDate(post.publishedAt ?? post.createdAt)}
+                      </p>
+                    </div>
+                    <h3 className="text-xl font-semibold text-white">{post.title}</h3>
+                    <p className="text-sm leading-relaxed text-slate-200">{buildExcerpt(post)}</p>
+                    <Link
+                      href={`/blog/${post.slug}`}
+                      className="mt-2 inline-flex items-center gap-2 text-sm font-semibold text-sky-200 hover:text-sky-100"
+                    >
+                      Lire l'article
+                      <span aria-hidden>→</span>
+                    </Link>
+                  </div>
+                </Card>
+              );
+            })}
+            {!posts.length ? (
+              <Card className="border-white/10 bg-slate-900/60 p-6 text-slate-200">
+                Aucun article publié pour le moment. Revenez bientôt pour découvrir nos dernières réflexions.
+              </Card>
+            ) : null}
+          </div>
+        </section>
       </Container>
     </div>
   );

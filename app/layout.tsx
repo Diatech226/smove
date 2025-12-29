@@ -31,10 +31,15 @@ export default async function RootLayout({ children }: { children: React.ReactNo
 
   return (
     <html lang="fr">
-      <body className="min-h-screen bg-slate-950 text-slate-50 flex flex-col">
+      <body className="min-h-screen bg-slate-950 text-slate-50 flex flex-col antialiased">
         <Header siteName={settings.siteName} logoUrl={settings.logo} />
         <main className="flex-1">{children}</main>
-        <Footer siteName={settings.siteName} siteTagline={settings.siteTagline} socialLinks={settings.socialLinks} />
+        <Footer
+          siteName={settings.siteName}
+          siteTagline={settings.siteTagline}
+          socialLinks={settings.socialLinks}
+          contact={settings.contact}
+        />
       </body>
     </html>
   );
