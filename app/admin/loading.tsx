@@ -7,10 +7,14 @@ export default function AdminLoading() {
       <div className="h-10 w-48 animate-pulse rounded-lg bg-white/10" />
       <div className="grid gap-4 md:grid-cols-3">
         {Array.from({ length: 3 }).map((_, index) => (
-          <Card key={index} className="h-32 animate-pulse border-white/10 bg-white/5" />
+          <Card key={index} className="h-32 animate-pulse border-white/10 bg-white/5">
+            <div className="h-full w-full" />
+          </Card>
         ))}
       </div>
-      <Card className="h-64 animate-pulse border-white/10 bg-white/5" />
+      <Card className="h-64 animate-pulse border-white/10 bg-white/5">
+        <div className="h-full w-full" />
+      </Card>
     </div>
   );
 }
