@@ -3,7 +3,6 @@
 import type { FormEvent } from "react";
 import { useEffect, useMemo, useState, useTransition } from "react";
 
-import Link from "next/link";
 import { useRouter } from "next/navigation";
 
 import { AdminPageHeader } from "@/components/admin/AdminPageHeader";
@@ -331,11 +330,11 @@ export function PostForm({ initialValues, postId, mode, categories = [] }: PostF
                 </select>
                 {!categories.length ? (
                   <Button
-                    asChild
+                    href="/admin/categories"
                     variant="ghost"
                     className="w-fit border border-white/10 px-3 py-1 text-xs text-emerald-200 hover:text-emerald-100"
                   >
-                    <Link href="/admin/categories">Créer une catégorie</Link>
+                    Créer une catégorie
                   </Button>
                 ) : null}
                 <input

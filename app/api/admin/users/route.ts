@@ -36,14 +36,15 @@ export async function GET(request: Request) {
   ]);
 
   if (!usersResult.ok || !countResult.ok) {
+    const detail = !usersResult.ok ? usersResult.message : !countResult.ok ? countResult.message : "Unknown error";
     console.error("Failed to fetch users", {
       requestId,
-      detail: usersResult.ok ? countResult.message : usersResult.message,
+      detail,
     });
     return jsonError("Database unreachable", {
       status: 503,
       requestId,
-      data: { detail: usersResult.ok ? countResult.message : usersResult.message },
+      data: { detail },
     });
   }
 

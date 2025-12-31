@@ -4,12 +4,36 @@ import { safePrisma } from "@/lib/safePrisma";
 
 export async function POST() {
   try {
+    const mediaResult = await safePrisma((db) =>
+      db.media.create({
+        data: {
+          type: "image",
+          folder: "seed",
+          originalUrl: "https://placehold.co/600x400",
+          mime: "image/png",
+          size: 0,
+        },
+      }),
+    );
+
+    if (!mediaResult.ok) {
+      return NextResponse.json(
+        {
+          success: false,
+          message: "Error seeding demo media",
+          error: { code: (mediaResult.error as any)?.code ?? null, message: mediaResult.message },
+        },
+        { status: 503 },
+      );
+    }
+
     const demoResult = await safePrisma((db) =>
       db.service.create({
         data: {
           name: "Demo Service",
           slug: "demo-service",
           description: "Service de démonstration pour tester Prisma + MongoDB.",
+          coverMediaId: mediaResult.data.id,
         },
       }),
     );

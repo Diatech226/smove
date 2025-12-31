@@ -10,6 +10,7 @@ import { DatabaseWarning } from "@/components/ui/DatabaseWarning";
 import { createMetadata } from "@/lib/config/seo";
 import { safePrisma } from "@/lib/safePrisma";
 import { getMediaPosterUrl, getMediaVariantUrl } from "@/lib/media/utils";
+import type { MediaItem, MediaType } from "@/lib/media/types";
 import { Card } from "@/components/ui/Card";
 import { MediaCover } from "@/components/ui/MediaCover";
 
@@ -110,8 +111,40 @@ export default async function BlogPostPage({ params }: BlogPostPageProps) {
   const latestPosts = latestResult.ok ? latestResult.data : [];
   const galleryMedia = galleryResult.ok ? galleryResult.data : [];
 
-  const heroCover = post.cover
-    ? getMediaVariantUrl(post.cover, "lg") ?? post.cover.originalUrl
+  type NormalizableMedia = {
+    id: string;
+    originalUrl: string;
+    mime: string;
+    size: number;
+    createdAt: Date | string;
+    type?: string | null;
+    folder?: string | null;
+    variants?: MediaItem["variants"] | null | unknown;
+    posterUrl?: string | null;
+    width?: number | null;
+    height?: number | null;
+    duration?: number | null;
+  };
+
+  const normalizeMediaType = (type?: string | null): MediaType => (type === "video" ? "video" : "image");
+  const normalizeMediaItem = (media: NormalizableMedia | null): MediaItem | null => {
+    if (!media) return null;
+    const { type, variants, ...rest } = media;
+    return {
+      ...rest,
+      variants: variants as MediaItem["variants"],
+      type: normalizeMediaType(type),
+    };
+  };
+
+  const normalizedCover = normalizeMediaItem(post.cover);
+  const normalizedVideo = normalizeMediaItem(post.video);
+  const normalizedGallery = galleryMedia
+    .map((media) => normalizeMediaItem(media))
+    .filter((media): media is MediaItem => Boolean(media));
+
+  const heroCover = normalizedCover
+    ? getMediaVariantUrl(normalizedCover, "lg") ?? normalizedCover.originalUrl
     : null;
 
   return (
@@ -130,12 +163,12 @@ export default async function BlogPostPage({ params }: BlogPostPageProps) {
 
         <div className="grid gap-12 lg:grid-cols-[2fr_1fr]">
           <div className="space-y-8">
-            {post.video ? (
+            {normalizedVideo ? (
               <div className="relative overflow-hidden rounded-2xl border border-white/10">
                 <video
                   className="h-full w-full object-cover"
-                  src={post.video.originalUrl}
-                  poster={getMediaPosterUrl(post.video) ?? undefined}
+                  src={normalizedVideo.originalUrl}
+                  poster={getMediaPosterUrl(normalizedVideo) ?? undefined}
                   controls
                 />
               </div>
@@ -147,11 +180,11 @@ export default async function BlogPostPage({ params }: BlogPostPageProps) {
               ))}
             </article>
 
-            {galleryMedia.length ? (
+            {normalizedGallery.length ? (
               <div className="space-y-3">
                 <h3 className="text-lg font-semibold text-white">Galerie</h3>
                 <div className="grid gap-4 md:grid-cols-2">
-                  {galleryMedia.map((image, index) => {
+                  {normalizedGallery.map((image, index) => {
                     const src = getMediaVariantUrl(image, "md") ?? image.originalUrl;
                     return (
                       <div key={image.id ?? index} className="relative aspect-[4/3] overflow-hidden rounded-xl border border-white/10">
@@ -173,8 +206,9 @@ export default async function BlogPostPage({ params }: BlogPostPageProps) {
               <h3 className="text-lg font-semibold text-white">Les plus lus</h3>
               <div className="space-y-3">
                 {(mostReadPosts.length ? mostReadPosts : latestPosts).map((item) => {
-                  const coverSrc = item.cover
-                    ? getMediaVariantUrl(item.cover, "thumb") ?? item.cover.originalUrl
+                  const cover = normalizeMediaItem(item.cover);
+                  const coverSrc = cover
+                    ? getMediaVariantUrl(cover, "thumb") ?? cover.originalUrl
                     : null;
 
                   return (

@@ -1,6 +1,6 @@
 "use client";
 
-import { FormEvent, useMemo, useState } from "react";
+import { FormEvent, Suspense, useMemo, useState } from "react";
 import { useSearchParams } from "next/navigation";
 
 import { Button } from "@/components/ui/Button";
@@ -8,7 +8,7 @@ import { Card } from "@/components/ui/Card";
 
 type StatusState = "idle" | "submitting" | "success" | "error";
 
-export default function ActivatePage() {
+function ActivateForm() {
   const searchParams = useSearchParams();
   const token = useMemo(() => searchParams?.get("token") ?? "", [searchParams]);
   const [password, setPassword] = useState("");
@@ -116,5 +116,13 @@ export default function ActivatePage() {
         </form>
       </Card>
     </div>
+  );
+}
+
+export default function ActivatePage() {
+  return (
+    <Suspense fallback={<div className="flex min-h-screen items-center justify-center bg-slate-950 text-white">Chargement...</div>}>
+      <ActivateForm />
+    </Suspense>
   );
 }

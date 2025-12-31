@@ -50,7 +50,7 @@ export async function GET(request: Request) {
     });
   }
 
-  const match = lookupResult.data;
+  const match = lookupResult.data as { id: string; slug: string; [key: string]: string | null } | null;
   if (!match) {
     return jsonOk({ available: true }, { status: 200, requestId });
   }
