@@ -1,6 +1,4 @@
 // file: app/admin/posts/page.tsx
-import Link from "next/link";
-
 import { AdminPageHeader } from "@/components/admin/AdminPageHeader";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
@@ -65,6 +63,8 @@ export default async function AdminPostsPage({ searchParams = {} }: AdminPostsPa
   const loadError = !postsResult.ok;
   const total = countResult.ok ? countResult.data : posts.length;
   const totalPages = Math.max(1, Math.ceil(total / params.limit));
+  const isPrevDisabled = params.page <= 1;
+  const isNextDisabled = params.page >= totalPages;
   const categories = categoriesResult.ok ? categoriesResult.data : [];
   const categoryMap = new Map(categories.map((category) => [category.id, category.name]));
 
@@ -94,9 +94,7 @@ export default async function AdminPostsPage({ searchParams = {} }: AdminPostsPa
         title="Articles"
         subtitle="Gérez la bibliothèque éditoriale du blog."
         actions={
-          <Button asChild>
-            <Link href="/admin/posts/new">Nouvel article</Link>
-          </Button>
+          <Button href="/admin/posts/new">Nouvel article</Button>
         }
       />
 
@@ -231,8 +229,8 @@ export default async function AdminPostsPage({ searchParams = {} }: AdminPostsPa
             <Button type="submit" className="w-full">
               Filtrer
             </Button>
-            <Button asChild type="button" variant="ghost" className="border border-white/10 px-4 py-2 text-slate-200">
-              <Link href="/admin/posts">Réinitialiser</Link>
+            <Button href="/admin/posts" variant="ghost" className="border border-white/10 px-4 py-2 text-slate-200">
+              Réinitialiser
             </Button>
           </div>
         </form>
@@ -282,22 +280,24 @@ export default async function AdminPostsPage({ searchParams = {} }: AdminPostsPa
             Page {params.page} sur {totalPages}
           </p>
           <div className="flex items-center gap-2">
-            <Button
-              asChild
-              variant="secondary"
-              className="px-3 py-1 text-xs"
-              disabled={params.page <= 1}
-            >
-              <Link href={buildQuery({ page: Math.max(1, params.page - 1) })}>Précédent</Link>
-            </Button>
-            <Button
-              asChild
-              variant="secondary"
-              className="px-3 py-1 text-xs"
-              disabled={params.page >= totalPages}
-            >
-              <Link href={buildQuery({ page: Math.min(totalPages, params.page + 1) })}>Suivant</Link>
-            </Button>
+            {isPrevDisabled ? (
+              <Button variant="secondary" className="px-3 py-1 text-xs" disabled>
+                Précédent
+              </Button>
+            ) : (
+              <Button href={buildQuery({ page: Math.max(1, params.page - 1) })} variant="secondary" className="px-3 py-1 text-xs">
+                Précédent
+              </Button>
+            )}
+            {isNextDisabled ? (
+              <Button variant="secondary" className="px-3 py-1 text-xs" disabled>
+                Suivant
+              </Button>
+            ) : (
+              <Button href={buildQuery({ page: Math.min(totalPages, params.page + 1) })} variant="secondary" className="px-3 py-1 text-xs">
+                Suivant
+              </Button>
+            )}
           </div>
         </div>
       </Card>

@@ -3,8 +3,8 @@ import { z } from "zod";
 
 const urlRegex = /^(https?:\/\/|\/)[^\s/$.?#].[^\s]*$/i;
 export const slugSchema = z
-  .string({ required_error: "Slug requis" })
-  .min(1, "Le slug est obligatoire")
+  .string()
+  .min(1, "Slug requis")
   .max(120, "Le slug ne doit pas dépasser 120 caractères")
   .regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/, "Le slug doit utiliser des minuscules et des tirets");
 
@@ -82,7 +82,7 @@ export const projectUpdateSchema = projectSchema.partial();
 export const eventSchema = z.object({
   title: z.string().min(1, "Titre obligatoire"),
   slug: slugSchema,
-  date: z.coerce.date({ invalid_type_error: "Date invalide" }),
+  date: z.coerce.date().refine((value) => !Number.isNaN(value.getTime()), "Date invalide"),
   location: z.string().trim().optional().nullable(),
   description: z.string().trim().optional().nullable(),
   category: z.string().trim().optional().nullable(),

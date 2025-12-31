@@ -64,14 +64,15 @@ export async function GET(request: Request) {
   ]);
 
   if (!mediaResult.ok || !countResult.ok) {
+    const detail = !mediaResult.ok ? mediaResult.message : !countResult.ok ? countResult.message : "Unknown error";
     console.error("Failed to fetch media", {
       requestId,
-      detail: mediaResult.ok ? countResult.message : mediaResult.message,
+      detail,
     });
     return jsonError("Database unreachable", {
       status: 503,
       requestId,
-      data: { detail: mediaResult.ok ? countResult.message : mediaResult.message },
+      data: { detail },
     });
   }
 

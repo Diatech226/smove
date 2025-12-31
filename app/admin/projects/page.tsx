@@ -28,7 +28,12 @@ type AdminProject = {
   status?: ContentStatus | null;
 };
 
-const emptyForm: Pick<AdminProject, "slug" | "title" | "client" | "sector" | "summary"> & {
+type ProjectFormValues = {
+  slug: string;
+  title: string;
+  client: string;
+  sector: string;
+  summary: string;
   body?: string;
   results?: string[];
   category?: string;
@@ -36,7 +41,9 @@ const emptyForm: Pick<AdminProject, "slug" | "title" | "client" | "sector" | "su
   sectorSlug?: string;
   coverMediaId?: string;
   status?: ContentStatus;
-} = {
+};
+
+const emptyForm: ProjectFormValues = {
   slug: "",
   title: "",
   client: "",

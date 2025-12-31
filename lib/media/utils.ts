@@ -1,6 +1,12 @@
-import type { MediaItem, MediaVariants } from "./types";
+import type { MediaVariants } from "./types";
 
-export const getMediaVariantUrl = (media: MediaItem | null | undefined, variant: keyof MediaVariants | "original") => {
+type MediaLike = {
+  originalUrl: string;
+  variants?: MediaVariants | { poster?: MediaVariants } | null | unknown;
+  posterUrl?: string | null;
+};
+
+export const getMediaVariantUrl = (media: MediaLike | null | undefined, variant: keyof MediaVariants | "original") => {
   if (!media) return null;
   if (variant === "original") return media.originalUrl;
 
@@ -15,7 +21,7 @@ export const getMediaVariantUrl = (media: MediaItem | null | undefined, variant:
   return media.originalUrl;
 };
 
-export const getMediaPosterUrl = (media: MediaItem | null | undefined) => {
+export const getMediaPosterUrl = (media: MediaLike | null | undefined) => {
   if (!media) return null;
   if (media.posterUrl) return media.posterUrl;
   const variants = media.variants as { poster?: MediaVariants } | null | undefined;

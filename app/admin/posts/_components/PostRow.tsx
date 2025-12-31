@@ -2,7 +2,6 @@
 
 import { useMemo, useState } from "react";
 
-import Link from "next/link";
 
 import { Button } from "@/components/ui/Button";
 
@@ -74,8 +73,8 @@ export function PostRow({ post, categoryLabel }: PostRowProps) {
       <td className="px-3 py-3">
         <div className="flex flex-col gap-2">
           <div className="flex flex-wrap items-center gap-2">
-            <Button asChild variant="secondary" className="px-3 py-1 text-xs">
-              <Link href={`/admin/posts/${post.id}`}>Modifier</Link>
+            <Button href={`/admin/posts/${post.id}`} variant="secondary" className="px-3 py-1 text-xs">
+              Modifier
             </Button>
             <DeletePostButton postId={post.id} />
           </div>

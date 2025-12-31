@@ -42,6 +42,7 @@ export async function GET(request: Request) {
   ]);
 
   if (!postsResult.ok || !countResult.ok) {
+    const detail = !postsResult.ok ? postsResult.message : !countResult.ok ? countResult.message : "Unknown error";
     console.error("Failed to load posts", {
       requestId,
       postError: postsResult.ok ? undefined : postsResult.message,
@@ -50,7 +51,7 @@ export async function GET(request: Request) {
     return jsonError("Database unreachable", {
       status: 503,
       requestId,
-      data: { detail: postsResult.ok ? countResult.message : postsResult.message },
+      data: { detail },
     });
   }
 

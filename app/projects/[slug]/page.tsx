@@ -10,6 +10,7 @@ import { Button } from "@/components/ui/Button";
 import { DatabaseWarning } from "@/components/ui/DatabaseWarning";
 import { safePrisma } from "@/lib/safePrisma";
 import { getMediaVariantUrl } from "@/lib/media/utils";
+import type { MediaItem, MediaType } from "@/lib/media/types";
 import { MediaCover } from "@/components/ui/MediaCover";
 import { createMetadata } from "@/lib/config/seo";
 
@@ -70,8 +71,35 @@ export default async function ProjectPage({ params }: Props) {
     notFound();
   }
 
-  const coverSrc = project.cover
-    ? getMediaVariantUrl(project.cover, "lg") ?? project.cover.originalUrl
+  type NormalizableMedia = {
+    id: string;
+    originalUrl: string;
+    mime: string;
+    size: number;
+    createdAt: Date | string;
+    type?: string | null;
+    folder?: string | null;
+    variants?: MediaItem["variants"] | null | unknown;
+    posterUrl?: string | null;
+    width?: number | null;
+    height?: number | null;
+    duration?: number | null;
+  };
+
+  const normalizeMediaType = (type?: string | null): MediaType => (type === "video" ? "video" : "image");
+  const normalizeMediaItem = (media: NormalizableMedia | null): MediaItem | null => {
+    if (!media) return null;
+    const { type, variants, ...rest } = media;
+    return {
+      ...rest,
+      variants: variants as MediaItem["variants"],
+      type: normalizeMediaType(type),
+    };
+  };
+
+  const normalizedCover = normalizeMediaItem(project.cover);
+  const coverSrc = normalizedCover
+    ? getMediaVariantUrl(normalizedCover, "lg") ?? normalizedCover.originalUrl
     : null;
 
   return (

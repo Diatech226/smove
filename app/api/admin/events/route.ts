@@ -32,11 +32,12 @@ export async function GET(request: Request) {
   ]);
 
   if (!eventsResult.ok || !countResult.ok) {
-    console.error("Failed to fetch events", { requestId, detail: eventsResult.message });
+    const detail = !eventsResult.ok ? eventsResult.message : !countResult.ok ? countResult.message : "Unknown error";
+    console.error("Failed to fetch events", { requestId, detail });
     return jsonError("Failed to fetch events", {
       status: 503,
       requestId,
-      data: { detail: eventsResult.ok ? countResult.message : eventsResult.message },
+      data: { detail },
     });
   }
 

@@ -32,14 +32,15 @@ export async function GET(request: Request) {
   ]);
 
   if (!projectsResult.ok || !countResult.ok) {
+    const detail = !projectsResult.ok ? projectsResult.message : !countResult.ok ? countResult.message : "Unknown error";
     console.error("Failed to fetch projects", {
       requestId,
-      detail: projectsResult.ok ? countResult.message : projectsResult.message,
+      detail,
     });
     return jsonError("Failed to fetch projects", {
       status: 503,
       requestId,
-      data: { detail: projectsResult.ok ? countResult.message : projectsResult.message },
+      data: { detail },
     });
   }
 

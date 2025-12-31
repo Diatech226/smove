@@ -32,14 +32,15 @@ export async function GET(request: Request) {
   ]);
 
   if (!servicesResult.ok || !countResult.ok) {
+    const detail = !servicesResult.ok ? servicesResult.message : !countResult.ok ? countResult.message : "Unknown error";
     console.error("Failed to fetch services", {
       requestId,
-      detail: servicesResult.ok ? countResult.message : servicesResult.message,
+      detail,
     });
     return jsonError("Database unreachable", {
       status: 503,
       requestId,
-      data: { detail: servicesResult.ok ? countResult.message : servicesResult.message },
+      data: { detail },
     });
   }
 
